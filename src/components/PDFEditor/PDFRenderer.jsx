@@ -212,6 +212,7 @@ function PageRenderer({ page, pageIndex, fontsKey, editingItem, onDoubleClick })
                 height={renderHeight}
                 viewBox={`0 0 ${renderWidth} ${renderHeight}`}
                 textRendering="geometricPrecision"
+                shapeRendering="geometricPrecision"
                 style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
             >
                 {/* 1. Vector Layer */}

@@ -123,7 +123,7 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
         const scaledWidth = renderWidth * camera.scale;
 
         // Center Page (Horizontal Dynamic, Vertical Fixed Top)
-        const offsetX = Math.max(0, (viewportSize.width - scaledWidth) / 2);
+        const offsetX = Math.floor(Math.max(0, (viewportSize.width - scaledWidth) / 2));
         worldContainer.x = offsetX;
         worldContainer.y = 40;
         worldContainer.scale.set(camera.scale);
@@ -212,28 +212,9 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
             if (isEditing && item.type === 'text') return;
 
             if (item.type === 'text') {
-                /* Skip WebGL text for alignment check
-                nodes.push({
-                    type: 'text',
-                    content: item.content || item.str,
-                    text: item.content || item.str,
-                    x: item.origin ? item.origin[0] : (item.x || 0),
-                    y: item.origin ? item.origin[1] : (item.y || 0),
-                    color: item.color,
-                    font: item.font,
-                    size: item.size,
-                    height: page.height || 841.89,
-                    is_bold: item.is_bold,
-                    is_italic: item.is_italic,
-                    styles: {
-                        fontSize: item.size,
-                        fontFamily: item.font,
-                        fontWeight: item.is_bold ? 'bold' : 'normal',
-                        fontStyle: item.is_italic ? 'italic' : 'normal',
-                        color: typeof item.color === 'string' ? item.color : undefined
-                    }
-                });
-                */
+                // We use the SVG layer for text to ensure maximum sharpness and searchability.
+                // WebGL is reserved for heavy background elements (paths, images).
+                return;
             } else if (item.type === 'image') {
                 nodes.push({
                     type: 'image',
@@ -246,13 +227,37 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                 });
             }
             // --- PATH OPERATOR STATE MACHINE ---
-            // User requested to "disable inner text" (the vector paths that sometimes duplicate text)
-            // We disable path accumulation for now.
-            /*
             else if (item.type === 'path_move') {
-                ...
+                currentPath.push({ type: 'm', x: item.x, y: item.y });
+                lastPoint = { x: item.x, y: item.y };
+            } else if (item.type === 'path_line') {
+                currentPath.push({ type: 'l', pts: [[lastPoint.x, lastPoint.y], [item.x, item.y]] });
+                lastPoint = { x: item.x, y: item.y };
+            } else if (item.type === 'path_curve') {
+                // Bezier
+                currentPath.push({
+                    type: 'c', pts: [
+                        [lastPoint.x, lastPoint.y],
+                        [item.pts[0], item.pts[1]],
+                        [item.pts[2], item.pts[3]],
+                        [item.pts[4], item.pts[5]]
+                    ]
+                });
+                lastPoint = { x: item.pts[4], y: item.pts[5] };
+            } else if (item.op === 're') { // Rect
+                const [rx, ry, rw, rh] = item.pts;
+                currentPath.push({ type: 're', pts: [[rx, ry, rw, rh]] });
+            } else if (item.type === 'path_close') {
+                // ...
+            } else if (item.type === 'fill' || item.type === 'eofill') {
+                flushPath(true, item.color);
+            } else if (item.type === 'stroke') {
+                flushPath(false, item.color);
             }
-            */
+            // Handle high-level paths (backward compatibility)
+            else if (item.type === 'path' && item.segments) {
+                nodes.push({ type: 'pdf_path', items: [item], height: page.height });
+            }
         });
 
         // Flush remaining if any (rare for valid PDF)
@@ -331,12 +336,13 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                 background: '#300030',
                 border: 'none'
             }}>
-                {/* SVG Interaction Layer Overlay */}
                 <svg
+                    textRendering="geometricPrecision"
+                    shapeRendering="geometricPrecision"
                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: canvasHeight + 'px', pointerEvents: 'none', zIndex: 10 }}
                 >
                     {page && (
-                        <g transform={`translate(${Math.max(0, (viewportSize.width - page.width * camera.scale) / 2)}, 40) scale(${camera.scale})`}>
+                        <g transform={`translate(${Math.floor(Math.max(0, (viewportSize.width - page.width * camera.scale) / 2))}, 40) scale(${camera.scale})`}>
                             <EditableTextLayer
                                 items={page.items}
                                 height={page.height}
@@ -468,9 +474,9 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                             }}
                         />
 
-                        {/* 2. Visual Text */}
+                        {/* 2. Visual Text (Native Browser Rendering for Sharpness) */}
                         <text
-                            visibility={isEditing ? 'hidden' : 'visible'} // Hide the ghost when editing
+                            visibility={isEditing ? 'hidden' : 'visible'}
                             transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
                             fontSize={Math.abs(item.size)}
                             fontFamily={`"${item.font}", serif`}

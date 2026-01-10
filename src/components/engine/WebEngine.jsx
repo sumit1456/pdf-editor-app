@@ -10,7 +10,7 @@ export class PixiRendererEngine {
             width: options.width || 595,
             height: options.height || 842,
             backgroundColor: options.backgroundColor || 0xffffff,
-            resolution: options.resolution || 1,
+            resolution: options.resolution || 2, // Use 2x resolution for retina/high-fidelity text
             antialias: options.antialias ?? true,
             ...options
         };
@@ -179,7 +179,7 @@ export class PixiRendererEngine {
         const { items, height } = node;
 
         const drawSegments = (g, segments) => {
-            const flipY = (y) => y; // Backend is top-down
+            const flipY = (y) => height ? height - y : y;
             segments.forEach(seg => {
                 if (seg.type === 'm') {
                     g.moveTo(seg.x, flipY(seg.y));
@@ -193,7 +193,8 @@ export class PixiRendererEngine {
                     g.bezierCurveTo(cp1[0], flipY(cp1[1]), cp2[0], flipY(cp2[1]), end[0], flipY(end[1]));
                 } else if (seg.type === 're') {
                     const [x, y, w, h] = seg.pts[0];
-                    // v8 check for rect
+                    // For rects in bottom-up, (x, y) is bottom-left.
+                    // In top-down, we need top-left: height - (y + h)
                     if (g.rect) g.rect(x, flipY(y + h), w, h);
                     else g.drawRect(x, flipY(y + h), w, h);
                 }
@@ -359,6 +360,7 @@ export class PixiRendererEngine {
             fontStyle,
             fill,
             align: (node.styles && node.styles.textAlign) || 'left',
+            textBaseline: 'alphabetic', // Align with PDF/SVG baseline
             // Basic padding to prevent clipping
             padding: 5
         };
@@ -378,11 +380,9 @@ export class PixiRendererEngine {
         // Handle Scaling from Matrix if present
         if (node.matrix && Array.isArray(node.matrix) && node.matrix.length >= 4) {
             const [ma, mb, mc, md] = node.matrix;
-            // PDF Matrix [a, b, c, d, e, f]
-            // We use PIXI's setFromMatrix or manually set. 
-            // Caution: If 'd' is negative, it flips vertically. 
-            // If the backend already handled the flip but kept the matrix as-is, we may need to normalize.
-            // For now, we apply it as-is to match the SVG renderer's behavior.
+            // PDF Matrix [a, b, c, d, tx, ty]
+            // We apply the matrix for scale/skew and then set the absolute position.
+            // PIXI v8: setFromMatrix is the modern way.
             pixiText.setFromMatrix(new PIXI_LIB.Matrix(ma, mb, mc, md, x, y));
         } else {
             pixiText.x = (isLocal ? 0 : x);
