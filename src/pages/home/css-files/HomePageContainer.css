@@ -1,0 +1,58 @@
+.home-container {
+  min-height: calc(100vh - 60px); /* subtract navbar height */
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #000000;
+  text-align: center;
+  padding: 20px;
+  background-color: white;
+ 
+}
+
+.home-title {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.home-subtitle {
+  font-size: 1.2rem;
+  margin-bottom: 24px;
+  color: #444444;
+}
+
+.home-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: 1px solid #000000;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 1rem;
+  color: #000000;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.btn-primary {
+  background: #000000;
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: #333333;
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.btn-secondary:hover {
+  background: #f0f0f0;
+}

@@ -1,0 +1,20 @@
+- [/] Comprehensive Vector Extraction <!-- id: 69 -->
+    - [ ] Extend PDF operator parsing (rects, curves, fills) <!-- id: 70 -->
+    - [ ] Implement stateful vector path builder in `pdfExtractor.js` <!-- id: 71 -->
+    - [ ] Update `WebEngine.jsx` to render `ShapeRect` and `ShapePath` <!-- id: 72 -->
+    - [ ] Verify vector fidelity in debugger <!-- id: 73 -->
+- [x] High Fidelity: Absolute Fragment Mode <!-- id: 65 -->
+    - [x] Debug coordinate NaN issues in `pdfExtractor.js` <!-- id: 0 -->
+    - [x] Audit `applyTransform` and `state.ctm` for NaN sources <!-- id: 1 -->
+    - [x] Ensure all path arguments are valid floats before transformation <!-- id: 2 -->
+- [/] Refine Color Detection <!-- id: 3 -->
+    - [ ] Investigate why color parser defaults to black even for non-black shapes <!-- id: 4 -->
+    - [ ] Add more diagnostic logging for raw color arguments <!-- id: 5 -->
+    - [ ] Design State Layer (Editor Sync & Multi-page) <!-- id: 9 -->
+- [ ] Create detailed Architecture Document <!-- id: 10 -->
+- [x] Research existing Scene Graph / Document structures in the codebase <!-- id: 0 -->
+- [/] Create implementation plan for Scene Graph-based rendering <!-- id: 1 -->
+- [ ] Adapt [GeometrySnapshot](file:///c:/Users/SUMIT/Downloads/resumemaker-frontend-master/WebGL%20Renderer/webgl/src/engine/WebEngine.jsx#54-972) to handle non-DOM nodes (Scene Graph) <!-- id: 2 -->
+- [ ] Implement [renderNode](file:///c:/Users/SUMIT/Downloads/resumemaker-frontend-master/WebGL%20Renderer/webgl/src/engine/WebEngine.jsx#756-932) or equivalent for Scene Graph nodes in [PixiRendererEngine](file:///c:/Users/SUMIT/Downloads/resumemaker-frontend-master/WebGL%20Renderer/webgl/src/engine/WebEngine.jsx#977-1895) <!-- id: 3 -->
+- [ ] Verify multi-page handling in the renderer <!-- id: 4 -->
+- [ ] Create a demo showing PDF Scene Graph rendering <!-- id: 5 -->

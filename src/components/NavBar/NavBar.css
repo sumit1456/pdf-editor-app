@@ -1,0 +1,124 @@
+.nav-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 80px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    padding: 0 2rem;
+}
+
+.left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.left h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: -0.5px;
+    text-transform: uppercase;
+}
+
+.list {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+}
+
+.list p a {
+    text-decoration: none;
+    color: #86868b;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.list p a:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.box-icons {
+    display: flex;
+    gap: 1rem;
+}
+
+.box-icons a {
+    color: #86868b;
+    font-size: 1.1rem;
+    transition: color 0.3s ease;
+}
+
+.box-icons a:hover {
+    color: white;
+}
+
+/* Sidebar & Mobile styles preserved but cleaned up */
+.hamburger {
+    display: none;
+    font-size: 1.5rem;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .list {
+        display: none;
+    }
+
+    .hamburger {
+        display: block;
+    }
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -250px;
+    width: 250px;
+    height: 100vh;
+    background: #0a0a0a;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    transition: right 0.3s ease;
+    z-index: 1500;
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar.open {
+    right: 0;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 1400;
+}
+
+.sidebar a {
+    color: #86868b;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.sidebar a:hover {
+    color: white;
+}
