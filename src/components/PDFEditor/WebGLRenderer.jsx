@@ -317,15 +317,11 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 
     return (
         <div className="webgl-single-page" style={{
-            width: '100%',
-            height: '100%',
+            width: 'auto', // Don't force 100% if we want to scroll
+            height: 'auto',
             position: 'relative',
-            background: '#2d2d2d',
-            overflow: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '40px 20px'
+            background: 'transparent',
+            padding: '0px 20px'
         }}>
             {/* The Page Wrapper - Handles CSS Background, Shadow, and Scale */}
             <div
@@ -363,7 +359,8 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                         width: '100%',
                         height: '100%',
                         pointerEvents: 'none',
-                        zIndex: 10
+                        zIndex: 10,
+                        overflow: 'visible' // CRITICAL: Prevent text clipping at edges
                     }}
                 >
                     {page && (

@@ -17,8 +17,8 @@ export default function NavBar() {
     <>
       <nav className="nav-bar">
         <div className="left">
-          <img src="./web-logo.png" alt="Resume Maker Logo" />
-          <h1>Resume Maker</h1>
+          <img src="./web-logo.png" alt="" />
+          <h1>THE PDF StudIO</h1>
         </div>
 
         <div className="hamburger" onClick={toggleSidebar}>
@@ -27,7 +27,6 @@ export default function NavBar() {
 
         <div className="list">
           <p><Link to="/">Home</Link></p>
-          <p><Link to="/templates">Templates</Link></p>
           <p><Link to="/about">About</Link></p>
           <p><Link to="/ui-editor/webgl">PDF Editor ✨</Link></p>
         </div>

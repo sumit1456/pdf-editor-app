@@ -102,7 +102,7 @@ export const mergeFragmentsIntoLines = (items) => {
         if (currentLine) lines.push(currentLine);
     });
 
-    const sortedLines = lines.sort((a, b) => b.bbox[1] - a.bbox[1]); // Descending Y = Top-to-Bottom
+    const sortedLines = lines.sort((a, b) => b.bbox[1] - a.bbox[1]); // Highest PDF Y = Visual Top
 
     // Return combined list: Other items (bg) + Merged Lines
     return [...otherItems, ...sortedLines];

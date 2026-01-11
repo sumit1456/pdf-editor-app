@@ -42,7 +42,7 @@ export default function HomePage() {
           <div className="hero-badge">Next Gen PDF Engine</div>
 
           <h1 className="hero-title">
-            The PDF <span className="highlight">Studio</span>
+            THE PDF <span className="highlight">STUDIO</span>
           </h1>
 
           <p className="hero-subtitle">
