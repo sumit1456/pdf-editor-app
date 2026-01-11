@@ -30,7 +30,6 @@ export default function PDFRenderer({ data }) {
                     const fontFace = new FontFace(font.name, bytes);
                     await fontFace.load();
                     document.fonts.add(fontFace);
-                    console.log(`✅ Loaded font: ${font.name}`);
                     setFontsLoaded(prev => prev + 1);
                 } catch (err) {
                     console.warn(`⚠️ Failed to load font ${font.name}:`, err);
@@ -52,7 +51,6 @@ export default function PDFRenderer({ data }) {
 
     // --- EDITING HANDLERS ---
     const handleDoubleClick = (pageIndex, itemIndex, item, domRect, styles) => {
-        console.log('[Edit-SVG] Double Clicked:', item.content);
         setEditingItem({
             pageIndex,
             itemIndex,

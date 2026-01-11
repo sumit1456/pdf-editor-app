@@ -45,7 +45,6 @@ export class VectorProcessor {
                 if (args) {
                     const oldCtm = [...state.ctm];
                     state.ctm = multiplyMatrices(args, state.ctm);
-                    console.log(`[Vector Processor] CTM Updated (fn: 12):`, { move: [args[4], args[5]], scale: [args[0], args[3]], new: state.ctm });
                 }
                 break;
             case OPS.setLineWidth:
@@ -59,7 +58,6 @@ export class VectorProcessor {
                     if (gState.ca_m !== undefined) state.opacity = gState.ca_m;
                     if (gState.CA !== undefined) state.opacity = gState.CA;
                     if (gState.CA_m !== undefined) state.opacity = gState.CA_m;
-                    console.log(`[Vector Processor] setGState Opacity:`, state.opacity);
                 }
                 break;
 
@@ -79,10 +77,8 @@ export class VectorProcessor {
                 const isStroke = [OPS.setStrokeGray, OPS.setStrokeColor, OPS.setStrokeColorN, OPS.setStrokeRGBColor, OPS.setStrokeCMYKColor].includes(fn);
                 if (isStroke) {
                     state.strokeColor = hex;
-                    console.log(`[Vector Processor] Stroke Color Updated: ${hex} (fn: ${fn})`, { args: comps });
                 } else {
                     state.fillColor = hex;
-                    console.log(`[Vector Processor] Fill Color Updated: ${hex} (fn: ${fn})`, { args: comps });
                 }
                 break;
 
@@ -98,7 +94,6 @@ export class VectorProcessor {
             case OPS.moveTo:
                 if (state.inTextMode) break;
                 const mv = applyTransform(args[0], args[1], state.ctm, this.viewportHeight, this.scaleX, this.scaleY);
-                if (fnIndex % 50 === 0) console.log(`[Vector Processor] Sample Move (fn: ${fnIndex}): raw(${args[0]}, ${args[1]}) -> view(${mv.x.toFixed(1)}, ${mv.y.toFixed(1)}) CTM:`, state.ctm);
                 state.currentPath.push({ type: 'move', x: mv.x, y: mv.y });
                 break;
             case OPS.lineTo:

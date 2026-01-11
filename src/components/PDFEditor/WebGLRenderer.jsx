@@ -7,24 +7,14 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 3000 });
-    const [camera, setCamera] = useState({ scale: 0.85, x: 0, y: 0 });
+    const [camera, setCamera] = useState({ scale: 1.1, x: 0, y: 0 });
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
 
     // { itemIndex: number, rect: { top, left, width, height, ...styles } }
     const [editingItem, setEditingItem] = useState(null);
 
-    // --- Helper: Apply Camera Transform ---
-    const updateCameraTransform = useCallback((world, cam, currentMaxWidth) => {
-        if (!world) return;
-        world.scale.set(cam.scale);
-        // Center horizontally
-        const scaledWidth = currentMaxWidth * cam.scale;
-        const offsetX = Math.max(0, (viewportSize.width - scaledWidth) / 2);
-        // Vertical Top Alignment
-        world.x = offsetX;
-        world.y = 40;
-    }, [viewportSize]);
+    // CSS Scaling Handles Camera now
 
     // 1. Initialize Engine
     useEffect(() => {
@@ -36,20 +26,19 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
             const w = rect.width || 800;
             const h = rect.height || 1000;
 
-            console.log('[DEBUG-WebGL] Container Measurement:', { w, h });
             setViewportSize({ width: w, height: h });
 
             const engine = new PixiRendererEngine(containerRef.current, {
                 width: w,
-                height: h, // Will be resized later
-                backgroundColor: 0x300030, // Dark background explicitly
+                height: h,
+                backgroundColor: 0x000000,
+                backgroundAlpha: 0, // Transparent canvas
                 antialias: true,
-                resolution: 2
+                resolution: window.devicePixelRatio || 3
             });
 
             const ok = await engine.initialize();
             if (ok) {
-                console.log('[DEBUG-WebGL] Engine Initialized Successfully');
                 engineRef.current = engine;
                 setIsReady(true);
             } else {
@@ -67,35 +56,29 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
         };
     }, []);
 
-    // Add logic to resize on render
+    // 2. Resize Canvas to Page size (1:1)
     useEffect(() => {
         if (!engineRef.current || !page) return;
 
         const A4_WIDTH = 595.28;
         const A4_HEIGHT = 841.89;
-
         const renderWidth = page.width || A4_WIDTH;
         const renderHeight = page.height || A4_HEIGHT;
 
-        // Calculate Required Canvas Height
-        const scaledHeight = renderHeight * camera.scale;
-        const requiredHeight = scaledHeight + 100;
-        setCanvasHeight(requiredHeight);
-
-        // Resize the renderer canvas
+        // Resize the renderer canvas to exact page dimensions
         const engine = engineRef.current;
         if (engine.app && engine.app.renderer) {
-            engine.app.renderer.resize(viewportSize.width, requiredHeight);
+            engine.app.renderer.resize(renderWidth, renderHeight);
         }
 
-        // Fit to width on first load
+        // Auto-fit on first load
         if (renderWidth > 0 && viewportSize.width > 0 && !engineRef.current._initialFitDone) {
-            const fitScale = (viewportSize.width - 80) / renderWidth;
-            setCamera(prev => ({ ...prev, scale: Math.min(fitScale, 1.0) }));
+            const fitScale = (viewportSize.width - 40) / renderWidth; // Use smaller margin
+            setCamera(prev => ({ ...prev, scale: Math.min(fitScale, 1.3) })); // Allow up to 1.3x scale
             engineRef.current._initialFitDone = true;
         }
 
-    }, [camera.scale, page, viewportSize]); // Re-run when these change
+    }, [page, viewportSize.width]);
 
     // 2. Render Single Active Page
     const renderActivePage = useCallback(async () => {
@@ -122,29 +105,12 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 
         const scaledWidth = renderWidth * camera.scale;
 
-        // Center Page (Horizontal Dynamic, Vertical Fixed Top)
-        const offsetX = Math.floor(Math.max(0, (viewportSize.width - scaledWidth) / 2));
-        worldContainer.x = offsetX;
-        worldContainer.y = 40;
-        worldContainer.scale.set(camera.scale);
+        // Match Canvas size (which matches wrapper size)
+        worldContainer.x = 0;
+        worldContainer.y = 0;
+        worldContainer.scale.set(1);
 
-        // Draw Drop Shadow
-        const shadow = new PIXI.Graphics();
-        if (typeof shadow.fill === 'function') {
-            shadow.rect(5, 5, renderWidth, renderHeight).fill({ color: 0x000000, alpha: 0.3 });
-        } else {
-            shadow.beginFill(0x000000, 0.3).drawRect(5, 5, renderWidth, renderHeight).endFill();
-        }
-        worldContainer.addChild(shadow);
-
-        // Draw Page Background
-        const bg = new PIXI.Graphics();
-        if (typeof bg.fill === 'function') {
-            bg.rect(0, 0, renderWidth, renderHeight).fill({ color: 0xffffff });
-        } else {
-            bg.beginFill(0xffffff).drawRect(0, 0, renderWidth, renderHeight).endFill();
-        }
-        worldContainer.addChild(bg);
+        // REMOVED Pixi Background/Shadow - Now handled by CSS
 
         // Prepare items
         const nodes = [];
@@ -262,7 +228,6 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 
         // Flush remaining if any (rare for valid PDF)
 
-        console.log(`[DEBUG-WebGL] Page nodes count: ${nodes.length}`);
         engine.worldContainer = worldContainer;
         await engine.render({ nodes }, { targetContainer: worldContainer });
 
@@ -276,27 +241,22 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
         renderActivePage();
     }, [renderActivePage]);
 
-    // Handle Resize
+    // Handle Window Resize
     useEffect(() => {
         const handleResize = () => {
             if (!containerRef.current || !engineRef.current) return;
-            const rect = containerRef.current.getBoundingClientRect();
+            const rect = containerRef.current.parentElement.parentElement.getBoundingClientRect();
             setViewportSize({ width: rect.width, height: rect.height });
-            engineRef.current.app.renderer.resize(rect.width, rect.height);
-            if (engineRef.current.worldContainer && page) {
-                updateCameraTransform(engineRef.current.worldContainer, camera, page.width);
-            }
         };
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [camera, page, updateCameraTransform]);
+    }, []);
 
     // --- ACTION HANDLERS ---
 
     // Start Editing
     const handleDoubleClick = (pIndex, itemIndex, item, domRect, styles) => {
         // pIndex is irrelevant now as we are single page, but good for validation
-        console.log('[Edit] Clicked:', item.content);
         setEditingItem({
             itemIndex,
             content: item.content,
@@ -309,7 +269,6 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
     const handleSaveEdit = (newText) => {
         if (!editingItem) return;
 
-        console.log('[Edit] Saving:', newText);
 
         // Update the PARENT via onUpdate
         const newItems = [...page.items];
@@ -325,37 +284,75 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
         setEditingItem(null);
     };
 
-    return (
-        <div className="webgl-single-page" style={{ width: '100%', height: '100%', position: 'relative' }}>
+    const A4_WIDTH = 595.28;
+    const A4_HEIGHT = 841.89;
+    const renderWidth = (page && page.width) || A4_WIDTH;
+    const renderHeight = (page && page.height) || A4_HEIGHT;
 
-            {/* Main WebGL Viewport - AUTO HEIGHT FOR FULL SS */}
-            <div ref={containerRef} style={{
-                width: '100%',
-                height: canvasHeight + 'px',
-                position: 'relative',
-                background: '#300030',
-                border: 'none'
-            }}>
+    return (
+        <div className="webgl-single-page" style={{
+            width: '100%',
+            height: '100%',
+            position: 'relative',
+            background: '#2d2d2d',
+            overflow: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            padding: '40px 20px'
+        }}>
+            {/* The Page Wrapper - Handles CSS Background, Shadow, and Scale */}
+            <div
+                className="page-paper-wrapper"
+                style={{
+                    position: 'relative',
+                    width: renderWidth + 'px',
+                    height: renderHeight + 'px',
+                    backgroundColor: 'white',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                    transform: `scale(${camera.scale})`,
+                    transformOrigin: 'top center',
+                    flexShrink: 0
+                }}
+            >
+                {/* 1. WebGL Canvas (Vectors) */}
+                <div ref={containerRef} style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    zIndex: 1
+                }} />
+
+                {/* 2. SVG (Sharp Text) */}
                 <svg
                     textRendering="geometricPrecision"
                     shapeRendering="geometricPrecision"
-                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: canvasHeight + 'px', pointerEvents: 'none', zIndex: 10 }}
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        pointerEvents: 'none',
+                        zIndex: 10
+                    }}
                 >
                     {page && (
-                        <g transform={`translate(${Math.floor(Math.max(0, (viewportSize.width - page.width * camera.scale) / 2))}, 40) scale(${camera.scale})`}>
-                            <EditableTextLayer
-                                items={page.items}
-                                height={page.height}
-                                pageIndex={pageIndex}
-                                fontsKey={fontsKey}
-                                editingItem={editingItem}
-                                onDoubleClick={handleDoubleClick}
-                            />
-                        </g>
+                        <EditableTextLayer
+                            items={page.items}
+                            height={page.height}
+                            pageIndex={pageIndex}
+                            fontsKey={fontsKey}
+                            editingItem={editingItem}
+                            onDoubleClick={handleDoubleClick}
+                        />
                     )}
                 </svg>
 
-                {/* --- FLOATING TEXT EDITOR (The Swap) --- */}
+                {/* 3. Floating Editor Overlay */}
                 {editingItem && (
                     <FloatingTextEditor
                         editingItem={editingItem}
@@ -363,12 +360,12 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                         containerRect={containerRef.current ? containerRef.current.getBoundingClientRect() : null}
                     />
                 )}
+            </div>
 
-                {/* ZOOM HUD */}
-                <div style={{ position: 'absolute', bottom: '25px', right: '25px', display: 'flex', gap: '10px', zIndex: 30 }}>
-                    <div style={{ background: 'rgba(0,0,0,0.7)', padding: '8px 15px', borderRadius: '12px', color: 'white', fontSize: '0.8rem', backdropFilter: 'blur(10px)', border: '1px solid var(--studio-border)' }}>
-                        Page {pageIndex + 1}
-                    </div>
+            {/* ZOOM HUD */}
+            <div style={{ position: 'fixed', bottom: '25px', right: '25px', display: 'flex', gap: '10px', zIndex: 100 }}>
+                <div style={{ background: 'rgba(0,0,0,0.8)', padding: '8px 15px', borderRadius: '12px', color: 'white', fontSize: '0.8rem', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                    Page {pageIndex + 1}
                 </div>
             </div>
         </div>

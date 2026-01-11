@@ -10,12 +10,15 @@ export class PixiRendererEngine {
             width: options.width || 595,
             height: options.height || 842,
             backgroundColor: options.backgroundColor || 0xffffff,
-            resolution: options.resolution || 2, // Use 2x resolution for retina/high-fidelity text
+            backgroundAlpha: options.backgroundAlpha ?? 1,
+            resolution: options.resolution || 3, // Use 3x resolution for retina-sharp vectors
             antialias: options.antialias ?? true,
             ...options
         };
         this.app = null;
-        this.textureCache = new Map();
+        this.textureCache = new Map(); // Key: data hash or unique ID
+        this.textureRecency = [];     // Array of keys, ordered by recency
+        this.maxTextureCacheSize = options.maxTextureCacheSize || 40; // Max textures in GPU memory
     }
 
     async initialize() {
@@ -31,6 +34,7 @@ export class PixiRendererEngine {
             width: this.options.width,
             height: this.options.height,
             backgroundColor: this.options.backgroundColor,
+            backgroundAlpha: this.options.backgroundAlpha,
             resolution: this.options.resolution,
             antialias: this.options.antialias,
             autoDensity: true
@@ -96,7 +100,6 @@ export class PixiRendererEngine {
                 return za - zb;
             });
 
-            console.log(`[RENDER] Starting render of ${sortedNodes.length} nodes...`);
             for (const node of sortedNodes) {
                 const displayObject = await this.renderNode(node);
                 if (displayObject) contentContainer.addChild(displayObject);
@@ -104,6 +107,14 @@ export class PixiRendererEngine {
         }
 
         const renderTime = performance.now() - renderStartTime;
+
+        // LIVE GPU STATUS REPORT
+        const textureKeys = Array.from(this.textureCache.keys()).map(k => k.substring(0, 10) + '...');
+        console.log(
+            `%c[GPU Live Status] Textures: ${this.textureCache.size}/${this.maxTextureCacheSize} | keys: [${textureKeys.join(', ')}] | Render: ${renderTime.toFixed(1)}ms`,
+            "color: #00ff00; font-weight: bold;"
+        );
+
         return mainContainer;
     }
 
@@ -158,7 +169,6 @@ export class PixiRendererEngine {
     }
 
     async renderNode(node) {
-        console.log('[WebEngine] Rendering Node Type:', node.type);
         switch (node.type) {
             case 'box':
                 return this.renderBox(node);
@@ -398,15 +408,41 @@ export class PixiRendererEngine {
         // Unified Schema
         // node.data (base64) or node.src (url)
         let src = node.src || node.data;
+        if (!src) return null;
 
         if (node.data && !node.data.startsWith('http') && !node.data.startsWith('data:')) {
-            // Assume PNG if unknown, or verify signature. Most extractions use PNG/JPEG.
-            // PyMuPDF extraction often raw base64. 
-            // Try detecting header or default to png
             src = `data:image/png;base64,${node.data}`;
         }
 
-        if (!src) return null;
+        // --- SMART CACHING LOGIC ---
+        // Use a subset of base64/url as key for performance
+        const cacheKey = src.slice(0, 100) + src.length;
+
+        let texture;
+        if (this.textureCache.has(cacheKey)) {
+            // Move to end of recency list (Mark as used)
+            this.textureRecency = this.textureRecency.filter(k => k !== cacheKey);
+            this.textureRecency.push(cacheKey);
+            texture = this.textureCache.get(cacheKey);
+            console.log(`[GPU Cache] HIT: ${cacheKey.substring(0, 20)}... | Total: ${this.textureCache.size}`);
+        } else {
+            try {
+                texture = await PIXI_LIB.Assets.load(src);
+                if (!texture) return null;
+
+                // Add to Cache
+                this.textureCache.set(cacheKey, texture);
+                this.textureRecency.push(cacheKey);
+
+                console.log(`[GPU Cache] NEW: ${cacheKey.substring(0, 20)}... | Total: ${this.textureCache.size}/${this.maxTextureCacheSize}`);
+
+                // Prune if limit exceeded
+                this.pruneCache();
+            } catch (error) {
+                console.error('Failed to load image found in node:', error);
+                return null;
+            }
+        }
 
         // Position
         let x = node.x;
@@ -421,29 +457,27 @@ export class PixiRendererEngine {
             height = node.bbox[3] - node.bbox[1];
         }
 
-        try {
-            const texture = await PIXI_LIB.Assets.load(src);
-            if (!texture) return null;
+        const sprite = new PIXI_LIB.Sprite(texture);
+        sprite.x = x || 0;
+        sprite.y = y || 0;
+        if (width) sprite.width = width;
+        if (height) sprite.height = height;
 
-            const sprite = new PIXI_LIB.Sprite(texture);
-            sprite.x = x || 0;
-            sprite.y = y || 0;
-            if (width) sprite.width = width;
-            if (height) sprite.height = height;
+        if (node.styles && node.styles.opacity !== undefined) sprite.alpha = node.styles.opacity;
 
-            if (node.styles && node.styles.opacity !== undefined) sprite.alpha = node.styles.opacity;
+        return sprite;
+    }
 
-            // Handle Matrix if needed (flip Y is common in PDF)
-            if (node.matrix && node.matrix[3] < 0) {
-                // scaleY is negative, meaning flipped.
-                // sprite.scale.y *= -1;
-                // sprite.anchor.y = 1; // Adjust anchor to flip correctly around position
+    pruneCache() {
+        while (this.textureRecency.length > this.maxTextureCacheSize) {
+            const oldestKey = this.textureRecency.shift(); // Remove oldest
+            const texture = this.textureCache.get(oldestKey);
+            if (texture) {
+                console.log(`[GPU GC] EVICT: ${oldestKey.substring(0, 20)}...`);
+                // EXPLICIT GPU DISPOSAL
+                texture.destroy(true);
             }
-
-            return sprite;
-        } catch (error) {
-            console.error('Failed to load image found in node:', error);
-            return null;
+            this.textureCache.delete(oldestKey);
         }
     }
 
@@ -485,6 +519,12 @@ export class PixiRendererEngine {
 
     destroy() {
         if (this.app) {
+            console.log(`[GPU GC] Engine Destroying. Cleaning up ${this.textureCache.size} managed textures.`);
+            // Explicitly destroy managed textures
+            this.textureCache.forEach(t => t.destroy(true));
+            this.textureCache.clear();
+            this.textureRecency = [];
+
             this.app.destroy(true);
             this.app = null;
         }
