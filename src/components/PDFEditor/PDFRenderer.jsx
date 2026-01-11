@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useRef, useLayoutEffect } from 'react';
+import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 /**
  * Renders the PDF content using SVG based on the JSON data from the backend.
@@ -66,12 +67,28 @@ export default function PDFRenderer({ data }) {
         setLocalPages(prev => {
             const next = [...prev];
             const p = next[editingItem.pageIndex];
-            const newItems = [...p.items];
-            newItems[editingItem.itemIndex] = {
-                ...newItems[editingItem.itemIndex],
-                content: newText
+
+            // We need to find which fragments this line represents
+            const mergedLines = mergeFragmentsIntoLines(p.items);
+            const line = mergedLines[editingItem.itemIndex];
+            if (!line) return prev;
+
+            const originalIndices = line.items.map(it => p.items.indexOf(it));
+            const firstIndex = Math.min(...originalIndices);
+            const indicesToRemove = new Set(originalIndices);
+
+            const filteredItems = p.items.filter((_, idx) => !indicesToRemove.has(idx));
+
+            const newMergedItem = {
+                ...line,
+                content: newText,
+                type: 'text',
+                items: undefined
             };
-            p.items = newItems;
+
+            filteredItems.splice(firstIndex, 0, newMergedItem);
+            p.items = filteredItems;
+
             return next;
         });
 
@@ -166,14 +183,10 @@ function PageRenderer({ page, pageIndex, fontsKey, editingItem, onDoubleClick })
     const renderWidth = page.width || A4_WIDTH;
     const renderHeight = page.height || A4_HEIGHT;
 
-    const { paths, images, textItems, isRichPage } = useMemo(() => {
+    const { paths, images, textItems, isRichPage, mergedLines } = useMemo(() => {
         const paths = [];
         const images = [];
         const textItems = [];
-
-        // Preserve original indices for editing by storing (item, originalIndex)
-        // Actually, we can just iterate the full list in the layers if we want perfect index matching, 
-        // OR we map them out here. Simpler to map here.
 
         (page.items || []).forEach((item, originalIndex) => {
             if (item.type === 'text') {
@@ -185,12 +198,14 @@ function PageRenderer({ page, pageIndex, fontsKey, editingItem, onDoubleClick })
             }
         });
 
+        const mergedLines = mergeFragmentsIntoLines(page.items);
+
         // Smart Detection
         const hasLargeImage = images.some(img => (img.width * img.height) > (renderWidth * renderHeight * 0.5));
         const hasManyPaths = paths.length > 50;
         const isRichPage = hasLargeImage || hasManyPaths;
 
-        return { paths, images, textItems, isRichPage };
+        return { paths, images, textItems, isRichPage, mergedLines };
     }, [page.items, renderWidth, renderHeight]);
 
     return (
@@ -221,7 +236,7 @@ function PageRenderer({ page, pageIndex, fontsKey, editingItem, onDoubleClick })
 
                 {/* 3. Text Layer */}
                 <EditableTextLayer
-                    items={textItems} // These have .originalIndex
+                    items={mergedLines}
                     height={renderHeight}
                     fontsKey={fontsKey}
                     hideText={false}
@@ -313,6 +328,8 @@ function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editi
     return (
         <g className="text-layer" key={fontsKey}>
             {items.map((item, i) => {
+                if (item.type !== 'text' || !item.bbox) return null;
+
                 const w = item.bbox[2] - item.bbox[0];
                 const color = item.color
                     ? `rgb(${item.color[0] * 255},${item.color[1] * 255},${item.color[2] * 255})`
@@ -325,7 +342,7 @@ function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editi
                 const baselineY = item.origin ? item.origin[1] : item.bbox[1];
                 const startX = item.origin ? item.origin[0] : item.bbox[0];
 
-                const isEditing = editingItem && editingItem.pageIndex === pageIndex && editingItem.itemIndex === item.originalIndex;
+                const isEditing = editingItem && editingItem.pageIndex === pageIndex && editingItem.itemIndex === i;
 
                 // Hit Area Calculations
                 const [x0, y0, x1, y1] = item.bbox;
@@ -352,7 +369,7 @@ function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editi
                                 const rect = e.target.getBoundingClientRect();
                                 const computed = window.getComputedStyle(e.target);
                                 // Pass text styles, not rect styles
-                                onDoubleClick(pageIndex, item.originalIndex, item, rect, {
+                                onDoubleClick(pageIndex, i, item, rect, {
                                     fontSize: Math.abs(item.size) + 'px',
                                     fontFamily: item.font,
                                     fontWeight: item.is_bold ? 'bold' : 'normal',
@@ -372,8 +389,6 @@ function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editi
                             fontStyle={item.is_italic ? 'italic' : 'normal'}
                             fill={hideText ? "transparent" : color}
                             dominantBaseline="alphabetic"
-                            textLength={w > 1 ? w : undefined}
-                            lengthAdjust="spacingAndGlyphs"
                             style={{
                                 userSelect: 'none', // Disable native selection to prefer click handling
                                 pointerEvents: 'none', // Let clicks pass to the rect

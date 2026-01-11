@@ -10,8 +10,25 @@
 - [/] Refine Color Detection <!-- id: 3 -->
     - [ ] Investigate why color parser defaults to black even for non-black shapes <!-- id: 4 -->
     - [ ] Add more diagnostic logging for raw color arguments <!-- id: 5 -->
-    - [ ] Design State Layer (Editor Sync & Multi-page) <!-- id: 9 -->
-- [ ] Create detailed Architecture Document <!-- id: 10 -->
+    - [ ] Design State- [ ] Analyze `EditorPage.jsx` and `EditorPage.css` to locate "hidden HTML" [x]
+- [ ] Create a "Text Structure" sidebar (The "Hidden HTML") on the left side [x]
+- [ ] Implement width compression for edited lines [x]
+- [ ] Make Structure Sidebar editable (The "Short Form" Editor) [x]
+- [x] Refine Text Layout (Reflow vs Compression) [x]
+- [x] Implement Cascading Fluid Reflow [x]
+    - [x] Fix state sync bug (text appearing in wrong inputs)
+    - [x] Fix text duplication bug ("api api api")
+    - [x] Implement stable Line IDs for React keys
+    - [x] Ensure correct word-level overflow detection
+- [ ] Simplify Editing Model (Local Only) [x]
+- [x] Fix Persistent Bugs [x]
+    - [x] Transition to persistent Node Tree model (Fixes duplication)
+    - [x] Fix visual sort order (Top-to-Bottom)
+    - [x] Implement Sticky Header for Editing Panel
+    - [x] Restore non-text items (Vector shapes, lines, images)
+    - [x] Fix PDFRenderer TypeError crash
+    - [x] Implement fragment de-duplication in LineMerger
+- [x] Final polish and verification [x]
 - [x] Research existing Scene Graph / Document structures in the codebase <!-- id: 0 -->
 - [/] Create implementation plan for Scene Graph-based rendering <!-- id: 1 -->
 - [ ] Adapt [GeometrySnapshot](file:///c:/Users/SUMIT/Downloads/resumemaker-frontend-master/WebGL%20Renderer/webgl/src/engine/WebEngine.jsx#54-972) to handle non-DOM nodes (Scene Graph) <!-- id: 2 -->

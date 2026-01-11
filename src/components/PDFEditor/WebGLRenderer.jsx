@@ -1,6 +1,7 @@
 import React, { useMemo, useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react';
 import * as PIXI from 'pixi.js';
 import { PixiRendererEngine } from '../engine/WebEngine';
+import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
 export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
@@ -236,6 +237,12 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 
     }, [isReady, page, pageIndex, camera, viewportSize, editingItem]);
 
+    // 3. Compute Merged Lines for Editing/SVG
+    const mergedLines = useMemo(() => {
+        if (!page || !page.items) return [];
+        return mergeFragmentsIntoLines(page.items);
+    }, [page, fontsKey]);
+
     // Re-render when dependencies change
     useEffect(() => {
         renderActivePage();
@@ -256,12 +263,11 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 
     // Start Editing
     const handleDoubleClick = (pIndex, itemIndex, item, domRect, styles) => {
-        // pIndex is irrelevant now as we are single page, but good for validation
         setEditingItem({
             itemIndex,
             content: item.content,
-            rect: domRect, // Absolute DOM coordinates to position the input
-            styles: styles // Font, size, color
+            rect: domRect,
+            styles: styles
         });
     };
 
@@ -269,16 +275,36 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
     const handleSaveEdit = (newText) => {
         if (!editingItem) return;
 
-
         // Update the PARENT via onUpdate
+        // When a LINE is edited, we replace the set of original fragments with a single new line fragment
+        const line = mergedLines[editingItem.itemIndex];
+        if (!line) return;
+
+        const originalIndices = line.items.map(it => page.items.indexOf(it));
+
+        // Remove old fragments, insert new merged fragment
         const newItems = [...page.items];
-        newItems[editingItem.itemIndex] = {
-            ...newItems[editingItem.itemIndex],
-            content: newText
+
+        // We find the first index and replace 
+        const firstIndex = Math.min(...originalIndices);
+
+        // Mark items for removal
+        const indicesToRemove = new Set(originalIndices);
+        const filteredItems = newItems.filter((_, idx) => !indicesToRemove.has(idx));
+
+        // Construct the new merged item
+        const newMergedItem = {
+            ...line,
+            content: newText,
+            type: 'text',
+            items: undefined // Clean up internal ref
         };
 
+        // Re-insert at the original position (closest to first segment)
+        filteredItems.splice(firstIndex, 0, newMergedItem);
+
         if (onUpdate) {
-            onUpdate(newItems);
+            onUpdate(filteredItems);
         }
 
         setEditingItem(null);
@@ -342,7 +368,7 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                 >
                     {page && (
                         <EditableTextLayer
-                            items={page.items}
+                            items={mergedLines}
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
@@ -357,7 +383,6 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                     <FloatingTextEditor
                         editingItem={editingItem}
                         onSave={handleSaveEdit}
-                        containerRect={containerRef.current ? containerRef.current.getBoundingClientRect() : null}
                     />
                 )}
             </div>
@@ -373,22 +398,20 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 }
 
 // Separate component for the input box
-function FloatingTextEditor({ editingItem, onSave, containerRect }) {
+function FloatingTextEditor({ editingItem, onSave }) {
     const inputRef = useRef(null);
     const [val, setVal] = useState(editingItem.content);
 
     useLayoutEffect(() => {
         if (inputRef.current) {
             inputRef.current.focus();
-            inputRef.current.select(); // Select all text on open
+            inputRef.current.select();
         }
     }, []);
 
-    if (!containerRect) return null;
-
-    const top = editingItem.rect.top - containerRect.top;
-    const left = editingItem.rect.left - containerRect.left;
-    const minWidth = editingItem.rect.width; // Allow growing
+    const top = editingItem.rect.top;
+    const left = editingItem.rect.left;
+    const minWidth = editingItem.rect.width;
 
     return (
         <textarea
@@ -397,23 +420,23 @@ function FloatingTextEditor({ editingItem, onSave, containerRect }) {
             onChange={e => setVal(e.target.value)}
             onBlur={() => onSave(val)}
             onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter for newline
+                if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     inputRef.current.blur();
                 }
             }}
             style={{
-                position: 'absolute',
-                top: top - 2, // Slight adjustment for padding
+                position: 'fixed',
+                top: top - 2,
                 left: left - 4,
                 minWidth: minWidth + 20,
                 height: 'auto',
-                background: 'white', // High contrast for editing
+                background: 'white',
                 color: 'black',
                 border: '2px solid #00AAFF',
                 borderRadius: '4px',
                 padding: '0px 4px',
-                zIndex: 100,
+                zIndex: 10000, // Top of everything
                 fontSize: editingItem.styles.fontSize,
                 fontFamily: editingItem.styles.fontFamily,
                 fontWeight: editingItem.styles.fontWeight,
@@ -421,7 +444,8 @@ function FloatingTextEditor({ editingItem, onSave, containerRect }) {
                 outline: 'none',
                 resize: 'both',
                 overflow: 'hidden',
-                whiteSpace: 'pre-wrap'
+                whiteSpace: 'pre-wrap',
+                boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
             }}
         />
     );
@@ -441,7 +465,8 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                 const isEditing = editingItem && editingItem.itemIndex === i;
 
                 const [x0, y0, x1, y1] = item.bbox;
-                const rectY = y0;
+                // PDF Y is bottom-up, SVG is top-down
+                const rectY = height - y1;
                 const rectH = y1 - y0;
                 const rectW = x1 - x0;
 
@@ -456,6 +481,7 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                             fill="transparent"
                             style={{ cursor: 'text', pointerEvents: 'all' }}
                             onClick={(e) => {
+                                // Use a small timeout to ensure double-clicking works on mobile/tap
                                 e.preventDefault();
                                 e.stopPropagation();
 
@@ -472,26 +498,26 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                         />
 
                         {/* 2. Visual Text (Native Browser Rendering for Sharpness) */}
-                        <text
-                            visibility={isEditing ? 'hidden' : 'visible'}
-                            transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
-                            fontSize={Math.abs(item.size)}
-                            fontFamily={`"${item.font}", serif`}
-                            fontWeight={item.is_bold ? 'bold' : 'normal'}
-                            fontStyle={item.is_italic ? 'italic' : 'normal'}
-                            fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
-                            dominantBaseline="alphabetic"
-                            textLength={w > 1 ? w : undefined}
-                            lengthAdjust="spacingAndGlyphs"
-                            style={{
-                                userSelect: 'text',
-                                pointerEvents: 'all', // FORCE pointer events
-                                cursor: 'text',
-                                touchAction: 'none' // Prevent scrolling while tapping text
-                            }}
-                        >
-                            {item.content}
-                        </text>
+                        <g style={{ pointerEvents: 'none' }}>
+                            <text
+                                visibility={isEditing ? 'hidden' : 'visible'}
+                                transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
+                                fontSize={Math.abs(item.size)}
+                                fontFamily={`"${item.font}", serif`}
+                                fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                fontStyle={item.is_italic ? 'italic' : 'normal'}
+                                fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                dominantBaseline="alphabetic"
+                                style={{
+                                    userSelect: 'text',
+                                    pointerEvents: 'all', // FORCE pointer events
+                                    cursor: 'text',
+                                    touchAction: 'none' // Prevent scrolling while tapping text
+                                }}
+                            >
+                                {item.content}
+                            </text>
+                        </g>
                     </g>
                 );
             })}

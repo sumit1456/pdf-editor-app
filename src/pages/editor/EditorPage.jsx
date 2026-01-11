@@ -2,16 +2,35 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
+import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import './EditorPage.css';
 
 export default function EditorPage() {
     const location = useLocation();
 
     // MASTER STATE: All pages and the current active index
-    const [pages, setPages] = useState(location.state?.sceneGraph?.pages || []);
+    // We merge fragments into lines ONCE at the start to create a persistent "Node Tree"
+    const [pages, setPages] = useState(() => {
+        const rawPages = location.state?.sceneGraph?.pages || [];
+        return rawPages.map(page => ({
+            ...page,
+            items: mergeFragmentsIntoLines(page.items)
+        }));
+    });
+
     const [fontsKey] = useState(location.state?.sceneGraph?.fonts_key || '');
     const [activePageIndex, setActivePageIndex] = useState(0);
     const [isAdvanced, setIsAdvanced] = useState(true); // Default to Advanced/WebGL
+
+    // Persistent canvas for measurement
+    const [measureCanvas] = useState(() => document.createElement('canvas'));
+
+    // Helper for measuring text width
+    const getTextWidth = (text, font, size) => {
+        const context = measureCanvas.getContext('2d');
+        context.font = `${Math.abs(size)}px "${font}", serif`;
+        return context.measureText(text).width;
+    };
 
     // Handle updates from Renderers (e.g. Text Edit)
     const handlePageUpdate = (newItems) => {
@@ -22,6 +41,27 @@ export default function EditorPage() {
             next[activePageIndex] = p;
             return next;
         });
+    };
+
+    const handleSidebarEdit = (lineId, newText) => {
+        if (!activePageData) return;
+
+        // Simplified: Directly update the node in the tree
+        const newItems = activePageData.items.map(item => {
+            if (item.id === lineId) {
+                const fontSize = Math.abs(item.size || 12);
+                const newWidth = getTextWidth(newText, item.font, fontSize);
+                return {
+                    ...item,
+                    content: newText,
+                    // Keep items undefined as we are editing the merged line node
+                    bbox: [item.bbox[0], item.bbox[1], item.bbox[0] + newWidth, item.bbox[3]]
+                };
+            }
+            return item;
+        });
+
+        handlePageUpdate(newItems);
     };
 
     if (pages.length === 0) {
@@ -35,12 +75,14 @@ export default function EditorPage() {
     }
 
     const activePageData = pages[activePageIndex];
+    // Since we merged on init, items ARE the lines
+    const textLines = activePageData ? activePageData.items.filter(it => it.type === 'text') : [];
 
     return (
         <div className="editor-page" style={{ flexDirection: 'row', alignItems: 'flex-start', padding: '20px', gap: '20px' }}>
             <div className="bg-decoration"></div>
 
-            {/* 1. SIDEBAR NAVIGATION (Controlled by EditorPage) */}
+            {/* 1. SIDEBAR NAVIGATION */}
             <div className="navigator-sidebar" style={{
                 width: '180px',
                 height: 'calc(100vh - 100px)',
@@ -73,6 +115,115 @@ export default function EditorPage() {
                         {i + 1}
                     </div>
                 ))}
+            </div>
+
+            {/* 1.5. EDITING PANEL */}
+            <div className="editing-panel" style={{
+                width: '360px',
+                height: 'calc(100vh - 100px)',
+                background: 'rgba(0,0,0,0.3)',
+                border: '1px solid var(--studio-border)',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden', // Contain the scrollable list
+                flexShrink: 0
+            }}>
+                {/* Sticky Header */}
+                <div style={{
+                    padding: '20px',
+                    borderBottom: '1px solid rgba(255,255,255,0.1)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'rgba(20,20,20,0.8)',
+                    backdropFilter: 'blur(10px)',
+                    zIndex: 10
+                }}>
+                    <h3 style={{ color: 'var(--studio-accent)', margin: 0, fontSize: '0.9rem', letterSpacing: '1px' }}>
+                        EDITING PANEL
+                    </h3>
+                    <span style={{ fontSize: '0.7rem', color: '#666', fontWeight: 'bold' }}>
+                        {textLines.length} LINES
+                    </span>
+                </div>
+
+                {/* Scrollable List */}
+                <div className="structure-list" style={{
+                    padding: '20px',
+                    overflowY: 'auto',
+                    flex: 1
+                }}>
+                    {textLines.map((line, i) => (
+                        <div
+                            key={line.id || i}
+                            className="structure-item-wrapper"
+                            style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'flex-start' }}
+                        >
+                            <div className="line-number" style={{
+                                fontSize: '0.65rem',
+                                color: 'var(--studio-accent)',
+                                width: '24px',
+                                textAlign: 'right',
+                                paddingTop: '10px',
+                                opacity: 0.5,
+                                flexShrink: 0,
+                                fontFamily: 'monospace'
+                            }}>
+                                {String(i + 1).padStart(2, '0')}
+                            </div>
+                            <div
+                                className="structure-item"
+                                style={{
+                                    flex: 1,
+                                    padding: '10px 14px',
+                                    background: 'rgba(255,255,255,0.03)',
+                                    borderRadius: '8px',
+                                    fontSize: '0.8rem',
+                                    color: '#ccc',
+                                    border: '1px solid rgba(255,255,255,0.05)',
+                                    transition: 'all 0.2s',
+                                    position: 'relative'
+                                }}
+                            >
+                                <div style={{ fontSize: '0.6rem', color: '#666', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    {line.font ? line.font.split(',')[0] : 'Font'} • {Math.round(Math.abs(line.size || 0))}pt
+                                </div>
+                                <textarea
+                                    value={line.content}
+                                    onChange={(e) => {
+                                        handleSidebarEdit(line.id, e.target.value);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            e.target.blur();
+                                        }
+                                    }}
+                                    rows={1}
+                                    style={{
+                                        width: '100%',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#eee',
+                                        fontSize: '0.85rem',
+                                        lineHeight: '1.4',
+                                        fontFamily: 'inherit',
+                                        resize: 'none',
+                                        outline: 'none',
+                                        padding: 0,
+                                        margin: 0,
+                                        overflow: 'hidden'
+                                    }}
+                                    onInput={(e) => {
+                                        e.target.style.height = 'auto';
+                                        e.target.style.height = e.target.scrollHeight + 'px';
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
 
             {/* 2. MAIN WORKSPACE */}

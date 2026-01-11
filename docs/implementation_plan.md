@@ -22,7 +22,41 @@ Following the architecture diagram, the process of creating nodes from PDF data 
 Since PDF data often arrives as "loose" characters or small chunks, we need an aggregation algorithm:
 
 ### Step 1: Extract Primitives
-We receive raw data chunks (Position, Character/Image/Path) from the PDF parser/worker. These are mapped to `PrimitiveNode` (lightweight objects).
+We receive raw data chunks (Position, Character/Image/Path) from the PDF parser/worker. These are mapped to `PrimitiveNode` (lightweight# Implementation Plan - Sidebar "Short Form" Editor
+
+The user wants to make the text items in the "Structure" sidebar editable. Edits made in the sidebar should reflect in the main WebGL/PDF view.
+
+## Proposed Changes
+
+### [Component] Editor Page
+#### [MODIFY] [EditorPage.jsx](file:///c:/Users/SUMIT/Downloads/pdf-editor-app/src/pages/editor/EditorPage.jsx)
+- Replace static text in the `structure-sidebar` with an editable interface (e.g., `contentEditable` or `<textarea>`).
+- Implement `handleSidebarEdit(itemIndex, newText)`:
+    - Locate the original line in the `textLines` array.
+    - Map the line back to its original fragments in the `pages` state.
+    - Replace the fragments with a new merged text item containing the updated content.
+    - Update the `pages` state.
+- Add debouncing or save-on-blur to prevent excessive re-renders during typing.
+
+## Verification Plan
+
+### Manual Verification
+1.  **Sidebar Editing**:
+    - Click a text item in the sidebar.
+    - Edit the text.
+    - Blur the field or press Enter.
+    - Verify that the text in the main canvas updates immediately.
+2.  **Two-way Sync**:
+    - Edit a line in the canvas and verify the sidebar updates.
+    - Edit the same line in the sidebar and verify the canvas updates.
+3.  **Compression Maintenance**:
+    - Verify that edits made via the sidebar still respect the width compression logic.
+ ImageNode({ src: '...', x: 100, y: 200 })
+    ]),
+    2: new PageNode(...)
+  }
+}
+```
 
 ### Step 2: Combine to Lines
 - Sort `PrimitiveNode` objects by `y` coordinate, then `x`.

@@ -142,3 +142,37 @@
 .renderer-container::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+.structure-item:hover,
+.structure-item:focus-within {
+    border-color: var(--studio-accent) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.editing-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.editing-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.editing-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+.structure-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.structure-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.structure-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
