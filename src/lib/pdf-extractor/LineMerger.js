@@ -76,6 +76,7 @@ export const mergeFragmentsIntoLines = (items) => {
                 if (gap > threshold) {
                     lines.push(currentLine);
                     currentLine = {
+                        id: item.id || `line-${item.origin?.[0] || 0}-${item.origin?.[1] || 0}`,
                         content: item.content,
                         bbox: [...item.bbox],
                         origin: item.origin ? [...item.origin] : null,

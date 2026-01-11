@@ -20,7 +20,7 @@ export default function EditorPage() {
 
     const [fontsKey] = useState(location.state?.sceneGraph?.fonts_key || '');
     const [activePageIndex, setActivePageIndex] = useState(0);
-    const [isAdvanced, setIsAdvanced] = useState(true); // Default to Advanced/WebGL
+    const [isAdvanced, setIsAdvanced] = useState(true);
 
     // Persistent canvas for measurement
     const [measureCanvas] = useState(() => document.createElement('canvas'));
@@ -44,24 +44,30 @@ export default function EditorPage() {
     };
 
     const handleSidebarEdit = (lineId, newText) => {
-        if (!activePageData) return;
+        setPages(prev => {
+            const next = [...prev];
+            const activePage = { ...next[activePageIndex] };
 
-        // Simplified: Directly update the node in the tree
-        const newItems = activePageData.items.map(item => {
-            if (item.id === lineId) {
-                const fontSize = Math.abs(item.size || 12);
-                const newWidth = getTextWidth(newText, item.font, fontSize);
-                return {
-                    ...item,
-                    content: newText,
-                    // Keep items undefined as we are editing the merged line node
-                    bbox: [item.bbox[0], item.bbox[1], item.bbox[0] + newWidth, item.bbox[3]]
-                };
-            }
-            return item;
+            activePage.items = activePage.items.map(item => {
+                if (item.id === lineId) {
+                    const fontSize = Math.abs(item.size || 12);
+                    const newWidth = getTextWidth(newText, item.font, fontSize);
+
+                    // CRASH FIX: Ensure bbox exists before accessing [0]
+                    const currentBbox = item.bbox || [0, 0, 0, 0];
+
+                    return {
+                        ...item,
+                        content: newText,
+                        bbox: [currentBbox[0], currentBbox[1], currentBbox[0] + newWidth, currentBbox[3]]
+                    };
+                }
+                return item;
+            });
+
+            next[activePageIndex] = activePage;
+            return next;
         });
-
-        handlePageUpdate(newItems);
     };
 
     if (pages.length === 0) {

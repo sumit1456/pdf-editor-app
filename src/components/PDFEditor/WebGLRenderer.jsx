@@ -509,8 +509,8 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                                 fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
                                 dominantBaseline="alphabetic"
                                 style={{
-                                    userSelect: 'text',
-                                    pointerEvents: 'all', // FORCE pointer events
+                                    userSelect: 'none',
+                                    pointerEvents: 'none',
                                     cursor: 'text',
                                     touchAction: 'none' // Prevent scrolling while tapping text
                                 }}
