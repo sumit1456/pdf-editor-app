@@ -35,16 +35,16 @@
 .editor-page {
     display: flex;
     flex-direction: row;
-    align-items: flex-start;
-    padding: 24px;
-    gap: 24px;
-    width: 100%;
-    min-height: 100vh;
-    background: radial-gradient(ellipse at top left, var(--studio-charcoal) 0%, var(--studio-black) 50%, var(--studio-charcoal) 100%);
+    align-items: stretch;
+    padding: 20px;
+    gap: 20px;
+    width: 100vw;
+    height: 100vh;
+    background: #0f0f0f;
     color: var(--studio-white);
     font-family: var(--font-studio);
     position: relative;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 .bg-decoration {
@@ -96,20 +96,25 @@
 }
 
 .navigator-sidebar {
-    width: 80px;
-    height: calc(100vh - 48px);
-    background: var(--studio-glass);
-    border: 1px solid var(--studio-border);
-    border-radius: 20px;
-    padding: 12px;
+    width: 300px;
+    height: 100%;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 24px;
     overflow-y: auto;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    backdrop-filter: blur(30px);
+    gap: 20px;
     z-index: 10;
-    box-shadow: var(--shadow-medium);
+    box-shadow: var(--shadow-strong);
+}
+
+.navigator-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
 }
 
 .navigator-header {
@@ -123,47 +128,41 @@
 }
 
 .sidebar-thumb {
-    width: 100%;
-    height: 45px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px;
+    aspect-ratio: 1;
+    background: #252528;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    color: var(--studio-silver);
-    font-size: 0.8rem;
-    flex-shrink: 0;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-    border: 1px solid var(--studio-border);
+    font-weight: 700;
+    color: #94949b;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
 }
 
 .sidebar-thumb:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: #2d2d30;
+    color: #ffffff;
 }
 
 .sidebar-thumb.active {
-    background: rgba(255, 255, 255, 0.12);
-    color: var(--studio-white);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: var(--glow-white);
-    transform: scale(1.05);
+    background: #ffd27d;
+    color: #000000;
+    box-shadow: 0 4px 12px rgba(255, 210, 125, 0.3);
 }
 
 .editing-panel {
-    width: 460px;
-    height: calc(100vh - 48px);
-    background: var(--studio-glass);
-    border: 1px solid var(--studio-border);
-    border-radius: 24px;
+    width: 420px;
+    height: 100%;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     flex-shrink: 0;
-    backdrop-filter: blur(40px);
-    z-index: 10;
     box-shadow: var(--shadow-strong);
     position: relative;
 }
@@ -302,10 +301,25 @@
 
 .workspace-container {
     flex: 1;
-    height: calc(100vh - 48px);
+    height: 100%;
     display: flex;
     flex-direction: column;
     z-index: 10;
+    min-width: 0;
+}
+
+.right-preview-sidebar {
+    width: 280px;
+    height: 100%;
+    background: #141414;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-strong);
+    padding: 20px;
 }
 
 .workspace-header {
@@ -317,9 +331,10 @@
 }
 
 .workspace-header h2 {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
     margin: 0;
     letter-spacing: -0.04em;
+    color: #ffffff;
 }
 
 .preview-stage {

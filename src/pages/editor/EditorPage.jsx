@@ -92,23 +92,7 @@ export default function EditorPage() {
                 <div className="floating-shape shape-2"></div>
             </div>
 
-            {/* 1. SIDEBAR NAVIGATION - Slim Studio Style */}
-            <div className="navigator-sidebar">
-                <div className="navigator-header">
-                    <i className="fa-solid fa-layer-group"></i>
-                </div>
-                {pages.map((_, i) => (
-                    <div
-                        key={i}
-                        onClick={() => setActivePageIndex(i)}
-                        className={`sidebar-thumb ${activePageIndex === i ? 'active' : ''}`}
-                    >
-                        {i + 1}
-                    </div>
-                ))}
-            </div>
-
-            {/* 2. EDITING PANEL - Premium Editorial Panel */}
+            {/* 1. EDITING PANEL - Premium Editorial Panel (Now on the Left) */}
             <div className="editing-panel">
                 <div className="panel-header">
                     <div>
@@ -116,26 +100,17 @@ export default function EditorPage() {
                             Content <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Studio</span>
                         </h3>
                         <p>
-                            Design Workspace • Page {activePageIndex + 1}
+                            Page {activePageIndex + 1}
                         </p>
-                    </div>
-                    <div className="nodes-count-badge">
-                        {textLines.length} Nodes
                     </div>
                 </div>
 
                 <div className="structure-list">
                     {textLines.slice().reverse().map((line, i) => (
-                        <div
-                            key={line.id || i}
-                            className="premium-input-card"
-                        >
+                        <div key={line.id || i} className="premium-input-card">
                             <div className="input-card-header">
                                 <span className="object-label">
-                                    Object {String(textLines.length - i).padStart(2, '0')} • {line.font?.split(',')[0]}
-                                </span>
-                                <span className="size-tag">
-                                    {Math.round(Math.abs(line.size || 0))} PT
+                                    Object {String(textLines.length - i).padStart(2, '0')}
                                 </span>
                             </div>
                             <textarea
@@ -147,47 +122,47 @@ export default function EditorPage() {
                                         e.target.blur();
                                     }
                                 }}
-                                onInput={(e) => {
-                                    e.target.style.height = 'auto';
-                                    e.target.style.height = e.target.scrollHeight + 'px';
-                                }}
-                                placeholder="Enter text..."
                             />
                         </div>
                     ))}
                 </div>
             </div>
 
-            {/* 3. MAIN WORKSPACE */}
+            {/* 2. MAIN WORKSPACE - Central WebGL Stage */}
             <div className="workspace-container">
-                {/* Header / Toolbar */}
                 <div className="workspace-header">
                     <h2 className="highlight">
-                        Preview <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Layer</span>
+                        WebGL <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Engine</span>
                     </h2>
-                    <div style={{ display: 'flex', gap: '12px' }}>
-                        <button
-                            onClick={() => setIsAdvanced(!isAdvanced)}
-                            className={`btn-toggle ${isAdvanced ? 'advanced' : ''}`}
-                        >
-                            {isAdvanced ? 'Engine: WebGL' : 'Engine: Standard'}
-                        </button>
-                    </div>
                 </div>
 
                 <div className="preview-stage">
                     <div className="preview-content-wrapper">
-                        {isAdvanced ? (
-                            <WebGLRenderer
-                                page={activePageData}
-                                pageIndex={activePageIndex}
-                                fontsKey={fontsKey}
-                                onUpdate={handlePageUpdate}
-                            />
-                        ) : (
-                            <PDFRenderer data={{ pages }} />
-                        )}
+                        <WebGLRenderer
+                            page={activePageData}
+                            pageIndex={activePageIndex}
+                            fontsKey={fontsKey}
+                            onUpdate={handlePageUpdate}
+                        />
                     </div>
+                </div>
+            </div>
+
+            {/* 3. PAGE NAVIGATOR - Grid (Now on the Right as requested) */}
+            <div className="navigator-sidebar">
+                <div className="navigator-header">
+                    <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0 0 10px 0' }}>Pages preview</h3>
+                </div>
+                <div className="navigator-grid">
+                    {pages.map((_, i) => (
+                        <div
+                            key={i}
+                            onClick={() => setActivePageIndex(i)}
+                            className={`sidebar-thumb ${activePageIndex === i ? 'active' : ''}`}
+                        >
+                            {i + 1}
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

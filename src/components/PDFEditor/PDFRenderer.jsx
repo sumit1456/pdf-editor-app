@@ -5,7 +5,7 @@ import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
  * Renders the PDF content using SVG based on the JSON data from the backend.
  * Uses SVG <text> with textLength for high-fidelity coordinate matching.
  */
-export default function PDFRenderer({ data }) {
+export default function PDFRenderer({ data, isMini = false }) {
     const [fontsLoaded, setFontsLoaded] = useState(0);
     const [localPages, setLocalPages] = useState([]);
 
@@ -95,8 +95,28 @@ export default function PDFRenderer({ data }) {
         setEditingItem(null);
     };
 
+    const containerStyle = isMini ? {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '20px',
+        alignItems: 'center',
+        padding: '0',
+        backgroundColor: 'transparent',
+        minHeight: 'auto',
+        position: 'relative'
+    } : {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '40px',
+        alignItems: 'center',
+        padding: '40px',
+        backgroundColor: '#525659',
+        minHeight: '200vh',
+        position: 'relative'
+    };
+
     return (
-        <div className="pdf-renderer" style={{ display: 'flex', flexDirection: 'column', gap: '40px', alignItems: 'center', padding: '40px', backgroundColor: '#525659', minHeight: '200vh', position: 'relative' }}>
+        <div className="pdf-renderer" style={containerStyle}>
             {localPages.map((page, index) => (
                 <PageRenderer
                     key={index}
