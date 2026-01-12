@@ -4,7 +4,7 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
-export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
+export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onSelect }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 3000 });
@@ -12,8 +12,6 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
 
-    // { itemIndex: number, rect: { top, left, width, height, ...styles } }
-    const [editingItem, setEditingItem] = useState(null);
 
     // CSS Scaling Handles Camera now
 
@@ -174,9 +172,6 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
         };
 
         (page.items || []).forEach((item, index) => {
-            // Text Editing Shield
-            const isEditing = editingItem && editingItem.itemIndex === index;
-            if (isEditing && item.type === 'text') return;
 
             if (item.type === 'text') {
                 // We use the SVG layer for text to ensure maximum sharpness and searchability.
@@ -235,7 +230,7 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
         // Force a re-render frame
         engine.app.render();
 
-    }, [isReady, page, pageIndex, camera, viewportSize, editingItem]);
+    }, [isReady, page, pageIndex, camera, viewportSize]);
 
     // 3. Compute Merged Lines for Editing/SVG
     const mergedLines = useMemo(() => {
@@ -263,52 +258,12 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
 
     // Start Editing
     const handleDoubleClick = (pIndex, itemIndex, item, domRect, styles) => {
-        setEditingItem({
-            itemIndex,
-            content: item.content,
-            rect: domRect,
-            styles: styles
-        });
-    };
-
-    // Save Edit
-    const handleSaveEdit = (newText) => {
-        if (!editingItem) return;
-
-        // Update the PARENT via onUpdate
-        // When a LINE is edited, we replace the set of original fragments with a single new line fragment
-        const line = mergedLines[editingItem.itemIndex];
-        if (!line) return;
-
-        const originalIndices = line.items.map(it => page.items.indexOf(it));
-
-        // Remove old fragments, insert new merged fragment
-        const newItems = [...page.items];
-
-        // We find the first index and replace 
-        const firstIndex = Math.min(...originalIndices);
-
-        // Mark items for removal
-        const indicesToRemove = new Set(originalIndices);
-        const filteredItems = newItems.filter((_, idx) => !indicesToRemove.has(idx));
-
-        // Construct the new merged item
-        const newMergedItem = {
-            ...line,
-            content: newText,
-            type: 'text',
-            items: undefined // Clean up internal ref
-        };
-
-        // Re-insert at the original position (closest to first segment)
-        filteredItems.splice(firstIndex, 0, newMergedItem);
-
-        if (onUpdate) {
-            onUpdate(filteredItems);
+        // Notify parent to scroll the sidebar
+        if (onSelect) {
+            onSelect(itemIndex);
         }
-
-        setEditingItem(null);
     };
+
 
     const A4_WIDTH = 595.28;
     const A4_HEIGHT = 841.89;
@@ -369,19 +324,11 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
-                            editingItem={editingItem}
                             onDoubleClick={handleDoubleClick}
                         />
                     )}
                 </svg>
 
-                {/* 3. Floating Editor Overlay */}
-                {editingItem && (
-                    <FloatingTextEditor
-                        editingItem={editingItem}
-                        onSave={handleSaveEdit}
-                    />
-                )}
             </div>
 
             {/* ZOOM HUD */}
@@ -394,61 +341,8 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate }) {
     );
 }
 
-// Separate component for the input box
-function FloatingTextEditor({ editingItem, onSave }) {
-    const inputRef = useRef(null);
-    const [val, setVal] = useState(editingItem.content);
 
-    useLayoutEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-        }
-    }, []);
-
-    const top = editingItem.rect.top;
-    const left = editingItem.rect.left;
-    const minWidth = editingItem.rect.width;
-
-    return (
-        <textarea
-            ref={inputRef}
-            value={val}
-            onChange={e => setVal(e.target.value)}
-            onBlur={() => onSave(val)}
-            onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    inputRef.current.blur();
-                }
-            }}
-            style={{
-                position: 'fixed',
-                top: top - 2,
-                left: left - 4,
-                minWidth: minWidth + 20,
-                height: 'auto',
-                background: 'white',
-                color: 'black',
-                border: '2px solid #00AAFF',
-                borderRadius: '4px',
-                padding: '0px 4px',
-                zIndex: 10000, // Top of everything
-                fontSize: editingItem.styles.fontSize,
-                fontFamily: editingItem.styles.fontFamily,
-                fontWeight: editingItem.styles.fontWeight,
-                fontStyle: editingItem.styles.fontStyle,
-                outline: 'none',
-                resize: 'both',
-                overflow: 'hidden',
-                whiteSpace: 'pre-wrap',
-                boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
-            }}
-        />
-    );
-}
-
-function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, onDoubleClick }) {
+function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {items.map((item, i) => {
@@ -459,11 +353,10 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                 const baselineY = item.origin ? item.origin[1] : item.bbox[1];
                 const startX = item.origin ? item.origin[0] : item.bbox[0];
 
-                const isEditing = editingItem && editingItem.itemIndex === i;
 
                 const [x0, y0, x1, y1] = item.bbox;
-                // PDF Y is bottom-up, SVG is top-down
-                const rectY = height - y1;
+                // Since rendering is confirmed Top-Down (Y=0 at top), use direct Y
+                const rectY = y0 - 3; // Nudge up for better alignment
                 const rectH = y1 - y0;
                 const rectW = x1 - x0;
 
@@ -497,7 +390,7 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, editingItem, on
                         {/* 2. Visual Text (Native Browser Rendering for Sharpness) */}
                         <g style={{ pointerEvents: 'none' }}>
                             <text
-                                visibility={isEditing ? 'hidden' : 'visible'}
+                                visibility="visible"
                                 transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
                                 fontSize={Math.abs(item.size)}
                                 fontFamily={`"${item.font}", serif`}

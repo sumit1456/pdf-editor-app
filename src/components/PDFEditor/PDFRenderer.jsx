@@ -9,8 +9,6 @@ export default function PDFRenderer({ data, isMini = false }) {
     const [fontsLoaded, setFontsLoaded] = useState(0);
     const [localPages, setLocalPages] = useState([]);
 
-    // { pageIndex: number, itemIndex: number, rect: { top, left, width, height, ...styles } }
-    const [editingItem, setEditingItem] = useState(null);
 
     // 1. Font Loading Effect
     useEffect(() => {
@@ -52,48 +50,9 @@ export default function PDFRenderer({ data, isMini = false }) {
 
     // --- EDITING HANDLERS ---
     const handleDoubleClick = (pageIndex, itemIndex, item, domRect, styles) => {
-        setEditingItem({
-            pageIndex,
-            itemIndex,
-            content: item.content,
-            rect: domRect, // Absolute DOM coordinates
-            styles: styles
-        });
+        // Content Studio logic is handled in the main editor page
     };
 
-    const handleSaveEdit = (newText) => {
-        if (!editingItem) return;
-
-        setLocalPages(prev => {
-            const next = [...prev];
-            const p = next[editingItem.pageIndex];
-
-            // We need to find which fragments this line represents
-            const mergedLines = mergeFragmentsIntoLines(p.items);
-            const line = mergedLines[editingItem.itemIndex];
-            if (!line) return prev;
-
-            const originalIndices = line.items.map(it => p.items.indexOf(it));
-            const firstIndex = Math.min(...originalIndices);
-            const indicesToRemove = new Set(originalIndices);
-
-            const filteredItems = p.items.filter((_, idx) => !indicesToRemove.has(idx));
-
-            const newMergedItem = {
-                ...line,
-                content: newText,
-                type: 'text',
-                items: undefined
-            };
-
-            filteredItems.splice(firstIndex, 0, newMergedItem);
-            p.items = filteredItems;
-
-            return next;
-        });
-
-        setEditingItem(null);
-    };
 
     const containerStyle = isMini ? {
         display: 'flex',
@@ -123,80 +82,16 @@ export default function PDFRenderer({ data, isMini = false }) {
                     page={page}
                     pageIndex={index}
                     fontsKey={fontsLoaded}
-                    editingItem={editingItem}
                     onDoubleClick={handleDoubleClick}
                 />
             ))}
 
-            {/* --- FLOATING TEXT EDITOR (Global Overlay) --- */}
-            {editingItem && (
-                <FloatingTextEditor
-                    editingItem={editingItem}
-                    onSave={handleSaveEdit}
-                />
-            )}
         </div>
     );
 }
 
-// Separate component for the input box
-function FloatingTextEditor({ editingItem, onSave }) {
-    const inputRef = useRef(null);
-    const [val, setVal] = useState(editingItem.content);
 
-    useLayoutEffect(() => {
-        if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select(); // Select all text on open
-        }
-    }, []);
-
-    // Since the main renderer has relative/absolute positioning, 
-    // we can use fixed positioning or absolute relative to the body if simpler.
-    // The `editingItem.rect` contains detailed viewport coordinates from getBoundingClientRect().
-    // Using `position: fixed` is usually safest for overlays to match getBoundingClientRect.
-
-    return (
-        <textarea
-            ref={inputRef}
-            value={val}
-            onChange={e => setVal(e.target.value)}
-            onBlur={() => onSave(val)}
-            onKeyDown={e => {
-                if (e.key === 'Enter' && !e.shiftKey) { // Shift+Enter for newline
-                    e.preventDefault();
-                    inputRef.current.blur();
-                }
-            }}
-            style={{
-                position: 'fixed',
-                top: editingItem.rect.top - 2,
-                left: editingItem.rect.left - 4,
-                width: editingItem.rect.width + 20, // Allow slight expansion
-                minWidth: '100px',
-                height: 'auto',
-                background: 'white',
-                color: 'black', // Always black for contrast while editing? Or inherit?
-                // color: editingItem.styles.color,
-                border: '2px solid #00AAFF',
-                borderRadius: '4px',
-                padding: '0px 4px',
-                zIndex: 9999, // Ensure it's on top of everything
-                fontSize: editingItem.styles.fontSize,
-                fontFamily: editingItem.styles.fontFamily,
-                fontWeight: editingItem.styles.fontWeight,
-                fontStyle: editingItem.styles.fontStyle,
-                outline: 'none',
-                resize: 'both',
-                overflow: 'hidden',
-                whiteSpace: 'pre-wrap',
-                boxShadow: '0 5px 15px rgba(0,0,0,0.3)'
-            }}
-        />
-    );
-}
-
-function PageRenderer({ page, pageIndex, fontsKey, editingItem, onDoubleClick }) {
+function PageRenderer({ page, pageIndex, fontsKey, onDoubleClick }) {
     const A4_WIDTH = 595.28;
     const A4_HEIGHT = 841.89;
 
@@ -261,7 +156,6 @@ function PageRenderer({ page, pageIndex, fontsKey, editingItem, onDoubleClick })
                     fontsKey={fontsKey}
                     hideText={false}
                     pageIndex={pageIndex}
-                    editingItem={editingItem}
                     onDoubleClick={onDoubleClick}
                 />
             </svg>
@@ -344,7 +238,7 @@ function ImageLayer({ items, height }) {
     );
 }
 
-function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editingItem, onDoubleClick }) {
+function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, onDoubleClick }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {items.map((item, i) => {
@@ -362,13 +256,12 @@ function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editi
                 const baselineY = item.origin ? item.origin[1] : item.bbox[1];
                 const startX = item.origin ? item.origin[0] : item.bbox[0];
 
-                const isEditing = editingItem && editingItem.pageIndex === pageIndex && editingItem.itemIndex === i;
 
                 // Hit Area Calculations
                 const [x0, y0, x1, y1] = item.bbox;
                 // PDF y=0 is bottom. SVG y=0 is top.
                 // rectY (top-left) = height - y1
-                const rectY = height - y1;
+                const rectY = (height - y1) - 3;
                 const rectH = y1 - y0;
                 const rectW = x1 - x0;
 
@@ -401,7 +294,7 @@ function EditableTextLayer({ items, height, fontsKey, hideText, pageIndex, editi
 
                         {/* 2. Visual Text */}
                         <text
-                            visibility={isEditing ? 'hidden' : 'visible'}
+                            visibility="visible"
                             transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
                             fontSize={Math.abs(item.size)}
                             fontFamily={`"${item.font}", serif`}

@@ -43,6 +43,18 @@ export default function EditorPage() {
         });
     };
 
+    const scrollToNode = (index) => {
+        const element = document.getElementById(`input-card-${index}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Add a temporary highlight effect
+            element.classList.add('highlight-flash');
+
+            setTimeout(() => element.classList.remove('highlight-flash'), 1500);
+        }
+    };
+
     const handleSidebarEdit = (lineId, newText) => {
         setPages(prev => {
             const next = [...prev];
@@ -81,8 +93,12 @@ export default function EditorPage() {
     }
 
     const activePageData = pages[activePageIndex];
-    // Since we merged on init, items ARE the lines
-    const textLines = activePageData ? activePageData.items.filter(it => it.type === 'text') : [];
+    // Filter to text and preserve original data index for stable scrolling
+    const textLines = activePageData
+        ? activePageData.items
+            .map((item, index) => ({ ...item, dataIndex: index }))
+            .filter(it => it.type === 'text')
+        : [];
 
     return (
         <div className="editor-page">
@@ -105,9 +121,13 @@ export default function EditorPage() {
                     </div>
                 </div>
 
-                <div className="structure-list">
+                <div className="structure-list" style={{ scrollBehavior: 'smooth' }}>
                     {textLines.slice().reverse().map((line, i) => (
-                        <div key={line.id || i} className="premium-input-card">
+                        <div
+                            key={line.id || i}
+                            id={`input-card-${line.dataIndex}`}
+                            className="premium-input-card"
+                        >
                             <div className="input-card-header">
                                 <span className="object-label">
                                     Object {String(textLines.length - i).padStart(2, '0')}
@@ -143,6 +163,7 @@ export default function EditorPage() {
                             pageIndex={activePageIndex}
                             fontsKey={fontsKey}
                             onUpdate={handlePageUpdate}
+                            onSelect={scrollToNode}
                         />
                     </div>
                 </div>

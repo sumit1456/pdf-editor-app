@@ -209,6 +209,26 @@
     gap: 16px;
 }
 
+.highlight-flash {
+    animation: sidebarFlash 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@keyframes sidebarFlash {
+    0% {
+        background: rgba(255, 210, 125, 0.4);
+        box-shadow: 0 0 30px rgba(255, 210, 125, 0.2);
+        border-color: #ffd27d;
+        transform: scale(1.02);
+    }
+
+    100% {
+        background: rgba(255, 255, 255, 0.03);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        border-color: var(--studio-border);
+        transform: scale(1);
+    }
+}
+
 .premium-input-card {
     display: flex;
     flex-direction: column;
