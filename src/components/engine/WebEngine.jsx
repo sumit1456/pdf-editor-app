@@ -192,21 +192,33 @@ export class PixiRendererEngine {
             const flipY = (y) => height ? height - y : y;
             segments.forEach(seg => {
                 if (seg.type === 'm') {
-                    g.moveTo(seg.x, flipY(seg.y));
+                    const x = seg.x !== undefined ? seg.x : (seg.pts ? seg.pts[0][0] : 0);
+                    const y = seg.y !== undefined ? seg.y : (seg.pts ? seg.pts[0][1] : 0);
+                    g.moveTo(x, flipY(y));
                 } else if (seg.type === 'l') {
-                    const dest = seg.pts[1];
-                    g.lineTo(dest[0], flipY(dest[1]));
+                    const x = seg.x !== undefined ? seg.x : (seg.pts ? seg.pts[1][0] : 0);
+                    const y = seg.y !== undefined ? seg.y : (seg.pts ? seg.pts[1][1] : 0);
+                    g.lineTo(x, flipY(y));
                 } else if (seg.type === 'c') {
-                    const cp1 = seg.pts[1];
-                    const cp2 = seg.pts[2];
+                    // Python renderer sends flat points, Java sends nested
+                    const p1 = seg.pts[1];
+                    const p2 = seg.pts[2];
                     const end = seg.pts[3];
-                    g.bezierCurveTo(cp1[0], flipY(cp1[1]), cp2[0], flipY(cp2[1]), end[0], flipY(end[1]));
+                    g.bezierCurveTo(p1[0], flipY(p1[1]), p2[0], flipY(p2[1]), end[0], flipY(end[1]));
                 } else if (seg.type === 're') {
-                    const [x, y, w, h] = seg.pts[0];
-                    // For rects in bottom-up, (x, y) is bottom-left.
-                    // In top-down, we need top-left: height - (y + h)
-                    if (g.rect) g.rect(x, flipY(y + h), w, h);
-                    else g.drawRect(x, flipY(y + h), w, h);
+                    // Python sends [x, y, w, h] as pts. Java sends [[x, y, x, y]].
+                    const r = (seg.pts && Array.isArray(seg.pts[0])) ? seg.pts[0] : seg.pts;
+                    if (r) {
+                        const [x, y, w, h] = r;
+                        // If height is 0 (disable flip), flipY(y+h) is just y+h but in top-down PDF it's actually y
+                        if (!height) {
+                            if (g.rect) g.rect(x, y, w, h);
+                            else g.drawRect(x, y, w, h);
+                        } else {
+                            if (g.rect) g.rect(x, flipY(y + h), w, h);
+                            else g.drawRect(x, flipY(y + h), w, h);
+                        }
+                    }
                 }
             });
         };

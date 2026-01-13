@@ -2,23 +2,26 @@ import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
+import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import './EditorPage.css';
 
 export default function EditorPage() {
     const location = useLocation();
+    const backend = location.state?.backend || 'java';
 
     // MASTER STATE: All pages and the current active index
     // We merge fragments into lines ONCE at the start to create a persistent "Node Tree"
     const [pages, setPages] = useState(() => {
-        const rawPages = location.state?.sceneGraph?.pages || [];
+        const rawPages = location.state?.sceneGraph?.data?.pages || location.state?.sceneGraph?.pages || [];
+        // If it's python backend, data is nested in .data
         return rawPages.map(page => ({
             ...page,
             items: mergeFragmentsIntoLines(page.items)
         }));
     });
 
-    const [fontsKey] = useState(location.state?.sceneGraph?.fonts_key || '');
+    const [fontsKey] = useState(location.state?.sceneGraph?.data?.fonts_key || location.state?.sceneGraph?.fonts_key || '');
     const [activePageIndex, setActivePageIndex] = useState(0);
     const [isAdvanced, setIsAdvanced] = useState(true);
 
@@ -82,6 +85,23 @@ export default function EditorPage() {
         });
     };
 
+    const handleLinkEdit = (lineId, newUri) => {
+        setPages(prev => {
+            const next = [...prev];
+            const activePage = { ...next[activePageIndex] };
+
+            activePage.items = activePage.items.map(item => {
+                if (item.id === lineId) {
+                    return { ...item, uri: newUri };
+                }
+                return item;
+            });
+
+            next[activePageIndex] = activePage;
+            return next;
+        });
+    };
+
     if (pages.length === 0) {
         return (
             <div className="editor-page">
@@ -134,6 +154,7 @@ export default function EditorPage() {
                                 </span>
                             </div>
                             <textarea
+                                id={`input-${line.id}`}
                                 value={line.content}
                                 onChange={(e) => handleSidebarEdit(line.id, e.target.value)}
                                 onKeyDown={(e) => {
@@ -143,6 +164,17 @@ export default function EditorPage() {
                                     }
                                 }}
                             />
+                            {line.uri !== undefined && (
+                                <div className="link-input-wrapper">
+                                    <label>Link URL</label>
+                                    <input
+                                        type="text"
+                                        value={line.uri}
+                                        placeholder="https://..."
+                                        onChange={(e) => handleLinkEdit(line.id, e.target.value)}
+                                    />
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -158,13 +190,23 @@ export default function EditorPage() {
 
                 <div className="preview-stage">
                     <div className="preview-content-wrapper">
-                        <WebGLRenderer
-                            page={activePageData}
-                            pageIndex={activePageIndex}
-                            fontsKey={fontsKey}
-                            onUpdate={handlePageUpdate}
-                            onSelect={scrollToNode}
-                        />
+                        {backend === 'python' ? (
+                            <PythonRenderer
+                                page={activePageData}
+                                pageIndex={activePageIndex}
+                                fontsKey={fontsKey}
+                                onUpdate={handlePageUpdate}
+                                onSelect={scrollToNode}
+                            />
+                        ) : (
+                            <WebGLRenderer
+                                page={activePageData}
+                                pageIndex={activePageIndex}
+                                fontsKey={fontsKey}
+                                onUpdate={handlePageUpdate}
+                                onSelect={scrollToNode}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

@@ -1,16 +1,20 @@
 /**
- * Service to handle communication with the Java Spring Boot Backend.
- * Endpoint: POST http://localhost:8080/extract
+ * Service to handle communication with PDF Extraction Backends.
+ * Supports Java (8080) and Python (8000).
  */
-export const uploadPdfToBackend = async (file) => {
+export const uploadPdfToBackend = async (file, backend = 'python') => {
+    const JAVA_API = "https://resumemaker-1.onrender.com";
+    const PYTHON_API = "http://localhost:8000";
 
-    const api = "https://resumemaker-1.onrender.com";
-    const api2 = "http://localhost:8080"
+    // Default to Python if not specified or for the new flow
+    const apiBase = (backend === 'java' ? JAVA_API : PYTHON_API);
+    const endpoint = '/pdf-extraction-config';
+
     const formData = new FormData();
     formData.append('file', file);
 
     try {
-        const response = await fetch(`${api}/pdf-extraction-config`, {
+        const response = await fetch(`${apiBase}${endpoint}`, {
             method: 'POST',
             body: formData,
         });
@@ -23,7 +27,7 @@ export const uploadPdfToBackend = async (file) => {
         const json = await response.json();
         return json;
     } catch (error) {
-        console.error("PDF Upload Failed:", error);
+        console.error(`${backend} PDF Upload Failed:`, error);
         throw error;
     }
 };

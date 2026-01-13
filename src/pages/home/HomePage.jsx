@@ -6,6 +6,7 @@ import { uploadPdfToBackend } from "../../services/PdfBackendService";
 export default function HomePage() {
   const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
+  const [backend, setBackend] = React.useState('python'); // 'python' or 'java'
 
   const handleUploadClick = () => {
     fileInputRef.current.click();
@@ -15,16 +16,15 @@ export default function HomePage() {
     const file = event.target.files[0];
     if (file && file.type === "application/pdf") {
       try {
-        console.log("PDF Selected:", file.name);
-        // Upload to Java Backend instead of Python
-        const jsonOutput = await uploadPdfToBackend(file);
+        console.log(`PDF Selected (${backend}):`, file.name);
+        const jsonOutput = await uploadPdfToBackend(file, backend);
         console.log("Extracted Scene Graph JSON:", jsonOutput);
 
-        // Navigate to the editor with the data
-        navigate('/editor', { state: { sceneGraph: jsonOutput } });
+        // Navigate to the editor with the data and backend type
+        navigate('/editor', { state: { sceneGraph: jsonOutput, backend } });
       } catch (error) {
         console.error("Error extracting PDF:", error);
-        alert("Failed to extract PDF. Make sure the Java backend is running on port 8080.");
+        alert(`Failed to extract PDF. Make sure the ${backend} backend is running.`);
       }
     }
   };
@@ -49,6 +49,18 @@ export default function HomePage() {
             Professional-grade PDF editing without the DOM.
             Harness the power of WebGL and high-fidelity extraction.
           </p>
+
+          <div className="backend-toggle-container">
+            <span className={`toggle-label ${backend === 'python' ? 'active' : ''}`} onClick={() => setBackend('python')}>
+              Python <small>Native</small>
+            </span>
+            <span className={`toggle-label ${backend === 'java' ? 'active' : ''}`} onClick={() => setBackend('java')}>
+              Java <small>Legacy</small>
+            </span>
+            <div className={`toggle-switch-multi ${backend}`}>
+              <div className="switch-handle"></div>
+            </div>
+          </div>
         </header>
 
         <section className="action-area">
