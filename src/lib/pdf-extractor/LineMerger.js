@@ -51,38 +51,50 @@ export const mergeFragmentsIntoLines = (items) => {
     });
     textItems = finalItems;
 
-    // 1. Group by Baseline (Y) - The source of truth for a visual "row"
-    const groupsMap = new Map(); // Key: Rounded baseline Y
+    // 1. Group by SEMANTIC BLOCK or Baseline (Y)
+    const groupsMap = new Map();
 
     textItems.forEach(item => {
-        const y = item.origin ? item.origin[1] : item.bbox[1];
-        const roundedY = Math.round(y * 2) / 2; // 0.5px precision to group slightly jittery baselines
+        // Use backend block_id if available for semantic grouping (multi-line paragraphs)
+        const blockId = item.block_id;
 
-        // Find existing group with similar Y (tolerance 2px)
-        let groupKey = roundedY;
-        for (const existingY of groupsMap.keys()) {
-            if (Math.abs(existingY - y) < 2) {
-                groupKey = existingY;
-                break;
+        if (blockId) {
+            if (!groupsMap.has(blockId)) {
+                groupsMap.set(blockId, { y: item.origin ? item.origin[1] : item.bbox[1], items: [], isBlock: true });
             }
+            groupsMap.get(blockId).items.push(item);
+        } else {
+            // Fallback to Y-grouping for untagged items
+            const y = item.origin ? item.origin[1] : item.bbox[1];
+            const roundedY = Math.round(y * 2) / 2;
+            let groupKey = `y-${roundedY}`;
+            for (const key of groupsMap.keys()) {
+                if (key.startsWith('y-')) {
+                    const existingY = parseFloat(key.split('-')[1]);
+                    if (Math.abs(existingY - y) < 2) {
+                        groupKey = key;
+                        break;
+                    }
+                }
+            }
+            if (!groupsMap.has(groupKey)) {
+                groupsMap.set(groupKey, { y: y, items: [], isBlock: false });
+            }
+            groupsMap.get(groupKey).items.push(item);
         }
-
-        if (!groupsMap.has(groupKey)) {
-            groupsMap.set(groupKey, {
-                y: y,
-                items: []
-            });
-        }
-        groupsMap.get(groupKey).items.push(item);
     });
 
     const groups = Array.from(groupsMap.values());
     const lines = [];
 
-    // 2. Process each horizontal group with STYLE-AWARE merging
+    // 2. Process each group
     groups.forEach(group => {
-        // Sort items in group by X (left to right)
+        // Sort items by Y (top to bottom) then X (left to right)
         group.items.sort((a, b) => {
+            const ay = a.origin ? a.origin[1] : a.bbox[1];
+            const by = b.origin ? b.origin[1] : b.bbox[1];
+            if (Math.abs(ay - by) > 2) return by - ay; // Top visual lines first
+
             const ax = a.origin ? a.origin[0] : a.bbox[0];
             const bx = b.origin ? b.origin[0] : b.bbox[0];
             return ax - bx;
@@ -96,11 +108,10 @@ export const mergeFragmentsIntoLines = (items) => {
             if (currentSubGroup.length === 0) return;
             const first = currentSubGroup[0];
             const line = {
-                // Combine original ID with geometric data to ensure uniqueness if we split a backend line
-                id: (first.line_id || first.id || "line") + `-${Math.round(first.x)}-${Math.round(first.y)}`,
+                id: (first.block_id || first.line_id || first.id || "line") + `-${Math.round(first.x || first.origin?.[0] || 0)}`,
                 content: currentSubGroup.map(it => it.content).join(""),
-                x: first.x,
-                y: first.y,
+                x: first.origin ? first.origin[0] : first.bbox[0],
+                y: first.origin ? first.origin[1] : first.bbox[1],
                 bbox: [...first.bbox],
                 origin: first.origin ? [...first.origin] : null,
                 font: first.font,
@@ -131,6 +142,13 @@ export const mergeFragmentsIntoLines = (items) => {
                 currentSubGroup.push(item);
             } else {
                 const prev = group.items[idx - 1];
+
+                // BULLET-AWARE MERGING:
+                // If the previous item was a single bullet character, always merge the next item 
+                // regardless of style changes to keep them as a single unit in the sidebar.
+                const BULLET_CHARS = ["•", "·", "*", "-", "ΓÇó", "├»", "Γêù"];
+                const isAfterBullet = BULLET_CHARS.includes(prev.content.trim());
+
                 const styleChanged = item.font !== prev.font ||
                     Math.abs(item.size - prev.size) > 0.1 ||
                     item.is_bold !== prev.is_bold ||
@@ -141,7 +159,7 @@ export const mergeFragmentsIntoLines = (items) => {
                 const prevX1 = prev.bbox[2];
                 const isGap = (currentX - prevX1) > 25;
 
-                if (styleChanged || isGap) {
+                if ((styleChanged && !isAfterBullet) || isGap) {
                     flushLine();
                 }
                 currentSubGroup.push(item);

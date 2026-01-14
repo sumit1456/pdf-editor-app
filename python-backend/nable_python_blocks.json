@@ -1,0 +1,2555 @@
+{
+  "blocks": [
+    {
+      "id": "db1e5ef4-c1e8-4666-a3c5-c54f442abc79",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Yagyik Raghuwanshi",
+          "y": 56.18398660504151,
+          "items": [
+            {
+              "id": "76d8e147-0389-45ce-90e7-9fcd643a38a7",
+              "line_id": "2bc1d717-08ef-46fe-bf5c-a0e976584ff7",
+              "type": "text",
+              "content": "Yagyik Raghuwanshi",
+              "origin": [
+                234.60661045640566,
+                56.18398660504151
+              ],
+              "bbox": [
+                234.60661045640566,
+                23.134528416399004,
+                581.3284272590028,
+                56.18398660504151
+              ],
+              "size": 33.049458188642504,
+              "height": 33.049458188642504,
+              "font": "CMCSC10",
+              "block_id": "db1e5ef4-c1e8-4666-a3c5-c54f442abc79"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        234.60661045640566,
+        23.134528416399007,
+        581.3284272590028,
+        56.18398660504151
+      ],
+      "indentX": 234.60661045640566,
+      "style": {
+        "font": "CMCSC10",
+        "size": 33.049458188642504
+      }
+    },
+    {
+      "id": "736ed64b-a12f-4c60-984c-152341f18633",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Software Developer",
+          "y": 74.78131268487549,
+          "items": [
+            {
+              "id": "2270fed9-9997-40d3-8871-abe256d87375",
+              "line_id": "8ff8e4b7-4e37-41b2-abff-6ef4bcb6ab3c",
+              "type": "text",
+              "content": "Software Developer",
+              "origin": [
+                351.9692316691284,
+                74.78131268487549
+              ],
+              "bbox": [
+                351.9692316691284,
+                64.39986589872743,
+                464.041794796814,
+                77.68333018853761
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "736ed64b-a12f-4c60-984c-152341f18633"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        351.9692316691284,
+        61.49784966663074,
+        464.041794796814,
+        74.78131268487549
+      ],
+      "indentX": 351.9692316691284,
+      "style": {
+        "font": "CMR10",
+        "size": 13.283463018244744
+      }
+    },
+    {
+      "id": "0dc3725b-9560-4e52-af6f-80cadbaa294a",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "\u0083 +91 91113 41641|# raghuwanshiyagyik@gmail.com|\u00a7 Github|\u00ef LinkedIn|\u00d0 LeetCode",
+          "y": 93.37863876470948,
+          "items": [
+            {
+              "id": "68674d6c-eb52-402d-b387-323db460afb8",
+              "line_id": "c83ddb96-45ef-4624-9505-37412c3f92ba",
+              "type": "text",
+              "content": "\u0083",
+              "origin": [
+                80.91196707669069,
+                93.37863876470948
+              ],
+              "bbox": [
+                80.91196707669069,
+                81.76060476329422,
+                94.19543136650086,
+                95.04406396684266
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283459203548432,
+              "font": "FontAwesome5Free-Solid",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "f35c3717-d7dd-4c78-a988-85e74f15110d",
+              "line_id": "c83ddb96-45ef-4624-9505-37412c3f92ba",
+              "type": "text",
+              "content": " +91 91113 41641",
+              "origin": [
+                94.19543136650086,
+                93.37863876470948
+              ],
+              "bbox": [
+                94.19543136650086,
+                82.9971919785614,
+                197.51795599159243,
+                96.28065626837159
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "2bb88a76-a6ad-49a1-8638-29e4dd42d350",
+              "line_id": "74497bf1-497b-45e7-9893-0ec9d7f33a9d",
+              "type": "text",
+              "content": "|",
+              "origin": [
+                215.22260244433596,
+                93.37863876470948
+              ],
+              "bbox": [
+                215.22260244433596,
+                82.8250423633957,
+                218.9154115797272,
+                96.10850665320588
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMSY10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "30c68dd0-fbaa-4d20-aa38-65680ac95446",
+              "line_id": "72befbbc-02b4-4ba3-971e-3f94ba4854c4",
+              "type": "text",
+              "content": "#",
+              "origin": [
+                232.1959258377228,
+                93.37863876470948
+              ],
+              "bbox": [
+                232.1959258377228,
+                81.76060476329422,
+                245.47939012753298,
+                95.04406396684266
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283459203548432,
+              "font": "FontAwesome5Free-Solid",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "f6dc46b5-61a7-4fd8-8258-cc9798884fec",
+              "line_id": "72befbbc-02b4-4ba3-971e-3f94ba4854c4",
+              "type": "text",
+              "content": " raghuwanshiyagyik@gmail.com",
+              "origin": [
+                245.47939012753298,
+                93.37863876470948
+              ],
+              "bbox": [
+                245.47939012753298,
+                82.9971919785614,
+                429.00876319049075,
+                96.28065626837159
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "838dc1b0-ff3b-4b7d-8912-d5d4109d4686",
+              "line_id": "2b7c90a8-3375-4132-9d30-e160c8a1b50c",
+              "type": "text",
+              "content": "|",
+              "origin": [
+                446.6891786922608,
+                93.37863876470948
+              ],
+              "bbox": [
+                446.6891786922608,
+                82.8250423633957,
+                450.38196748260503,
+                96.10850665320588
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMSY10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "6340d8f4-15c4-4787-a3c9-fffc7b31b083",
+              "line_id": "cf409a54-c3a7-4030-9aac-6df48c370a2a",
+              "type": "text",
+              "content": "\u00a7",
+              "origin": [
+                463.6625224306946,
+                93.37863876470948
+              ],
+              "bbox": [
+                463.6625224306946,
+                82.62646453218079,
+                476.520917653595,
+                95.90992882199097
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "FontAwesome5Brands-Regul",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "03cc02bb-22e3-4f43-997a-4d562589727e",
+              "line_id": "cf409a54-c3a7-4030-9aac-6df48c370a2a",
+              "type": "text",
+              "content": " Github",
+              "origin": [
+                476.520917653595,
+                93.37863876470948
+              ],
+              "bbox": [
+                476.520917653595,
+                82.9971919785614,
+                522.0203366172791,
+                96.28065626837159
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "d40c0ace-5b1e-4773-a3a0-3f7621e93e1d",
+              "line_id": "c28df491-9b6c-4e1b-bd35-e64066a589e2",
+              "type": "text",
+              "content": "|",
+              "origin": [
+                539.7091749685059,
+                93.37863876470948
+              ],
+              "bbox": [
+                539.7091749685059,
+                82.8250423633957,
+                543.4019637588501,
+                96.10850665320588
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMSY10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "c20dfdff-4d81-446e-885d-f856988bacdd",
+              "line_id": "ffe9a68a-0d3b-49e3-baff-fb5438cebdc4",
+              "type": "text",
+              "content": "\u00ef",
+              "origin": [
+                556.6825187069397,
+                93.37863876470948
+              ],
+              "bbox": [
+                556.6825187069397,
+                82.62646453218079,
+                568.305562676178,
+                95.90992882199097
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "FontAwesome5Brands-Regul",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "a9ec39f8-934b-4721-84fa-208c3da00ca2",
+              "line_id": "ffe9a68a-0d3b-49e3-baff-fb5438cebdc4",
+              "type": "text",
+              "content": " LinkedIn",
+              "origin": [
+                568.305562676178,
+                93.37863876470948
+              ],
+              "bbox": [
+                568.305562676178,
+                82.9971919785614,
+                624.2212388014221,
+                96.28065626837159
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "e895aefd-fb12-41d7-baf6-b09475715153",
+              "line_id": "1a261316-eb7b-4e9c-88fc-537231adb64c",
+              "type": "text",
+              "content": "|",
+              "origin": [
+                641.9185000021058,
+                93.37863876470948
+              ],
+              "bbox": [
+                641.9185000021058,
+                82.8250423633957,
+                645.61128879245,
+                96.10850665320588
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMSY10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "c94f4c58-7051-4a42-990d-f5445ee3b47a",
+              "line_id": "97dbed2c-9b0b-4778-b0bb-69a46df3ad5a",
+              "type": "text",
+              "content": "\u00d0",
+              "origin": [
+                658.8931458235475,
+                93.37863876470948
+              ],
+              "bbox": [
+                658.8931458235475,
+                81.76060476329422,
+                675.4974710995484,
+                95.04406396684266
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283459203548432,
+              "font": "FontAwesome5Free-Solid",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            },
+            {
+              "id": "96150401-2410-4710-8bf6-a12a5cf70fc5",
+              "line_id": "97dbed2c-9b0b-4778-b0bb-69a46df3ad5a",
+              "type": "text",
+              "content": " LeetCode",
+              "origin": [
+                675.4974710995484,
+                93.37863876470948
+              ],
+              "bbox": [
+                675.4974710995484,
+                82.9971919785614,
+                735.0780226106568,
+                96.28065626837159
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "0dc3725b-9560-4e52-af6f-80cadbaa294a"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        80.91196707669069,
+        80.09517574646473,
+        735.0780226106568,
+        93.37863876470948
+      ],
+      "indentX": 80.91196707669069,
+      "style": {
+        "font": "FontAwesome5Free-Solid",
+        "size": 13.283463018244744
+      }
+    },
+    {
+      "id": "6f5fc9cb-5745-4581-9572-1ac2b9769d00",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Profile Summary",
+          "y": 115.29733445690918,
+          "items": [
+            {
+              "id": "4d027394-fb1a-4767-a07d-94bf80cfa74a",
+              "line_id": "4a06b989-9b8b-4cd9-b645-3e1dd6f3d65b",
+              "type": "text",
+              "content": "Profile Summary",
+              "origin": [
+                52.79995424792481,
+                115.29733445690918
+              ],
+              "bbox": [
+                52.79995424792481,
+                99.35707151489258,
+                191.86282638323976,
+                115.29733445690918
+              ],
+              "size": 15.940262942016602,
+              "height": 15.940262942016602,
+              "font": "CMCSC10",
+              "block_id": "6f5fc9cb-5745-4581-9572-1ac2b9769d00"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        52.79995424792481,
+        99.35707151489258,
+        191.86282638323976,
+        115.29733445690918
+      ],
+      "indentX": 52.79995424792481,
+      "style": {
+        "font": "CMCSC10",
+        "size": 15.940262942016602
+      }
+    },
+    {
+      "id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Full Stack Developer passionate about designing and delivering dynamic, user-centric web applications with Python, Java,",
+          "y": 142.3799285977173,
+          "items": [
+            {
+              "id": "fba4a47e-929e-4a7c-b7e0-07b0bb17b325",
+              "line_id": "e871be3f-d452-4d29-b07a-de1f466ed155",
+              "type": "text",
+              "content": "Full Stack Developer passionate about designing and delivering dynamic, user-centric web applications with Python, Java,",
+              "origin": [
+                52.7999847654953,
+                142.3799285977173
+              ],
+              "bbox": [
+                52.7999847654953,
+                131.99848181156923,
+                763.319226487854,
+                145.28194610137942
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Spring Boot, React.js, and modern development practices, focusing on scalable architecture, seamless frontend-backend",
+          "y": 158.31994739916993,
+          "items": [
+            {
+              "id": "3f804243-4c54-4180-80a3-8a77762a8ffe",
+              "line_id": "cf3b54d5-1dec-4e4a-a7ad-7663c99b45b9",
+              "type": "text",
+              "content": "Spring Boot, React.js, and modern development practices, focusing on scalable architecture, seamless frontend-backend",
+              "origin": [
+                52.7999847654953,
+                158.31994739916993
+              ],
+              "bbox": [
+                52.7999847654953,
+                147.93850061302186,
+                746.542049692566,
+                161.22196490283204
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "integration, and high-performance solutions.",
+          "y": 174.25996620062259,
+          "items": [
+            {
+              "id": "370a00ae-fa86-41bd-87af-21b7291d25a9",
+              "line_id": "b3ea67a4-288e-465b-8815-1bbd6ccbbc1d",
+              "type": "text",
+              "content": "integration, and high-performance solutions.",
+              "origin": [
+                52.7999847654953,
+                174.25996620062259
+              ],
+              "bbox": [
+                52.7999847654953,
+                163.8785194144745,
+                310.29988987292484,
+                177.1619837042847
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283464289810183,
+              "font": "CMR10",
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Technical Skills",
+          "y": 196.1799639758301,
+          "items": [
+            {
+              "id": "b6bf3ab7-eda6-4b79-a944-8b6ff11f9f79",
+              "line_id": "065c711e-fc01-443b-bfcd-f429f2761a8f",
+              "type": "text",
+              "content": "Technical Skills",
+              "origin": [
+                52.7999847654953,
+                196.1799639758301
+              ],
+              "bbox": [
+                52.7999847654953,
+                180.2397010338135,
+                189.74277076091005,
+                196.1799639758301
+              ],
+              "size": 15.940262942016602,
+              "height": 15.940262942016602,
+              "font": "CMCSC10",
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Programming Languages: Python, Java",
+          "y": 224.13861584033205,
+          "items": [
+            {
+              "id": "49afd344-1b4d-448c-bdfb-35139fe0a84b",
+              "line_id": "232a6821-8acb-42e1-9bd4-1d18ce945cf8",
+              "type": "text",
+              "content": "Programming Languages:",
+              "origin": [
+                52.7999847654953,
+                224.13861584033205
+              ],
+              "bbox": [
+                52.7999847654953,
+                212.77088186586,
+                239.17102683646013,
+                227.31634942089846
+              ],
+              "size": 14.545462468776703,
+              "height": 14.54546755503847,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "8c18e520-165f-4ef3-b40a-9534716e471f",
+              "line_id": "232a6821-8acb-42e1-9bd4-1d18ce945cf8",
+              "type": "text",
+              "content": " Python, Java",
+              "origin": [
+                239.17102683646013,
+                224.13861584033205
+              ],
+              "bbox": [
+                239.17102683646013,
+                212.77088186586,
+                329.71271155780414,
+                227.31634942089846
+              ],
+              "size": 14.545462468776703,
+              "height": 14.54546755503847,
+              "font": "CMR10",
+              "x": 239.17102683646013,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Python Fundamentals: Data Types, Control Flow, Functions, OOP Basics",
+          "y": 242.20395963128664,
+          "items": [
+            {
+              "id": "be73c1c7-16f4-4dfa-a266-5915b326b1cb",
+              "line_id": "ff108cdf-ece4-478d-b7fb-ec5cd9efe83d",
+              "type": "text",
+              "content": "Python Fundamentals:",
+              "origin": [
+                52.7999847654953,
+                242.20395963128664
+              ],
+              "bbox": [
+                52.7999847654953,
+                230.8362256568146,
+                218.1964684814682,
+                245.38169321185305
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "d16b720c-abd8-4624-82b0-76ec61412b0e",
+              "line_id": "ff108cdf-ece4-478d-b7fb-ec5cd9efe83d",
+              "type": "text",
+              "content": " Data Types, Control Flow, Functions, OOP Basics",
+              "origin": [
+                218.1964684814682,
+                242.20395963128664
+              ],
+              "bbox": [
+                218.1964684814682,
+                230.8362256568146,
+                548.4855908245316,
+                245.38169321185305
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMR10",
+              "x": 218.1964684814682,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Scripting & Automation: File Handling, Exception Handling, Basic Automation Scripts",
+          "y": 260.26930342224125,
+          "items": [
+            {
+              "id": "7f46bc52-263d-4530-b1aa-7e707c07a72f",
+              "line_id": "bbfad95b-088e-4e42-89e1-d763c4824526",
+              "type": "text",
+              "content": "Scripting & Automation:",
+              "origin": [
+                52.7999847654953,
+                260.26930342224125
+              ],
+              "bbox": [
+                52.7999847654953,
+                248.9015694477692,
+                235.62191985427094,
+                263.44703700280763
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "ea22d484-da16-4bbb-bb2b-76a85f9ca532",
+              "line_id": "bbfad95b-088e-4e42-89e1-d763c4824526",
+              "type": "text",
+              "content": " File Handling, Exception Handling, Basic Automation Scripts",
+              "origin": [
+                235.62191985427094,
+                260.26930342224125
+              ],
+              "bbox": [
+                235.62191985427094,
+                248.9015694477692,
+                636.5373673141862,
+                263.44703700280763
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMR10",
+              "x": 235.62191985427094,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Data Handling (Basic): Lists, Dictionaries, Tuples, Sets",
+          "y": 278.3346472131958,
+          "items": [
+            {
+              "id": "a1b3f68c-3b15-41b4-b673-5e03664a22a4",
+              "line_id": "7d8cac0a-b4b8-401e-b58a-1231cac5c9db",
+              "type": "text",
+              "content": "Data Handling (Basic):",
+              "origin": [
+                52.7999847654953,
+                278.3346472131958
+              ],
+              "bbox": [
+                52.7999847654953,
+                266.96691323872375,
+                222.64739510311128,
+                281.51238079376225
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038499,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "302fe6ca-022f-478b-9265-d62d72d758fa",
+              "line_id": "7d8cac0a-b4b8-401e-b58a-1231cac5c9db",
+              "type": "text",
+              "content": " Lists, Dictionaries, Tuples, Sets",
+              "origin": [
+                222.64739510311128,
+                278.3346472131958
+              ],
+              "bbox": [
+                222.64739510311128,
+                266.96691323872375,
+                429.5855961354752,
+                281.51238079376225
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038499,
+              "font": "CMR10",
+              "x": 222.64739510311128,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Databases: MySQL, Postgres (CRUD, Queries)",
+          "y": 296.3999910041504,
+          "items": [
+            {
+              "id": "b0e8b1d4-f631-4c23-a4a9-984404e1bc36",
+              "line_id": "fe21bce5-a1b0-41d8-a458-2f2e020fbbbe",
+              "type": "text",
+              "content": "Databases:",
+              "origin": [
+                52.7999847654953,
+                296.3999910041504
+              ],
+              "bbox": [
+                52.7999847654953,
+                285.03225702967836,
+                131.33094047454836,
+                299.5777245847168
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "0c2263e0-64d5-4b13-808e-147001fc265e",
+              "line_id": "fe21bce5-a1b0-41d8-a458-2f2e020fbbbe",
+              "type": "text",
+              "content": " MySQL, Postgres (CRUD, Queries)",
+              "origin": [
+                131.33094047454836,
+                296.3999910041504
+              ],
+              "bbox": [
+                131.33094047454836,
+                285.03225702967836,
+                365.19702173783116,
+                299.5777245847168
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMR10",
+              "x": 131.33094047454836,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Tools: Git, GitHub, VS Code",
+          "y": 314.4666368781128,
+          "items": [
+            {
+              "id": "6d3da5a0-f658-491d-963d-64627ea478e3",
+              "line_id": "55e9d62b-84fb-4757-b4d0-9e89cf71403e",
+              "type": "text",
+              "content": "Tools:",
+              "origin": [
+                52.7999847654953,
+                314.4666368781128
+              ],
+              "bbox": [
+                52.7999847654953,
+                303.09890290364075,
+                96.11636492760849,
+                317.64437045867925
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038499,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "ab9e96ba-54f6-4042-b8c0-77942ad4f773",
+              "line_id": "55e9d62b-84fb-4757-b4d0-9e89cf71403e",
+              "type": "text",
+              "content": " Git, GitHub, VS Code",
+              "origin": [
+                96.11636492760849,
+                314.4666368781128
+              ],
+              "bbox": [
+                96.11636492760849,
+                303.09890290364075,
+                246.27072598926927,
+                317.64437045867925
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038499,
+              "font": "CMR10",
+              "x": 96.11636492760849,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Practices: Problem Solving, Debugging, Clean Code Basics",
+          "y": 332.5319806690674,
+          "items": [
+            {
+              "id": "930c7369-6a9b-4604-ae45-978b42f600b4",
+              "line_id": "06c04405-63d1-46c7-9aea-5b711756a885",
+              "type": "text",
+              "content": "Practices:",
+              "origin": [
+                52.7999847654953,
+                332.5319806690674
+              ],
+              "bbox": [
+                52.7999847654953,
+                321.16424669459536,
+                124.17455493454361,
+                335.7097142496338
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMBX10",
+              "x": 52.7999847654953,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            },
+            {
+              "id": "4b171b1b-a313-4cf4-83c1-fac316c716a1",
+              "line_id": "06c04405-63d1-46c7-9aea-5b711756a885",
+              "type": "text",
+              "content": " Problem Solving, Debugging, Clean Code Basics",
+              "origin": [
+                124.17455493454361,
+                332.5319806690674
+              ],
+              "bbox": [
+                124.17455493454361,
+                321.16424669459536,
+                439.3635121887169,
+                335.7097142496338
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545467555038442,
+              "font": "CMR10",
+              "x": 124.17455493454361,
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        },
+        {
+          "content": "Experience",
+          "y": 354.45067636126714,
+          "items": [
+            {
+              "id": "33bde00d-7b8e-440c-9481-31d0a398e5f5",
+              "line_id": "2ccbcef9-4c29-446a-a6ac-8e469333d8e1",
+              "type": "text",
+              "content": "Experience",
+              "origin": [
+                52.7999847654953,
+                354.45067636126714
+              ],
+              "bbox": [
+                52.7999847654953,
+                338.51041341925054,
+                143.57978791689303,
+                354.45067636126714
+              ],
+              "size": 15.940262942016602,
+              "height": 15.940262942016602,
+              "font": "CMCSC10",
+              "block_id": "e58d3b79-81f8-4dbb-bc63-2eaba1f9d3d7"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        52.7999847654953,
+        129.09646557947258,
+        763.319226487854,
+        354.45067636126714
+      ],
+      "indentX": 52.7999847654953,
+      "style": {
+        "font": "CMR10",
+        "size": 13.283463018244744
+      }
+    },
+    {
+      "id": "95bfd8cd-213e-4fa6-a968-4c26b84e54ba",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Java full stack Booster Program (Jspiders)Aug 2024 \u2013 Sept 2025",
+          "y": 384.95457498529055,
+          "items": [
+            {
+              "id": "f2d6b4ed-34c5-44e0-a071-38040c9fce19",
+              "line_id": "831aba06-cf1b-45c5-b984-cbd3d1c449a0",
+              "type": "text",
+              "content": "Java full stack Booster Program (Jspiders)",
+              "origin": [
+                67.19998523450471,
+                384.95457498529055
+              ],
+              "bbox": [
+                67.19998523450471,
+                373.58682066577154,
+                381.542059562378,
+                388.132308565857
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545487900085448,
+              "font": "CMBX10",
+              "block_id": "95bfd8cd-213e-4fa6-a968-4c26b84e54ba"
+            },
+            {
+              "id": "3aa43b89-1542-4c5b-90c1-d2f0bb0e6a5d",
+              "line_id": "d435660a-2361-4757-b3fe-6270302d306c",
+              "type": "text",
+              "content": "Aug 2024 \u2013 Sept 2025",
+              "origin": [
+                616.8931563235474,
+                384.95457498529055
+              ],
+              "bbox": [
+                616.8931563235474,
+                373.58682066577154,
+                756.2967673059693,
+                388.132308565857
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545487900085448,
+              "font": "CMR10",
+              "block_id": "95bfd8cd-213e-4fa6-a968-4c26b84e54ba"
+            }
+          ]
+        },
+        {
+          "content": "Java Full Stack Trainee (Pune, Maharashtra)",
+          "y": 403.01991877624516,
+          "items": [
+            {
+              "id": "2e56c4d0-74bc-4e9b-bfc8-09f3df51ed46",
+              "line_id": "f63e35dd-ae9b-4e99-822f-158ff5d02e10",
+              "type": "text",
+              "content": "Java Full Stack Trainee (Pune, Maharashtra)",
+              "origin": [
+                67.19998523450471,
+                403.01991877624516
+              ],
+              "bbox": [
+                67.19998523450471,
+                392.63849233514406,
+                331.0626715474625,
+                405.92193627990724
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763178,
+              "font": "CMTI10",
+              "x": 67.19998523450471,
+              "block_id": "95bfd8cd-213e-4fa6-a968-4c26b84e54ba"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        370.40911251651386,
+        756.2967673059693,
+        403.01991877624516
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMBX10",
+        "size": 14.545462468776703
+      }
+    },
+    {
+      "id": "c24ace84-8d3b-406e-b040-7a0651e7aaca",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Completed an intensive, industry-aligned Java Full Stack Development Program focusing on scalable web",
+          "y": 421.24126838757326,
+          "items": [
+            {
+              "id": "1eaa5ab3-5a9f-4aa2-b949-a1b1e7f3bae2",
+              "line_id": "8aa8b243-f357-4e68-9f26-f1040bcf1b20",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.1999750619812,
+                421.24126838757326
+              ],
+              "bbox": [
+                67.1999750619812,
+                414.9090759602051,
+                72.29288964161682,
+                422.8792074312134
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008301,
+              "font": "CMSY6",
+              "x": 67.1999750619812,
+              "block_id": "c24ace84-8d3b-406e-b040-7a0651e7aaca"
+            },
+            {
+              "id": "9eecfd21-8f07-4a91-bedd-a41f2e28b048",
+              "line_id": "8aa8b243-f357-4e68-9f26-f1040bcf1b20",
+              "type": "text",
+              "content": " Completed an intensive, industry-aligned Java Full Stack Development Program focusing on scalable web",
+              "origin": [
+                80.6999750619812,
+                421.24126838757326
+              ],
+              "bbox": [
+                80.6999750619812,
+                410.8598419464722,
+                701.3348907039948,
+                425.8792880614014
+              ],
+              "size": 13.283463018244744,
+              "height": 15.019446114929167,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "c24ace84-8d3b-406e-b040-7a0651e7aaca"
+            }
+          ]
+        },
+        {
+          "content": "applications and RESTful API design.",
+          "y": 438.9185914421997,
+          "items": [
+            {
+              "id": "115ccd68-3bbb-45e6-972e-84b9cf2beab9",
+              "line_id": "f45ab488-af04-46f9-9d98-ab1527183f54",
+              "type": "text",
+              "content": "applications and RESTful API design.",
+              "origin": [
+                80.6999750619812,
+                438.9185914421997
+              ],
+              "bbox": [
+                80.6999750619812,
+                428.5371650010987,
+                303.95512249525075,
+                441.82060894586186
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763178,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "c24ace84-8d3b-406e-b040-7a0651e7aaca"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.1999750619812,
+        407.9578053693285,
+        692.9278052836304,
+        438.9185914421997
+      ],
+      "indentX": 67.1999750619812,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.6999750619812,
+      "level": 0
+    },
+    {
+      "id": "67e8e806-6b2c-4a98-9004-d61d1f520edc",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Built and deployed full stack projects using Java, Spring Boot, Hibernate, MySQL, and React.js.",
+          "y": 454.7652671680298,
+          "items": [
+            {
+              "id": "dd692184-7b3a-4f1f-a6be-b5068011e7dd",
+              "line_id": "da09b9f0-346e-4eae-a9c4-5e3986cd9283",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.1999750619812,
+                454.7652671680298
+              ],
+              "bbox": [
+                67.1999750619812,
+                448.43307474066165,
+                72.29288964161682,
+                456.40320621166995
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008301,
+              "font": "CMSY6",
+              "x": 67.1999750619812,
+              "block_id": "67e8e806-6b2c-4a98-9004-d61d1f520edc"
+            },
+            {
+              "id": "888915e0-f32b-4a36-bef7-9df7850c02b8",
+              "line_id": "da09b9f0-346e-4eae-a9c4-5e3986cd9283",
+              "type": "text",
+              "content": " Built and deployed full stack projects using Java, Spring Boot, Hibernate, MySQL, and React.js.",
+              "origin": [
+                80.6999750619812,
+                454.7652671680298
+              ],
+              "bbox": [
+                80.6999750619812,
+                444.3838407269287,
+                652.8503650647126,
+                459.08863034500126
+              ],
+              "size": 13.283463018244744,
+              "height": 14.704789618072539,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "67e8e806-6b2c-4a98-9004-d61d1f520edc"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.1999750619812,
+        441.4818041497851,
+        644.4432796443482,
+        454.7652671680298
+      ],
+      "indentX": 67.1999750619812,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.6999750619812,
+      "level": 0
+    },
+    {
+      "id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Capstone projects:",
+          "y": 472.03459065017705,
+          "items": [
+            {
+              "id": "a6605d25-5964-4457-9078-eb5cc009bedd",
+              "line_id": "7293a07f-6f5f-49c5-ac7e-d34925c3e4b7",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.1999750619812,
+                472.03459065017705
+              ],
+              "bbox": [
+                67.1999750619812,
+                465.7023982228089,
+                72.29288964161682,
+                473.6725296938172
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008301,
+              "font": "CMSY6",
+              "x": 67.1999750619812,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            },
+            {
+              "id": "2cb30ad1-92e5-4d46-abfb-cd5f99f04e43",
+              "line_id": "7293a07f-6f5f-49c5-ac7e-d34925c3e4b7",
+              "type": "text",
+              "content": " Capstone projects:",
+              "origin": [
+                80.6999750619812,
+                472.03459065017705
+              ],
+              "bbox": [
+                80.6999750619812,
+                461.65316420907595,
+                196.27115385147096,
+                476.35661105404665
+              ],
+              "size": 13.283463018244744,
+              "height": 14.7034468449707,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            }
+          ]
+        },
+        {
+          "content": "\u2217Sky Dominance: Aviation platform with real-time quote estimation via Spring Boot REST APIs.",
+          "y": 489.395914434845,
+          "items": [
+            {
+              "id": "821af2a7-1f0a-461e-8050-c09846fe69be",
+              "line_id": "5c60c008-5f03-4708-a399-bd71fb347cdc",
+              "type": "text",
+              "content": "\u2217",
+              "origin": [
+                80.6999750619812,
+                489.395914434845
+              ],
+              "bbox": [
+                80.6999750619812,
+                478.76912672695926,
+                87.34170212062455,
+                492.05261136181645
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283484634857189,
+              "font": "SFRM1000",
+              "x": 80.6999750619812,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            },
+            {
+              "id": "bf6d60c9-bc30-4d86-be52-74382584a0e8",
+              "line_id": "5c60c008-5f03-4708-a399-bd71fb347cdc",
+              "type": "text",
+              "content": "Sky Dominance:",
+              "origin": [
+                94.61330674803543,
+                489.395914434845
+              ],
+              "bbox": [
+                94.61330674803543,
+                479.01448799374396,
+                203.07278280698776,
+                492.29793193850713
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763178,
+              "font": "CMBX10",
+              "x": 94.61330674803543,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            },
+            {
+              "id": "1a6ab085-6e91-4f87-87fa-427c7f13d4fb",
+              "line_id": "5c60c008-5f03-4708-a399-bd71fb347cdc",
+              "type": "text",
+              "content": " Aviation platform with real-time quote estimation via Spring Boot REST APIs.",
+              "origin": [
+                203.07278280698776,
+                489.395914434845
+              ],
+              "bbox": [
+                203.07278280698776,
+                479.01448799374396,
+                675.3357872998009,
+                492.29793193850713
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763178,
+              "font": "CMR10",
+              "x": 203.07278280698776,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            }
+          ]
+        },
+        {
+          "content": "\u2217Ultimate Resume: Interactive resume builder with live preview and PDF export using React.js and Spring Boot.",
+          "y": 506.66389514389044,
+          "items": [
+            {
+              "id": "8447f79a-333f-48cd-a045-01e630baa2aa",
+              "line_id": "9786f8b7-61dd-469a-9f07-735326b356c9",
+              "type": "text",
+              "content": "\u2217",
+              "origin": [
+                80.6999750619812,
+                506.66389514389044
+              ],
+              "bbox": [
+                80.6999750619812,
+                496.0371074360047,
+                87.3417072068863,
+                509.32059207086184
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283484634857132,
+              "font": "SFRM1000",
+              "x": 80.6999750619812,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            },
+            {
+              "id": "666ce2d1-4d10-4e27-8f50-8ae622e6c7ed",
+              "line_id": "9786f8b7-61dd-469a-9f07-735326b356c9",
+              "type": "text",
+              "content": "Ultimate Resume:",
+              "origin": [
+                94.61330166177368,
+                506.66389514389044
+              ],
+              "bbox": [
+                94.61330166177368,
+                496.28246870278934,
+                215.6389773786545,
+                509.5659126475525
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763178,
+              "font": "CMBX10",
+              "x": 94.61330166177368,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            },
+            {
+              "id": "e78d60f3-c56d-4dc6-b65e-2fb3a723d0c8",
+              "line_id": "9786f8b7-61dd-469a-9f07-735326b356c9",
+              "type": "text",
+              "content": " Interactive resume builder with live preview and PDF export using React.js and Spring Boot.",
+              "origin": [
+                215.6389773786545,
+                506.66389514389044
+              ],
+              "bbox": [
+                215.6389773786545,
+                496.28246870278934,
+                764.413559423256,
+                509.5659126475525
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763178,
+              "font": "CMR10",
+              "x": 215.6389773786545,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            }
+          ]
+        },
+        {
+          "content": "Agricapita Innotech Private LimitedMay 2023 \u2013 Aug 2023",
+          "y": 531.3718967793885,
+          "items": [
+            {
+              "id": "551f91af-cb20-4b56-9d1b-11d3a04493b8",
+              "line_id": "bc99d61a-8faf-4047-8ed7-3d573c2f94d6",
+              "type": "text",
+              "content": "Agricapita Innotech Private Limited",
+              "origin": [
+                80.6999750619812,
+                531.3718967793885
+              ],
+              "bbox": [
+                80.6999750619812,
+                520.0041424598694,
+                347.725654968956,
+                534.5496303599549
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545487900085504,
+              "font": "CMBX10",
+              "x": 80.6999750619812,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            },
+            {
+              "id": "87e5e7be-74de-4523-bcdb-b8f2c76dc836",
+              "line_id": "ac6da8bb-5223-4703-af37-9e185e2c035c",
+              "type": "text",
+              "content": "May 2023 \u2013 Aug 2023",
+              "origin": [
+                630.7971784393387,
+                531.3718967793885
+              ],
+              "bbox": [
+                630.7971784393387,
+                520.0041424598694,
+                769.8080079444352,
+                534.5496303599549
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545487900085504,
+              "font": "CMR10",
+              "x": 630.7971784393387,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            }
+          ]
+        },
+        {
+          "content": "Intern (Bhopal, Madhya Pradesh)",
+          "y": 549.4372405703431,
+          "items": [
+            {
+              "id": "3b2a7fac-62bd-4748-b17b-78b273f983e0",
+              "line_id": "7b131a4c-8cf7-46d9-921b-d4b6a851cdae",
+              "type": "text",
+              "content": "Intern (Bhopal, Madhya Pradesh)",
+              "origin": [
+                80.6999750619812,
+                549.4372405703431
+              ],
+              "bbox": [
+                80.6999750619812,
+                539.055814129242,
+                276.6708733348694,
+                552.3392580740052
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMTI10",
+              "x": 80.6999750619812,
+              "block_id": "e31450e1-e6de-48a1-a7c6-3f2d75d88f75"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.1999750619812,
+        458.7511276319323,
+        769.8080079444352,
+        549.4372405703431
+      ],
+      "indentX": 67.1999750619812,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.6999750619812,
+      "level": 0
+    },
+    {
+      "id": "9d38ff13-8ffa-416e-97a3-74e48ef876ef",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Enhanced website performance and reliability by optimizing code, fixing critical bugs, and implementing security",
+          "y": 567.6585494915772,
+          "items": [
+            {
+              "id": "c4b6567a-563c-45c5-a576-a591943569e3",
+              "line_id": "0b0adc7f-4a22-41d3-8bc1-4858997633af",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.1999750619812,
+                567.6585494915772
+              ],
+              "bbox": [
+                67.1999750619812,
+                561.326357064209,
+                72.29288964161682,
+                569.2964885352173
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008358,
+              "font": "CMSY6",
+              "x": 67.1999750619812,
+              "block_id": "9d38ff13-8ffa-416e-97a3-74e48ef876ef"
+            },
+            {
+              "id": "e7687383-ff9c-432d-a949-9dc219d5e427",
+              "line_id": "0b0adc7f-4a22-41d3-8bc1-4858997633af",
+              "type": "text",
+              "content": " Enhanced website performance and reliability by optimizing code, fixing critical bugs, and implementing security",
+              "origin": [
+                80.6999750619812,
+                567.6585494915772
+              ],
+              "bbox": [
+                80.6999750619812,
+                557.2771230504761,
+                746.1933593070833,
+                572.2965691654053
+              ],
+              "size": 13.283463018244744,
+              "height": 15.019446114929224,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "9d38ff13-8ffa-416e-97a3-74e48ef876ef"
+            }
+          ]
+        },
+        {
+          "content": "measures, improving page load speed by 50%.",
+          "y": 585.3345297731018,
+          "items": [
+            {
+              "id": "2265cbf7-98e7-4934-8fd9-e4193dd7bd0e",
+              "line_id": "b992f724-2593-47aa-9de7-a99db21557a8",
+              "type": "text",
+              "content": "measures, improving page load speed by 50%.",
+              "origin": [
+                80.6999750619812,
+                585.3345297731018
+              ],
+              "bbox": [
+                80.6999750619812,
+                574.9531033320008,
+                347.04664411169057,
+                588.236547276764
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "9d38ff13-8ffa-416e-97a3-74e48ef876ef"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.1999750619812,
+        554.3750864733324,
+        737.7862738867188,
+        585.3345297731018
+      ],
+      "indentX": 67.1999750619812,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.6999750619812,
+      "level": 0
+    },
+    {
+      "id": "cddef949-e203-4711-a7d3-10b369129fb6",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Managed server deployments and uptime monitoring, ensuring 99.9% website availability during peak traffic.",
+          "y": 601.1825075819397,
+          "items": [
+            {
+              "id": "2e780097-93a5-4bab-894c-f93cd12e932f",
+              "line_id": "47b32e40-40c8-4195-9d66-e05a57eab5d5",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.1999750619812,
+                601.1825075819397
+              ],
+              "bbox": [
+                67.1999750619812,
+                594.8503151545716,
+                72.29288964161682,
+                602.8204466255798
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008244,
+              "font": "CMSY6",
+              "x": 67.1999750619812,
+              "block_id": "cddef949-e203-4711-a7d3-10b369129fb6"
+            },
+            {
+              "id": "a1c4ebda-321e-4b1a-b555-b7b7ab49a575",
+              "line_id": "47b32e40-40c8-4195-9d66-e05a57eab5d5",
+              "type": "text",
+              "content": " Managed server deployments and uptime monitoring, ensuring 99.9% website availability during peak traffic.",
+              "origin": [
+                80.6999750619812,
+                601.1825075819397
+              ],
+              "bbox": [
+                80.6999750619812,
+                590.8010811408386,
+                721.3929097780305,
+                605.5058707589112
+              ],
+              "size": 13.283463018244744,
+              "height": 14.704789618072596,
+              "font": "CMR10",
+              "x": 80.6999750619812,
+              "block_id": "cddef949-e203-4711-a7d3-10b369129fb6"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.1999750619812,
+        587.8990445636949,
+        712.985824357666,
+        601.1825075819397
+      ],
+      "indentX": 67.1999750619812,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.6999750619812,
+      "level": 0
+    },
+    {
+      "id": "d42c069a-bc9d-49c1-8bc5-4e1cda123980",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Key Projects",
+          "y": 624.5225082573547,
+          "items": [
+            {
+              "id": "7ba75514-563c-4bea-8e95-23f0f78da2e1",
+              "line_id": "48be04f1-35e4-408e-8ced-e9592f99b940",
+              "type": "text",
+              "content": "Key Projects",
+              "origin": [
+                52.79997459297181,
+                624.5225082573547
+              ],
+              "bbox": [
+                52.79997459297181,
+                608.5822453153381,
+                163.9354855460663,
+                624.5225082573547
+              ],
+              "size": 15.940262942016602,
+              "height": 15.940262942016602,
+              "font": "CMCSC10",
+              "block_id": "d42c069a-bc9d-49c1-8bc5-4e1cda123980"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        52.79997459297181,
+        608.5822453153381,
+        163.9354855460663,
+        624.5225082573547
+      ],
+      "indentX": 52.79997459297181,
+      "style": {
+        "font": "CMCSC10",
+        "size": 15.940262942016602
+      }
+    },
+    {
+      "id": "ffe76b8b-14a9-4604-aade-5732eb7d954b",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Sky Dominance \u2013 Full Stack Web Application",
+          "y": 655.0264882615662,
+          "items": [
+            {
+              "id": "6cc50ec6-f91e-44bb-a683-795555455e98",
+              "line_id": "cd6ca005-2474-4ba4-ace1-b63f40628ccf",
+              "type": "text",
+              "content": "Sky Dominance \u2013 Full Stack Web Application",
+              "origin": [
+                67.19998523450471,
+                655.0264882615662
+              ],
+              "bbox": [
+                67.19998523450471,
+                643.6587339420472,
+                402.7348032876282,
+                658.2042218421326
+              ],
+              "size": 14.545462468776703,
+              "height": 14.54548790008539,
+              "font": "CMBX10",
+              "block_id": "ffe76b8b-14a9-4604-aade-5732eb7d954b"
+            }
+          ]
+        },
+        {
+          "content": "Engineered a Full Stack Aviation Platform for Private Jet and Helicopter Rentals",
+          "y": 673.0918320525208,
+          "items": [
+            {
+              "id": "14ee64f9-eb82-4676-b6ca-dd1358d39d4f",
+              "line_id": "aba1741c-ef3f-447f-927a-f50375338b0f",
+              "type": "text",
+              "content": "Engineered a Full Stack Aviation Platform for Private Jet and Helicopter Rentals",
+              "origin": [
+                67.19998523450471,
+                673.0918320525208
+              ],
+              "bbox": [
+                67.19998523450471,
+                662.7104056114197,
+                540.7421743847351,
+                675.9938495561829
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMTI10",
+              "block_id": "ffe76b8b-14a9-4604-aade-5732eb7d954b"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        640.4810257927895,
+        540.7421743847351,
+        673.0918320525208
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMBX10",
+        "size": 14.545462468776703
+      }
+    },
+    {
+      "id": "5abeef78-aa5e-4073-a219-c7a5a3de3cb5",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Implemented secure backend services for authentication, dynamic pricing, and data management, ensuring reliable",
+          "y": 691.3131409737549,
+          "items": [
+            {
+              "id": "fa77e1da-a6d5-45aa-9100-57a50d808bef",
+              "line_id": "92d7af84-5d94-4c69-8bf7-0a4ac4323078",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.19998523450471,
+                691.3131409737549
+              ],
+              "bbox": [
+                67.19998523450471,
+                684.9809485463868,
+                72.29289981414033,
+                692.951080017395
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008244,
+              "font": "CMSY6",
+              "x": 67.19998523450471,
+              "block_id": "5abeef78-aa5e-4073-a219-c7a5a3de3cb5"
+            },
+            {
+              "id": "3495ffbb-d299-47f9-832e-a61e13600543",
+              "line_id": "92d7af84-5d94-4c69-8bf7-0a4ac4323078",
+              "type": "text",
+              "content": " Implemented secure backend services for authentication, dynamic pricing, and data management, ensuring reliable",
+              "origin": [
+                80.69998523450471,
+                691.3131409737549
+              ],
+              "bbox": [
+                80.69998523450471,
+                680.9317145326538,
+                754.2032043098297,
+                695.951160647583
+              ],
+              "size": 13.283463018244744,
+              "height": 15.019446114929224,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "5abeef78-aa5e-4073-a219-c7a5a3de3cb5"
+            }
+          ]
+        },
+        {
+          "content": "real-time quote generation.",
+          "y": 708.9890805651856,
+          "items": [
+            {
+              "id": "30d1f3a1-2eee-4385-ae68-8ab264538db1",
+              "line_id": "f565e27f-e108-4972-8c9e-8cd19a59f1d9",
+              "type": "text",
+              "content": "real-time quote generation.",
+              "origin": [
+                80.69998523450471,
+                708.9890805651856
+              ],
+              "bbox": [
+                80.69998523450471,
+                698.6076541240845,
+                237.60422762464526,
+                711.8910980688477
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "5abeef78-aa5e-4073-a219-c7a5a3de3cb5"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        678.0296779555101,
+        745.7961188894653,
+        708.9890805651856
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.69998523450471,
+      "level": 0
+    },
+    {
+      "id": "d14a1703-0331-4ed1-b058-d30139f4b175",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Developed a responsive frontend with dynamic content rendering and seamless API integration, enhancing user",
+          "y": 724.8371397542115,
+          "items": [
+            {
+              "id": "f909f959-6662-44a1-a330-a22b71c90306",
+              "line_id": "7620b7e2-efd4-41a9-8786-f91f73e6f6bd",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.19998523450471,
+                724.8371397542115
+              ],
+              "bbox": [
+                67.19998523450471,
+                718.5049473268433,
+                72.29289981414033,
+                726.4750787978517
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008358,
+              "font": "CMSY6",
+              "x": 67.19998523450471,
+              "block_id": "d14a1703-0331-4ed1-b058-d30139f4b175"
+            },
+            {
+              "id": "2d4bfc5e-e591-41cc-90b4-b1a6c56fd888",
+              "line_id": "7620b7e2-efd4-41a9-8786-f91f73e6f6bd",
+              "type": "text",
+              "content": " Developed a responsive frontend with dynamic content rendering and seamless API integration, enhancing user",
+              "origin": [
+                80.69998523450471,
+                724.8371397542115
+              ],
+              "bbox": [
+                80.69998523450471,
+                714.4557133131104,
+                735.9118677368317,
+                729.1604622410889
+              ],
+              "size": 13.283463018244744,
+              "height": 14.704748927978471,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "d14a1703-0331-4ed1-b058-d30139f4b175"
+            }
+          ]
+        },
+        {
+          "content": "experience and engagement.",
+          "y": 742.1984635388794,
+          "items": [
+            {
+              "id": "f24cda68-091c-4906-822b-192b909a42a2",
+              "line_id": "4a1e2880-48bb-4db4-8e68-567233d31881",
+              "type": "text",
+              "content": "experience and engagement.",
+              "origin": [
+                80.69998523450471,
+                742.1984635388794
+              ],
+              "bbox": [
+                80.69998523450471,
+                731.8170370977783,
+                243.46225838669972,
+                745.1004810425416
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "d14a1703-0331-4ed1-b058-d30139f4b175"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        711.5536767359667,
+        727.5047823164673,
+        742.1984635388794
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.69998523450471,
+      "level": 0
+    },
+    {
+      "id": "76278624-e9fc-4072-8707-72cc2eeea9ec",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Tech Stack: Java, Spring Boot, Hibernate, REST APIs, JSP, MySQL, HTML, CSS, JavaScript.",
+          "y": 758.0464413477173,
+          "items": [
+            {
+              "id": "11e75aac-beec-42d0-bc3c-38b3a627611c",
+              "line_id": "87536e94-4e88-4cf7-b7a1-5297e27897a6",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.19998523450471,
+                758.0464413477173
+              ],
+              "bbox": [
+                67.19998523450471,
+                751.7142489203492,
+                72.29289981414033,
+                759.6843803913575
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008358,
+              "font": "CMSY6",
+              "x": 67.19998523450471,
+              "block_id": "76278624-e9fc-4072-8707-72cc2eeea9ec"
+            },
+            {
+              "id": "7f25eba9-d387-4a13-9f1e-c72034d30707",
+              "line_id": "87536e94-4e88-4cf7-b7a1-5297e27897a6",
+              "type": "text",
+              "content": " Tech Stack:",
+              "origin": [
+                80.69998523450471,
+                758.0464413477173
+              ],
+              "bbox": [
+                80.69998523450471,
+                747.6650149066163,
+                164.78935019848635,
+                762.368461751587
+              ],
+              "size": 13.283463018244744,
+              "height": 14.7034468449707,
+              "font": "CMBX10",
+              "x": 80.69998523450471,
+              "block_id": "76278624-e9fc-4072-8707-72cc2eeea9ec"
+            },
+            {
+              "id": "837e7a18-8f02-4101-bdf3-c96461d20a20",
+              "line_id": "87536e94-4e88-4cf7-b7a1-5297e27897a6",
+              "type": "text",
+              "content": " Java, Spring Boot, Hibernate, REST APIs, JSP, MySQL, HTML, CSS, JavaScript.",
+              "origin": [
+                80.69998523450471,
+                759.4664442479249
+              ],
+              "bbox": [
+                80.69998523450471,
+                749.0850178068238,
+                571.0164520108261,
+                762.368461751587
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "76278624-e9fc-4072-8707-72cc2eeea9ec"
+            }
+          ]
+        },
+        {
+          "content": "Personalized Movie Discovery Platform",
+          "y": 784.1744458834229,
+          "items": [
+            {
+              "id": "b77a512e-a1c9-4435-82d5-bb1aee2dce93",
+              "line_id": "64a55a14-5a0d-40e5-867f-15d62f03d724",
+              "type": "text",
+              "content": "Personalized Movie Discovery Platform",
+              "origin": [
+                80.69998523450471,
+                784.1744458834229
+              ],
+              "bbox": [
+                80.69998523450471,
+                772.8066915639039,
+                370.11115759198003,
+                787.3521794639893
+              ],
+              "size": 14.545462468776703,
+              "height": 14.54548790008539,
+              "font": "CMBX10",
+              "x": 80.69998523450471,
+              "block_id": "76278624-e9fc-4072-8707-72cc2eeea9ec"
+            }
+          ]
+        },
+        {
+          "content": "ML-Based Personalized Movie Recommender",
+          "y": 802.2397896743774,
+          "items": [
+            {
+              "id": "fb2aa448-9f67-4ac6-b204-8d00d5c0cfd2",
+              "line_id": "3c2d8749-22b6-47e6-a02c-a5590d361175",
+              "type": "text",
+              "content": "ML-Based Personalized Movie Recommender",
+              "origin": [
+                80.69998523450471,
+                802.2397896743774
+              ],
+              "bbox": [
+                80.69998523450471,
+                791.8583632332765,
+                341.5474033396912,
+                805.1418071780396
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMTI10",
+              "x": 80.69998523450471,
+              "block_id": "76278624-e9fc-4072-8707-72cc2eeea9ec"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        744.7629783294725,
+        646.6987315544434,
+        802.2397896743774
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.69998523450471,
+      "level": 0
+    },
+    {
+      "id": "b504e861-67f4-4cbd-9076-85b46233b190",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Built a personalized recommendation engine using content-based and collaborative filtering techniques, improving",
+          "y": 820.4610579055177,
+          "items": [
+            {
+              "id": "f3aa9f39-b1cc-4558-bae3-c5a742192152",
+              "line_id": "98cba17e-9ef6-4aa6-8dfb-a7e4d04d8282",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.19998523450471,
+                820.4610579055177
+              ],
+              "bbox": [
+                67.19998523450471,
+                814.1288654781495,
+                72.29289981414033,
+                822.0989969491578
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008358,
+              "font": "CMSY6",
+              "x": 67.19998523450471,
+              "block_id": "b504e861-67f4-4cbd-9076-85b46233b190"
+            },
+            {
+              "id": "e1e915ba-fec2-49d3-88f2-a2de985a336c",
+              "line_id": "98cba17e-9ef6-4aa6-8dfb-a7e4d04d8282",
+              "type": "text",
+              "content": " Built a personalized recommendation engine using content-based and collaborative filtering techniques, improving",
+              "origin": [
+                80.69998523450471,
+                820.4610579055177
+              ],
+              "bbox": [
+                80.69998523450471,
+                810.0796314644166,
+                750.3111154391023,
+                825.0990775793458
+              ],
+              "size": 13.283463018244744,
+              "height": 15.019446114929224,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "b504e861-67f4-4cbd-9076-85b46233b190"
+            }
+          ]
+        },
+        {
+          "content": "recommendation accuracy by 30%.",
+          "y": 838.1384623403321,
+          "items": [
+            {
+              "id": "e5199e3c-9b82-4ce1-821c-0613d0447ad7",
+              "line_id": "3a3fe967-4b89-4489-b965-51df3fb83101",
+              "type": "text",
+              "content": "recommendation accuracy by 30%.",
+              "origin": [
+                80.69998523450471,
+                838.1384623403321
+              ],
+              "bbox": [
+                80.69998523450471,
+                827.757035899231,
+                282.6086109047966,
+                841.0404798439941
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "b504e861-67f4-4cbd-9076-85b46233b190"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        807.1775948872729,
+        741.9040300187379,
+        838.1384623403321
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.69998523450471,
+      "level": 0
+    },
+    {
+      "id": "c6462714-5ac4-451d-8d8a-d194d814810a",
+      "type": "list-item",
+      "lines": [
+        {
+          "content": "\u2022 Tech Stack: Python, Scikit-learn, Pandas, HTML, CSS, Bootstrap.",
+          "y": 853.98644014917,
+          "items": [
+            {
+              "id": "b4f57e75-52ce-4c12-9cfa-8f714ba29c6d",
+              "line_id": "a2781e81-51ec-45fe-ad19-ee11aaafecc4",
+              "type": "text",
+              "content": "\u2022",
+              "origin": [
+                67.19998523450471,
+                853.98644014917
+              ],
+              "bbox": [
+                67.19998523450471,
+                847.6542477218018,
+                72.29289981414033,
+                855.6243791928101
+              ],
+              "size": 7.970131471008301,
+              "height": 7.970131471008358,
+              "font": "CMSY6",
+              "x": 67.19998523450471,
+              "block_id": "c6462714-5ac4-451d-8d8a-d194d814810a"
+            },
+            {
+              "id": "72b5a447-fcbb-43eb-92a9-404744607e85",
+              "line_id": "a2781e81-51ec-45fe-ad19-ee11aaafecc4",
+              "type": "text",
+              "content": " Tech Stack:",
+              "origin": [
+                80.69998523450471,
+                853.98644014917
+              ],
+              "bbox": [
+                80.69998523450471,
+                843.6050137080689,
+                164.78935019848635,
+                858.3084605530396
+              ],
+              "size": 13.283463018244744,
+              "height": 14.7034468449707,
+              "font": "CMBX10",
+              "x": 80.69998523450471,
+              "block_id": "c6462714-5ac4-451d-8d8a-d194d814810a"
+            },
+            {
+              "id": "2b5cd1af-9d7b-470c-8f3f-58b4a452ce33",
+              "line_id": "a2781e81-51ec-45fe-ad19-ee11aaafecc4",
+              "type": "text",
+              "content": " Python, Scikit-learn, Pandas, HTML, CSS, Bootstrap.",
+              "origin": [
+                80.69998523450471,
+                855.4064430493775
+              ],
+              "bbox": [
+                80.69998523450471,
+                845.0250166082765,
+                403.8572327329331,
+                858.3084605530396
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMR10",
+              "x": 80.69998523450471,
+              "block_id": "c6462714-5ac4-451d-8d8a-d194d814810a"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        840.7029771309252,
+        479.53951227655034,
+        853.98644014917
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMSY6",
+        "size": 13.283463018244744
+      },
+      "marker": "\u2022",
+      "textX": 80.69998523450471,
+      "level": 0
+    },
+    {
+      "id": "c059f83a-cca9-4aa8-9e50-7ac0bc973348",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Education",
+          "y": 877.3250573613892,
+          "items": [
+            {
+              "id": "163119a6-2188-46ff-897e-09ab2c759267",
+              "line_id": "8c67d441-4284-489b-bb32-03529fa4302a",
+              "type": "text",
+              "content": "Education",
+              "origin": [
+                52.799994938018806,
+                877.3250573613892
+              ],
+              "bbox": [
+                52.799994938018806,
+                861.3847944193726,
+                136.6138981381836,
+                877.3250573613892
+              ],
+              "size": 15.940262942016602,
+              "height": 15.940262942016602,
+              "font": "CMCSC10",
+              "block_id": "c059f83a-cca9-4aa8-9e50-7ac0bc973348"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        52.799994938018806,
+        861.3847944193726,
+        136.6138981381836,
+        877.3250573613892
+      ],
+      "indentX": 52.799994938018806,
+      "style": {
+        "font": "CMCSC10",
+        "size": 15.940262942016602
+      }
+    },
+    {
+      "id": "c9b9d532-a6a0-4170-8068-0f35f7559ab3",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Bachelor of Technology (Computer Science and Engineering) \u2013 7.90 CGPA2020 \u2013 2024",
+          "y": 907.8291187457886,
+          "items": [
+            {
+              "id": "ea18ab58-c149-4ac8-add8-d834ddc89f52",
+              "line_id": "bc7e36ea-d46f-433f-87d2-acd0f40c7148",
+              "type": "text",
+              "content": "Bachelor of Technology (Computer Science and Engineering) \u2013 7.90 CGPA",
+              "origin": [
+                67.19998523450471,
+                907.8291187457886
+              ],
+              "bbox": [
+                67.19998523450471,
+                896.4613644262696,
+                617.0331709369813,
+                911.0068523263551
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545487900085504,
+              "font": "CMBX10",
+              "block_id": "c9b9d532-a6a0-4170-8068-0f35f7559ab3"
+            },
+            {
+              "id": "14dc86aa-45a0-4a56-bab2-2683f39ea869",
+              "line_id": "276ba367-c6fe-4325-8bf5-00de77052169",
+              "type": "text",
+              "content": "2020 \u2013 2024",
+              "origin": [
+                681.1358160441284,
+                907.8291187457886
+              ],
+              "bbox": [
+                681.1358160441284,
+                896.4613644262696,
+                756.291965874878,
+                911.0068523263551
+              ],
+              "size": 14.545462468776703,
+              "height": 14.545487900085504,
+              "font": "CMR10",
+              "block_id": "c9b9d532-a6a0-4170-8068-0f35f7559ab3"
+            }
+          ]
+        },
+        {
+          "content": "Shri Ram Institute of Technology, Jabalpur",
+          "y": 925.8944625367433,
+          "items": [
+            {
+              "id": "e1d737a8-8067-4884-8f1b-42ff20e6d827",
+              "line_id": "f814f5e3-af07-45b4-9392-2c284ba52411",
+              "type": "text",
+              "content": "Shri Ram Institute of Technology, Jabalpur",
+              "origin": [
+                67.19998523450471,
+                925.8944625367433
+              ],
+              "bbox": [
+                67.19998523450471,
+                915.5130360956422,
+                317.12840989431004,
+                928.7964800404053
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMTI10",
+              "x": 67.19998523450471,
+              "block_id": "c9b9d532-a6a0-4170-8068-0f35f7559ab3"
+            }
+          ]
+        },
+        {
+          "content": "Certifications & Achievements",
+          "y": 948.9824287699586,
+          "items": [
+            {
+              "id": "0de57a42-934a-40b8-aa6f-1e4e8c6c2774",
+              "line_id": "cca25f1a-cf6e-4249-8e95-083a328c20d2",
+              "type": "text",
+              "content": "Certifications & Achievements",
+              "origin": [
+                67.19998523450471,
+                948.9824287699586
+              ],
+              "bbox": [
+                67.19998523450471,
+                933.042165827942,
+                321.1921651853371,
+                948.9824287699586
+              ],
+              "size": 15.940262942016602,
+              "height": 15.940262942016602,
+              "font": "CMCSC10",
+              "x": 67.19998523450471,
+              "block_id": "c9b9d532-a6a0-4170-8068-0f35f7559ab3"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        67.19998523450471,
+        893.2836562770119,
+        756.291965874878,
+        948.9824287699586
+      ],
+      "indentX": 67.19998523450471,
+      "style": {
+        "font": "CMBX10",
+        "size": 14.545462468776703
+      }
+    },
+    {
+      "id": "8e8c557a-0768-4229-832e-6eebcb51df94",
+      "type": "paragraph",
+      "lines": [
+        {
+          "content": "Certifications: Google Agile Project Management (2025), Cisco Cybersecurity Essentials (2023)",
+          "y": 976.8037922573243,
+          "items": [
+            {
+              "id": "19c44648-3c16-454e-8c0a-9d9275e8ae86",
+              "line_id": "e4101bb8-2f1c-4495-a8aa-ca0da04888d8",
+              "type": "text",
+              "content": "Certifications:",
+              "origin": [
+                52.7999847654953,
+                976.8037922573243
+              ],
+              "bbox": [
+                52.7999847654953,
+                966.4223658162232,
+                146.5812418377533,
+                979.7058097609864
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMBX10",
+              "block_id": "8e8c557a-0768-4229-832e-6eebcb51df94"
+            },
+            {
+              "id": "a01aca31-cd25-40f1-b0b3-cc3f2873dbec",
+              "line_id": "e4101bb8-2f1c-4495-a8aa-ca0da04888d8",
+              "type": "text",
+              "content": " Google Agile Project Management (2025), Cisco Cybersecurity Essentials (2023)",
+              "origin": [
+                146.5812418377533,
+                976.8037922573243
+              ],
+              "bbox": [
+                146.5812418377533,
+                966.4223658162232,
+                621.3184481859741,
+                979.7058097609864
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763235,
+              "font": "CMR10",
+              "block_id": "8e8c557a-0768-4229-832e-6eebcb51df94"
+            }
+          ]
+        },
+        {
+          "content": "Achievements: 5\u22c6SQL & CSS on HackerRank; Completed HPE Software Engineering Simulation",
+          "y": 996.729080244751,
+          "items": [
+            {
+              "id": "f420921b-7af9-48d0-9c35-6f712674c17a",
+              "line_id": "0025a465-34a8-4c35-ad96-b67eef2ef30c",
+              "type": "text",
+              "content": "Achievements:",
+              "origin": [
+                52.7999847654953,
+                996.729080244751
+              ],
+              "bbox": [
+                52.7999847654953,
+                986.34765380365,
+                149.0652703508606,
+                999.6310977484131
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMBX10",
+              "block_id": "8e8c557a-0768-4229-832e-6eebcb51df94"
+            },
+            {
+              "id": "b619658b-886f-4d46-9347-6c54a1f8eaf8",
+              "line_id": "0025a465-34a8-4c35-ad96-b67eef2ef30c",
+              "type": "text",
+              "content": " 5",
+              "origin": [
+                149.0652703508606,
+                996.729080244751
+              ],
+              "bbox": [
+                149.0652703508606,
+                986.34765380365,
+                161.63368761891175,
+                999.6310977484131
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMR10",
+              "block_id": "8e8c557a-0768-4229-832e-6eebcb51df94"
+            },
+            {
+              "id": "962e1942-b4c9-4063-bade-f2c08dd38065",
+              "line_id": "0025a465-34a8-4c35-ad96-b67eef2ef30c",
+              "type": "text",
+              "content": "\u22c6",
+              "origin": [
+                161.63462349107363,
+                996.729080244751
+              ],
+              "bbox": [
+                161.63462349107363,
+                986.34765380365,
+                168.27635563597872,
+                999.6310977484131
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMMI10",
+              "block_id": "8e8c557a-0768-4229-832e-6eebcb51df94"
+            },
+            {
+              "id": "2e8b348c-f44f-4d27-a974-a13332327485",
+              "line_id": "0025a465-34a8-4c35-ad96-b67eef2ef30c",
+              "type": "text",
+              "content": "SQL & CSS on HackerRank; Completed HPE Software Engineering Simulation",
+              "origin": [
+                172.70395666123963,
+                996.729080244751
+              ],
+              "bbox": [
+                172.70395666123963,
+                986.34765380365,
+                633.5870811865235,
+                999.6310977484131
+              ],
+              "size": 13.283463018244744,
+              "height": 13.283443944763121,
+              "font": "CMR10",
+              "block_id": "8e8c557a-0768-4229-832e-6eebcb51df94"
+            }
+          ]
+        }
+      ],
+      "bbox": [
+        52.7999847654953,
+        963.5203292390795,
+        633.5870811865235,
+        996.729080244751
+      ],
+      "indentX": 52.7999847654953,
+      "style": {
+        "font": "CMBX10",
+        "size": 13.283463018244744
+      }
+    }
+  ],
+  "bg_items": []
+}

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
 import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
+import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import './EditorPage.css';
 
 export default function EditorPage() {
@@ -16,8 +17,12 @@ export default function EditorPage() {
         const rawPages = location.state?.sceneGraph?.data?.pages || location.state?.sceneGraph?.pages || [];
 
         return rawPages.map((page, pIdx) => {
-            // CRITICAL: Ensure every raw item has a stable unique ID before merging.
-            // This prevents the "leak" where geometric collisions in LineMerger created duplicate IDs.
+            // Check if backend already provided blocks (Python)
+            if (page.blocks) {
+                return page;
+            }
+
+            // Legacy Logic (Java): Manual fragment merging
             const itemsWithIds = (page.items || []).map((item, iIdx) => ({
                 id: item.id || item.line_id || `page${pIdx}-item${iIdx}`,
                 ...item
@@ -31,6 +36,7 @@ export default function EditorPage() {
     });
 
     const [fontsKey] = useState(location.state?.sceneGraph?.data?.fonts_key || location.state?.sceneGraph?.fonts_key || '');
+    const [fonts] = useState(location.state?.sceneGraph?.data?.fonts || location.state?.sceneGraph?.fonts || []);
     const [activePageIndex, setActivePageIndex] = useState(0);
     const [isAdvanced, setIsAdvanced] = useState(true);
 
@@ -39,6 +45,9 @@ export default function EditorPage() {
 
     // Persistent canvas for measurement
     const [measureCanvas] = useState(() => document.createElement('canvas'));
+
+    // Initialize Reflow Engine with font metrics
+    const reflowEngine = useMemo(() => new ReflowEngine(fonts), [fonts]);
 
     // Helper for measuring text width
     const getTextWidth = (text, font, size) => {
@@ -70,20 +79,45 @@ export default function EditorPage() {
         }
     };
 
-    const handleSidebarEdit = (lineId, newText) => {
-        if (!lineId) {
+    const handleSidebarEdit = (blockId, newText) => {
+        if (!blockId) {
             console.warn('[EditorPage] Cannot edit node without stable ID');
             return;
         }
 
+        // Logic:
+        // 1. Update visual edit state
         setNodeEdits(prev => ({
             ...prev,
-            [lineId]: {
-                ...(prev[lineId] || {}),
+            [blockId]: {
+                ...(prev[blockId] || {}),
                 content: newText,
                 isModified: true
             }
         }));
+
+        // 2. REFLOW: Calculate new lines for this block
+        setPages(prev => {
+            const next = [...prev];
+            const page = { ...next[activePageIndex] };
+
+            if (page.blocks) {
+                const blockIndex = page.blocks.findIndex(b => b.id === blockId);
+                if (blockIndex !== -1) {
+                    const block = page.blocks[blockIndex];
+                    const newLines = reflowEngine.reflowBlock(block, newText);
+
+                    // Update the block in the page structure
+                    page.blocks[blockIndex] = {
+                        ...block,
+                        lines: newLines
+                    };
+                }
+            }
+
+            next[activePageIndex] = page;
+            return next;
+        });
     };
 
     const handleLinkEdit = (lineId, newUri) => {
@@ -109,12 +143,26 @@ export default function EditorPage() {
     }
 
     const activePageData = pages[activePageIndex];
-    // Filter to text and preserve original data index for stable scrolling
-    const textLines = activePageData
-        ? activePageData.items
+
+    // Semantic Text items for Side Panels (Blocks for Python, Lines for Java)
+    const textLines = useMemo(() => {
+        if (!activePageData) return [];
+
+        if (activePageData.blocks) {
+            return activePageData.blocks.map((block, index) => ({
+                id: block.id,
+                content: block.lines.map(l => l.content).join("\n"),
+                type: 'text',
+                dataIndex: index,
+                isBlock: true,
+                marker: block.marker
+            }));
+        }
+
+        return (activePageData.items || [])
             .map((item, index) => ({ ...item, dataIndex: index }))
-            .filter(it => it.type === 'text')
-        : [];
+            .filter(it => it.type === 'text');
+    }, [activePageData]);
 
     return (
         <div className="editor-page">
@@ -198,6 +246,7 @@ export default function EditorPage() {
                                 page={activePageData}
                                 pageIndex={activePageIndex}
                                 fontsKey={fontsKey}
+                                fonts={fonts}
                                 nodeEdits={nodeEdits}
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}

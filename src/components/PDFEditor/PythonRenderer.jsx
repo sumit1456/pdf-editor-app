@@ -4,7 +4,7 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer for Python Backend
-export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, onUpdate, onSelect }) {
+export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
@@ -169,11 +169,11 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
             }
         };
 
-        (page.items || []).forEach((item, index) => {
+        // Render Background Items (Images / Paths)
+        const bgItems = page.bg_items || (page.items || []).filter(it => it.type !== 'text');
 
-            if (item.type === 'text') {
-                return;
-            } else if (item.type === 'image') {
+        bgItems.forEach((item, index) => {
+            if (item.type === 'image') {
                 nodes.push({
                     id: item.id || `img-${index}`,
                     type: 'image',
@@ -251,7 +251,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
             }
         });
 
-        console.log(`[PythonRenderer] Rendering ${nodes.length} nodes to WebGL and ${textItems.length} text items to SVG`);
+        console.log(`[PythonRenderer] Rendering ${nodes.length} nodes to WebGL and ${page.blocks ? page.blocks.length : 0} text blocks to SVG`);
         console.log(`[PythonRenderer] Page Dimensions: ${page.width}x${page.height}`);
 
         // Flush remaining if any (rare for valid PDF)
@@ -261,6 +261,18 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
         engine.app.render();
 
     }, [isReady, page, pageIndex, viewportSize]);
+
+    // --- 3. DYNAMIC FONT INJECTION ---
+    const fontStyles = useMemo(() => {
+        if (!fonts || fonts.length === 0) return '';
+
+        return fonts.map(f => `
+            @font-face {
+                font-family: "${f.name}";
+                src: url(data:application/font-woff;base64,${f.data});
+            }
+        `).join('\n');
+    }, [fonts]);
 
     // 3. Compute Merged Lines for Editing/SVG
     const textItems = useMemo(() => {
@@ -357,13 +369,23 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
                         overflow: 'visible'
                     }}
                 >
-                    {page && (
+                    {page && page.blocks ? (
+                        <BlockLayer
+                            blocks={page.blocks}
+                            nodeEdits={nodeEdits || {}}
+                            pageIndex={pageIndex}
+                            fontsKey={fontsKey}
+                            fontStyles={fontStyles}
+                            onDoubleClick={handleDoubleClick}
+                        />
+                    ) : page && (
                         <EditableTextLayer
                             items={textItems}
                             nodeEdits={nodeEdits || {}}
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
+                            fontStyles={fontStyles}
                             onDoubleClick={handleDoubleClick}
                         />
                     )}
@@ -382,9 +404,27 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
 }
 
 
-function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDoubleClick }) {
+function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
+    // Robust font matching to handle cryptic PDF font names
+    const normalizeFont = (fontName) => {
+        if (!fontName) return '"Inter", system-ui, sans-serif';
+        const name = fontName.toLowerCase();
+
+        // LaTeX/PDF fonts often have thin metrics; mapping to Inter/System-UI for better web rendering
+        if (name.includes('cmbx') || name.includes('bold')) return '"Inter", sans-serif';
+        if (name.includes('cm') || name.includes('sfrm')) return '"Inter", system-ui, serif';
+        if (name.includes('times')) return '"Times New Roman", serif';
+        if (name.includes('arial') || name.includes('helv') || name.includes('sans')) return '"Inter", system-ui, sans-serif';
+
+        // Clean up prefixes like ABCDEF+
+        const cleanName = fontName.replace(/^[A-Z]{6}\+/, '');
+        return `"${cleanName}", "Inter", system-ui, sans-serif`;
+    };
+
     return (
         <g className="text-layer" key={fontsKey}>
+            {/* Inject dynamic fonts */}
+            <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
             {items.map((item, i) => {
                 if (item.type !== 'text' || !item.bbox) return null;
 
@@ -436,8 +476,8 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDo
                         {/* 2. Visual Text (High-Fidelity Rendering) */}
                         <text
                             transform={`translate(0, 0)`}
-                            fontSize={Math.abs(item.size)}
-                            fontFamily={`"${item.font}", serif`}
+                            fontSize={Math.max(10, Math.abs(item.size))}
+                            fontFamily={normalizeFont(item.font)}
                             fontWeight={item.is_bold ? 'bold' : 'normal'}
                             fontStyle={item.is_italic ? 'italic' : 'normal'}
                             fill={color}
@@ -453,13 +493,13 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDo
                                 <tspan x={startX} y={baselineY}>{content}</tspan>
                             ) : (
                                 (item.items || [item]).map((span, si) => {
-                                    // PROXIMITY-AWARE FLOW:
-                                    // Only force X if there's a significant geometric gap (> 2px)
-                                    // otherwise let the browser handle the kerning to prevent "gaps after bold"
+                                    // ABSOLUTE POSITIONING:
+                                    // Honor PDF coordinates absolutely by forcing X for every fragment
+                                    // unless they are exactly at the same position.
                                     const prevSpan = si > 0 ? item.items[si - 1] : null;
                                     const spanX = span.origin ? span.origin[0] : (span.x || item.x);
                                     const prevX1 = prevSpan ? (prevSpan.bbox ? prevSpan.bbox[2] : prevSpan.x + 10) : -1;
-                                    const forceX = si === 0 || (spanX - prevX1 > 2);
+                                    const forceX = si === 0 || (Math.abs(spanX - prevX1) > 0.1);
 
                                     return (
                                         <tspan
@@ -469,7 +509,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDo
                                             fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : color}
                                             fontWeight={span.is_bold ? 'bold' : undefined}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
-                                            fontFamily={span.font ? `"${span.font}", serif` : undefined}
+                                            fontFamily={span.font ? normalizeFont(span.font) : undefined}
                                         >
                                             {span.content}
                                         </tspan>
@@ -495,6 +535,96 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDo
                     </g>
                 );
             })}
+        </g>
+    );
+}
+function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
+    return (
+        <g className="block-layer" key={fontsKey}>
+            <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
+            {blocks.map((block, bi) => (
+                <SemanticBlock
+                    key={block.id || bi}
+                    block={block}
+                    nodeEdits={nodeEdits}
+                    pageIndex={pageIndex}
+                    onDoubleClick={onDoubleClick}
+                />
+            ))}
+        </g>
+    );
+}
+
+function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
+    const edit = nodeEdits[block.id] || {};
+    const isModified = !!edit.isModified;
+
+    // Use lines from the block structure (which are now reflowed by EditorPage on edit)
+    const lines = block.lines || [];
+
+    return (
+        <g className={`semantic-block ${block.type}`} id={`block-${block.id}`}>
+            {lines.map((line, li) => (
+                <g key={li} className="line-row">
+                    {/* Render the lines directly */}
+                    {(line.items || []).map((item, ii) => (
+                        <FragmentRenderer
+                            key={item.id || ii}
+                            item={item}
+                            blockEdit={edit}
+                            pageIndex={pageIndex}
+                            onDoubleClick={onDoubleClick}
+                        />
+                    ))}
+                    {/* If it's a marker line (bullet), ensure marker stays visible */}
+                    {li === 0 && block.type === 'list-item' && !line.items.find(it => it.content === block.marker) && (
+                        <FragmentRenderer
+                            item={{
+                                content: block.marker,
+                                origin: [block.indentX, line.y],
+                                bbox: [block.indentX, line.y - block.style.size, block.indentX + 10, line.y],
+                                size: block.style.size,
+                                font: block.style.font
+                            }}
+                            blockEdit={edit}
+                            pageIndex={pageIndex}
+                            onDoubleClick={onDoubleClick}
+                        />
+                    )}
+                </g>
+            ))}
+        </g>
+    );
+}
+
+function FragmentRenderer({ item, blockEdit, pageIndex, onDoubleClick }) {
+    const normalizeFont = (fontName) => {
+        if (!fontName) return '"Inter", sans-serif';
+        const name = fontName.toLowerCase();
+        if (name.includes('cmbx') || name.includes('bold')) return '"Inter", sans-serif';
+        if (name.includes('cm') || name.includes('sfrm')) return '"Inter", serif';
+        return `"${fontName.replace(/^[A-Z]{6}\+/, '')}", "Inter", sans-serif`;
+    };
+
+    const color = item.color ? `rgb(${item.color[0] * 255},${item.color[1] * 255},${item.color[2] * 255})` : 'black';
+    const baselineY = item.origin ? item.origin[1] : item.bbox[1];
+    const startX = item.origin ? item.origin[0] : item.bbox[0];
+
+    return (
+        <g className="fragment">
+            <text
+                x={startX}
+                y={baselineY}
+                fontSize={Math.max(10, Math.abs(item.size))}
+                fontFamily={normalizeFont(item.font)}
+                fontWeight={item.is_bold ? 'bold' : 'normal'}
+                fontStyle={item.is_italic ? 'italic' : 'normal'}
+                fill={color}
+                dominantBaseline="alphabetic"
+                style={{ userSelect: 'none', pointerEvents: 'none' }}
+            >
+                {item.content}
+            </text>
         </g>
     );
 }

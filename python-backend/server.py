@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 def extract_fonts(doc):
-    """Extract embedded fonts to base64 for frontend loading."""
+    """Extract embedded fonts to base64 and harvester metrics."""
     fonts = []
     seen_fonts = set()
     
@@ -38,13 +38,27 @@ def extract_fonts(doc):
             seen_fonts.add(xref)
             font_binary = doc.extract_font(xref)
             if font_binary:
-                # Get the binary data (index 3 is the binary usually)
                 binary = font_binary[3]
                 if binary:
                     b64 = base64.b64encode(binary).decode('utf-8')
+                    
+                    # HARVEST METRICS
+                    try:
+                        f = fitz.Font(fontbuffer=binary)
+                        # Extract widths for common glyphs (normalized to 100pt)
+                        widths = {chr(i): f.text_length(chr(i), fontsize=100) for i in range(32, 127)}
+                        metrics = {
+                            "widths": widths,
+                            "ascender": f.ascender,
+                            "descender": f.descender
+                        }
+                    except:
+                        metrics = None
+
                     fonts.append({
                         "name": name,
-                        "data": b64
+                        "data": b64,
+                        "metrics": metrics
                     })
     return fonts
 
@@ -246,14 +260,15 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                         "uri": lnk["uri"]
                     })
 
-            # 4. LAYOUT NORMALIZATION (Drift Fix & Stabilization)
-            items = normalize_layout(items)
+            # 4. LAYOUT NORMALIZATION (Block Tree Reconstruction)
+            layout_data = normalize_layout(items)
 
             extracted_pages.append({
                 "index": pno,
                 "width": pg_w,
                 "height": pg_h,
-                "items": items
+                "blocks": layout_data.get("blocks", []),
+                "bg_items": layout_data.get("bg_items", [])
             })
 
         fonts = extract_fonts(doc)
