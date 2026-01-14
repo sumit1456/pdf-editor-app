@@ -407,18 +407,17 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
 function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
     // Robust font matching to handle cryptic PDF font names
     const normalizeFont = (fontName) => {
-        if (!fontName) return '"Inter", system-ui, sans-serif';
+        if (!fontName) return '"Times New Roman", serif';
         const name = fontName.toLowerCase();
 
-        // LaTeX/PDF fonts often have thin metrics; mapping to Inter/System-UI for better web rendering
-        if (name.includes('cmbx') || name.includes('bold')) return '"Inter", sans-serif';
-        if (name.includes('cm') || name.includes('sfrm')) return '"Inter", system-ui, serif';
+        // Diagnostic Test: Use compact Serif instead of wide Sans-Serif
+        if (name.includes('cmbx') || name.includes('bold')) return '"Times New Roman", serif';
+        if (name.includes('cm') || name.includes('sfrm')) return '"Times New Roman", serif';
         if (name.includes('times')) return '"Times New Roman", serif';
-        if (name.includes('arial') || name.includes('helv') || name.includes('sans')) return '"Inter", system-ui, sans-serif';
+        if (name.includes('arial') || name.includes('helv') || name.includes('sans')) return 'sans-serif';
 
-        // Clean up prefixes like ABCDEF+
         const cleanName = fontName.replace(/^[A-Z]{6}\+/, '');
-        return `"${cleanName}", "Inter", system-ui, sans-serif`;
+        return `"${cleanName}", "Times New Roman", serif`;
     };
 
     return (
@@ -476,7 +475,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                         {/* 2. Visual Text (High-Fidelity Rendering) */}
                         <text
                             transform={`translate(0, 0)`}
-                            fontSize={Math.max(10, Math.abs(item.size))}
+                            fontSize={Math.max(1, Math.abs(item.size))}
                             fontFamily={normalizeFont(item.font)}
                             fontWeight={item.is_bold ? 'bold' : 'normal'}
                             fontStyle={item.is_italic ? 'italic' : 'normal'}
@@ -506,6 +505,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             key={si}
                                             x={forceX ? spanX : undefined}
                                             y={span.origin ? span.origin[1] : (span.y || item.y)}
+                                            fontSize={Math.max(1, Math.abs(span.size))}
                                             fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : color}
                                             fontWeight={span.is_bold ? 'bold' : undefined}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
@@ -541,7 +541,12 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
 function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
     return (
         <g className="block-layer" key={fontsKey}>
-            <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @import url('https://cdn.jsdelivr.net/npm/latin-modern-web@1.0.0/style/all.css');
+                @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css');
+                ${fontStyles}
+            ` }} />
             {blocks.map((block, bi) => (
                 <SemanticBlock
                     key={block.id || bi}
@@ -566,27 +571,16 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
         <g className={`semantic-block ${block.type}`} id={`block-${block.id}`}>
             {lines.map((line, li) => (
                 <g key={li} className="line-row">
-                    {/* Render the lines directly */}
-                    {(line.items || []).map((item, ii) => (
-                        <FragmentRenderer
-                            key={item.id || ii}
-                            item={item}
-                            blockEdit={edit}
-                            pageIndex={pageIndex}
-                            onDoubleClick={onDoubleClick}
-                        />
-                    ))}
-                    {/* If it's a marker line (bullet), ensure marker stays visible */}
-                    {li === 0 && block.type === 'list-item' && !line.items.find(it => it.content === block.marker) && (
-                        <FragmentRenderer
-                            item={{
-                                content: block.marker,
-                                origin: [block.indentX, line.y],
-                                bbox: [block.indentX, line.y - block.style.size, block.indentX + 10, line.y],
-                                size: block.style.size,
-                                font: block.style.font
-                            }}
-                            blockEdit={edit}
+                    {/* FLOW-BASED RENDERING: 
+                        We wrap the entire line in a single <text> element.
+                        The first item provides the Anchor X.
+                        Further items are <tspan> helpers.
+                    */}
+                    {line.items && line.items.length > 0 && (
+                        <LineRenderer
+                            line={line}
+                            block={block}
+                            edit={edit}
                             pageIndex={pageIndex}
                             onDoubleClick={onDoubleClick}
                         />
@@ -597,34 +591,86 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
     );
 }
 
-function FragmentRenderer({ item, blockEdit, pageIndex, onDoubleClick }) {
+function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
     const normalizeFont = (fontName) => {
-        if (!fontName) return '"Inter", sans-serif';
+        if (!fontName) return '"Latin Modern Roman", "Times New Roman", serif';
         const name = fontName.toLowerCase();
-        if (name.includes('cmbx') || name.includes('bold')) return '"Inter", sans-serif';
-        if (name.includes('cm') || name.includes('sfrm')) return '"Inter", serif';
-        return `"${fontName.replace(/^[A-Z]{6}\+/, '')}", "Inter", sans-serif`;
+
+        // High-Fidelity Mapping for LaTeX/Computer Modern variants
+        if (name.includes('cmbx') || name.includes('bold')) return '"Latin Modern Roman", serif';
+        if (name.includes('cmcsc')) return '"Latin Modern Roman", serif'; // Handled via fontVariant
+        if (name.includes('cmti')) return '"Latin Modern Roman", serif'; // Handled via fontStyle
+        if (name.includes('cm') || name.includes('sfrm')) return '"Latin Modern Roman", serif';
+
+        // Icon Font Handling
+        if (name.includes('awesome') || name.includes('fa-')) return '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif';
+
+        return `"${fontName.replace(/^[A-Z]{6}\+/, '')}", "Latin Modern Roman", serif`;
     };
 
-    const color = item.color ? `rgb(${item.color[0] * 255},${item.color[1] * 255},${item.color[2] * 255})` : 'black';
-    const baselineY = item.origin ? item.origin[1] : item.bbox[1];
-    const startX = item.origin ? item.origin[0] : item.bbox[0];
+    const firstItem = line.items[0];
+    const startX = firstItem.origin ? firstItem.origin[0] : firstItem.bbox[0];
+    const baselineY = firstItem.origin ? firstItem.origin[1] : firstItem.bbox[1];
+
+    // Calculate total PDF width for this line to enforce "Squeeze"
+    const x0 = Math.min(...line.items.map(it => it.bbox[0]));
+    const x1 = Math.max(...line.items.map(it => it.bbox[2]));
+    const targetWidth = x1 - x0;
+
+    const content = edit.isModified ? edit.content : line.content;
 
     return (
-        <g className="fragment">
-            <text
-                x={startX}
-                y={baselineY}
-                fontSize={Math.max(10, Math.abs(item.size))}
-                fontFamily={normalizeFont(item.font)}
-                fontWeight={item.is_bold ? 'bold' : 'normal'}
-                fontStyle={item.is_italic ? 'italic' : 'normal'}
-                fill={color}
-                dominantBaseline="alphabetic"
-                style={{ userSelect: 'none', pointerEvents: 'none' }}
-            >
-                {item.content}
-            </text>
-        </g>
+        <text
+            x={startX}
+            y={baselineY}
+            fontSize={Math.max(1, Math.abs(firstItem.size))}
+            fontFamily={normalizeFont(firstItem.font)}
+            fill="black"
+            dominantBaseline="alphabetic"
+            style={{ userSelect: 'none', pointerEvents: 'all', cursor: 'text' }}
+            onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDoubleClick(pageIndex, line.id, firstItem, e.target.getBoundingClientRect(), {});
+            }}
+        >
+            {line.items.map((span, si) => {
+                const fontName = span.font || '';
+                const isSmallCaps = fontName.toLowerCase().includes('cmcsc');
+
+                // GAPPING LOGIC: Detect large horizontal jumps to preserve PDF alignment
+                const prev = si > 0 ? line.items[si - 1] : null;
+                const currentX = span.origin ? span.origin[0] : span.bbox[0];
+                const prevX1 = prev ? prev.bbox[2] : -1;
+                const isGap = prev && (currentX - prevX1) > 8; // Threshold for flow
+
+                let content = span.content;
+                const isIconFont = fontName.toLowerCase().includes('awesome') || fontName.toLowerCase().includes('fa-');
+
+                if (isIconFont) {
+                    if (content === 'ï' || content.includes('\u00ef')) content = '\uf08c'; // LinkedIn
+                    if (content === 'Ð' || content.includes('\u00d0')) content = '\uf09b'; // GitHub
+                    if (content === '§' || content.includes('\u00a7')) content = '\uf0e0'; // Email
+                    if (content === '#' || content === 'phone') content = '\uf095'; // Phone
+                }
+
+                return (
+                    <tspan
+                        key={si}
+                        x={isGap ? currentX : undefined}
+                        fontSize={Math.max(1, Math.abs(span.size))}
+                        fontWeight={span.is_bold ? 'bold' : 'normal'}
+                        fontStyle={span.is_italic ? 'italic' : 'normal'}
+                        fontFamily={normalizeFont(span.font)}
+                        fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
+                        style={{
+                            fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+                        }}
+                    >
+                        {content}
+                    </tspan>
+                );
+            })}
+        </text>
     );
 }
