@@ -228,27 +228,31 @@ export class PixiRendererEngine {
                 const isV8 = !!graphics.fill; // v8 has fill method as action/property
 
                 if (isV8) {
-                    // v8: Draw Path -> Fill/Stroke
+                    // v8 compatibility: Draw Path -> Action (Fill/Stroke)
                     if (pathItem.segments) {
-                        // For v8, we might need a context or strictly speaking just draw then fill
-                        // But if we want to separate paths, we assume sequential calls work on the single graphics context
                         drawSegments(graphics, pathItem.segments);
                     }
 
                     if (pathItem.fill_color !== undefined) {
-                        const color = pathItem.fill_color;
-                        graphics.fill({ color, alpha: 1 });
-                    } else if (pathItem.stroke_color !== undefined) {
-                        const color = pathItem.stroke_color;
-                        const width = pathItem.stroke_width || 1;
-                        graphics.stroke({ color, width, alpha: 1 });
+                        graphics.fill({
+                            color: pathItem.fill_color,
+                            alpha: pathItem.fill_opacity !== undefined ? pathItem.fill_opacity : 1.0
+                        });
+                    }
+                    if (pathItem.stroke_color !== undefined) {
+                        graphics.stroke({
+                            color: pathItem.stroke_color,
+                            width: pathItem.stroke_width || 1,
+                            alpha: pathItem.stroke_opacity !== undefined ? pathItem.stroke_opacity : 1.0
+                        });
                     }
                 } else {
-                    // v7: BeginFill/LineStyle -> Draw Path -> EndFill
+                    // v7 Legacy: State (Fill/Line) -> Draw Path -> End
                     if (pathItem.fill_color !== undefined) {
-                        graphics.beginFill(pathItem.fill_color, 1);
-                    } else if (pathItem.stroke_color !== undefined) {
-                        graphics.lineStyle(pathItem.stroke_width || 1, pathItem.stroke_color, 1);
+                        graphics.beginFill(pathItem.fill_color, pathItem.fill_opacity !== undefined ? pathItem.fill_opacity : 1.0);
+                    }
+                    if (pathItem.stroke_color !== undefined) {
+                        graphics.lineStyle(pathItem.stroke_width || 1, pathItem.stroke_color, pathItem.stroke_opacity !== undefined ? pathItem.stroke_opacity : 1.0);
                     }
 
                     if (pathItem.segments) {

@@ -4,11 +4,11 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer for Python Backend
-export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, onSelect }) {
+export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, onUpdate, onSelect }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-    const [camera, setCamera] = useState({ scale: 0.5, x: 0, y: 0 }); // Start very safe
+    const [camera, setCamera] = useState({ scale: 1.1, x: 0, y: 0 }); // Match WebGLRenderer default
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
 
@@ -63,14 +63,12 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
         };
     }, []);
 
-    // 2. Resize Canvas to Page size (1:1)
+    // 2. Resize Canvas and Calculate Auto-Fit
     useEffect(() => {
         if (!engineRef.current || !page) return;
 
-        const A4_WIDTH = 793.70; // 595.28 * 1.333
-        const A4_HEIGHT = 1122.52; // 841.89 * 1.333
-        const renderWidth = page.width || A4_WIDTH;
-        const renderHeight = page.height || A4_HEIGHT;
+        const renderWidth = (page && page.width) || 595.28;
+        const renderHeight = (page && page.height) || 841.89;
 
         // Resize the renderer canvas to exact page dimensions
         const engine = engineRef.current;
@@ -78,18 +76,15 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
             engine.app.renderer.resize(renderWidth, renderHeight);
         }
 
-        // SMART AUTO-FIT: Prioritize width for readability (Fit to Width)
-        if (renderWidth > 0 && viewportSize.width > 100 && !engineRef.current._initialFitDone) {
-            const margin = 40;
-            const fitScaleW = (viewportSize.width - margin) / renderWidth;
-
-            // Aim for Fit to Width but cap it at a comfortable reading level
-            const finalScale = Math.min(fitScaleW, 1.5);
-
+        // PERFECT PREVIEW: Replicate WebGLRenderer's auto-fit logic
+        // Only run if we have a valid viewport measurement (> 300px)
+        if (renderWidth > 0 && viewportSize.width > 300 && !engineRef.current._initialFitDone) {
+            const fitScale = (viewportSize.width - 40) / renderWidth;
+            const finalScale = Math.min(fitScale, 1.3);
             setCamera(prev => ({ ...prev, scale: finalScale }));
             engineRef.current._initialFitDone = true;
+            console.log(`[PythonRenderer] Perfect Preview Scale: ${finalScale} (measured from ${viewportSize.width}px)`);
         }
-
     }, [page, viewportSize.width]);
 
     // 2. Render Single Active Page
@@ -110,8 +105,8 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
         const worldContainer = engineRef.current.worldContainer;
         worldContainer.removeChildren(); // Clear previous page content
 
-        const A4_WIDTH = 793.70;
-        const A4_HEIGHT = 1122.52;
+        const A4_WIDTH = 595.28;
+        const A4_HEIGHT = 841.89;
         const renderWidth = page.width || A4_WIDTH;
         const renderHeight = page.height || A4_HEIGHT;
 
@@ -256,7 +251,11 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
             } else if (item.type === 'stroke') {
                 flushPath(false, item.color);
             }
-            // Handle high-level paths (backward compatibility)
+            // Handle high-level paths (New Unified Format)
+            else if (item.type === 'pdf_path') {
+                nodes.push(item);
+            }
+            // Backward compatibility
             else if (item.type === 'path' && item.segments) {
                 nodes.push({ id: item.id || `path-${index}`, type: 'pdf_path', items: [item], height: 0 });
             }
@@ -310,8 +309,8 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
     };
 
 
-    const A4_WIDTH = 793.70;
-    const A4_HEIGHT = 1122.52;
+    const A4_WIDTH = 595.28;
+    const A4_HEIGHT = 841.89;
     const renderWidth = (page && page.width) || A4_WIDTH;
     const renderHeight = (page && page.height) || A4_HEIGHT;
 
@@ -331,11 +330,12 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
                     width: renderWidth + 'px',
                     height: renderHeight + 'px',
                     backgroundColor: 'white',
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', // Match WebGL shadow
                     transform: `scale(${camera.scale})`,
                     transformOrigin: 'top center',
                     flexShrink: 0,
-                    margin: '40px auto',
+                    margin: '0 auto',
+                    marginBottom: (renderHeight * (camera.scale - 1) + 40) + 'px', // Compensation
                     transition: 'transform 0.1s ease-out'
                 }}
             >
@@ -369,6 +369,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
                     {page && (
                         <EditableTextLayer
                             items={textItems}
+                            nodeEdits={nodeEdits || {}}
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
@@ -390,86 +391,105 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, onUpdate, on
 }
 
 
-function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }) {
+function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDoubleClick }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {items.map((item, i) => {
-                if (item.type !== 'text') return null;
+                if (item.type !== 'text' || !item.bbox) return null;
 
-                const rectX = item.bbox[0];
-                const rectY = item.bbox[1] - (3 * 1.333); // Small nudge for baseline offset
-                const rectW = item.width;
-                const rectH = item.height;
+                const edit = nodeEdits[item.id] || {};
+                const isModified = !!edit.isModified;
+                const content = edit.content !== undefined ? edit.content : item.content;
+
+                // Visual Deletion support
+                if (content === "" && isModified) return null;
+
+                const color = item.color
+                    ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})`
+                    : 'black';
+
+                // Construct baseline and hit-area metrics
+                const baselineY = item.origin ? item.origin[1] : item.bbox[1];
+                const startX = item.origin ? item.origin[0] : item.bbox[0];
+
+                const [x0, y0, x1, y1] = item.bbox;
+                const rectY = y0 - 3;
+                const rectH = y1 - y0;
+                const rectW = x1 - x0;
 
                 return (
-                    <g key={item.id || i} className="text-item-group" onDoubleClick={(e) => onDoubleClick(pageIndex, i, item, e.target.getBoundingClientRect())}>
-                        {/* Hit Test / Background Rect */}
+                    <g key={item.id || i}>
+                        {/* 1. Hit Test Rect */}
                         <rect
-                            x={rectX}
+                            x={x0}
                             y={rectY}
                             width={rectW}
                             height={rectH}
-                            fill="transparent"
-                            className="text-hit-rect"
-                            style={{ cursor: item.uri ? 'pointer' : 'text' }}
-                            onClick={() => item.uri && window.open(item.uri, '_blank')}
+                            fill={isModified ? "rgba(79, 70, 229, 0.1)" : "transparent"}
+                            cursor="text"
+                            pointerEvents="all"
+                            stroke={isModified ? "rgba(79, 70, 229, 0.4)" : "none"}
+                            strokeWidth="1"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const rect = e.target.getBoundingClientRect();
+                                onDoubleClick(pageIndex, i, item, rect, {
+                                    fontWeight: item.is_bold ? 'bold' : 'normal',
+                                    fontStyle: item.is_italic ? 'italic' : 'normal',
+                                    color: color
+                                });
+                            }}
                         />
+
+                        {/* 2. Visual Text (High-Fidelity Rendering) */}
                         <text
-                            fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                            transform={`translate(0, 0)`}
+                            fontSize={Math.abs(item.size)}
+                            fontFamily={`"${item.font}", serif`}
+                            fontWeight={item.is_bold ? 'bold' : 'normal'}
+                            fontStyle={item.is_italic ? 'italic' : 'normal'}
+                            fill={color}
+                            dominantBaseline="alphabetic"
                             style={{
-                                fontSize: `${item.size}px`,
-                                fontFamily: item.font || 'sans-serif',
-                                fontWeight: item.is_bold ? 'bold' : 'normal',
-                                fontStyle: item.is_italic ? 'italic' : 'normal',
-                                fontVariant: item.font_variant || 'normal',
-                                pointerEvents: 'none',
                                 userSelect: 'none',
-                                whiteSpace: 'pre'
+                                pointerEvents: 'none',
+                                cursor: 'text',
+                                touchAction: 'none'
                             }}
                         >
-                            {item.items ? item.items.map((span, idx) => {
-                                // Natural Flow Logic:
-                                // If this span follows another span AND the X-gap is tiny (< 2px),
-                                // we OMIT the x-position to let the browser handle kerning naturally.
-                                const prevSpan = idx > 0 ? item.items[idx - 1] : null;
-                                const currentX = span.origin ? span.origin[0] : (span.x || item.x);
-                                const prevEndX = prevSpan ? (prevSpan.bbox ? prevSpan.bbox[2] : (prevSpan.origin ? prevSpan.origin[0] : currentX)) : -999;
-
-                                const useNaturalFlow = prevSpan && Math.abs(currentX - prevEndX) < 2;
-
-                                return (
+                            {isModified ? (
+                                <tspan x={startX} y={baselineY}>{content}</tspan>
+                            ) : (
+                                (item.items || [item]).map((span, si) => (
                                     <tspan
-                                        key={idx}
-                                        x={useNaturalFlow ? undefined : currentX}
+                                        key={si}
+                                        x={span.origin ? span.origin[0] : (span.x || item.x)}
                                         y={span.origin ? span.origin[1] : (span.y || item.y)}
-                                        fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : (item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black')}
-                                        style={{
-                                            fontSize: `${span.size || item.size}px`,
-                                            fontFamily: span.font || item.font || 'sans-serif',
-                                            fontWeight: span.is_bold ? 'bold' : 'normal',
-                                            fontStyle: span.is_italic ? 'italic' : 'normal',
-                                            fontVariant: span.font_variant || item.font_variant || 'normal',
-                                        }}
+                                        fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : color}
+                                        fontWeight={span.is_bold ? 'bold' : undefined}
+                                        fontStyle={span.is_italic ? 'italic' : undefined}
+                                        fontFamily={span.font ? `"${span.font}", serif` : undefined}
                                     >
                                         {span.content}
                                     </tspan>
-                                );
-                            }) : (
-                                <tspan x={item.x} y={item.y}>{item.content}</tspan>
+                                ))
                             )}
                         </text>
 
-                        {/* Underline for links */}
+                        {/* 3. Link Handling */}
                         {item.uri && (
-                            <line
-                                x1={item.bbox[0]}
-                                y1={item.bbox[3]}
-                                x2={item.bbox[2]}
-                                y2={item.bbox[3]}
-                                stroke="blue"
-                                strokeWidth="1"
-                                opacity="0.5"
-                            />
+                            <>
+                                <line x1={x0} y1={baselineY + 2} x2={x0 + rectW} y2={baselineY + 2} stroke={color} strokeWidth="0.5" opacity="0.4" />
+                                <rect
+                                    x={x0} y={rectY} width={rectW} height={rectH}
+                                    fill="transparent" cursor="pointer" pointerEvents="all"
+                                    onClick={(e) => {
+                                        e.preventDefault(); e.stopPropagation();
+                                        window.open(item.uri, '_blank');
+                                    }}
+                                />
+                            </>
                         )}
                     </g>
                 );

@@ -15,84 +15,89 @@ def normalize_layout(items):
     if not text_items:
         return items
 
-    # 1. Group items into logical lines (Geometric proximity on Y)
+    # --- PHASE 1: LINE AGGREGATION ---
+    # Group raw PDF text spans into logical lines based on baseline (Y) proximity.
     lines_map = defaultdict(list)
     for item in text_items:
-        # Use origin Y for baseline stability
         y = item["origin"][1]
-        # 1px tolerance for baseline jitter
-        y_key = round(y)
-        lines_map[y_key].append(item)
+        # Cluster baselines within 4.5px jitter (increased to catch mixed-style baseline drift)
+        y_group = None
+        for existing_y in lines_map.keys():
+            if abs(existing_y - y) < 4.5:
+                y_group = existing_y
+                break
+        if y_group is None:
+            y_group = y
+            
+        lines_map[y_group].append(item)
 
-    lines = []
-    for y_key in sorted(lines_map.keys()):
-        group = lines_map[y_key]
-        # Sort by X
+    processed_lines = []
+    for y_val in sorted(lines_map.keys()):
+        group = lines_map[y_val]
         group.sort(key=lambda x: x["origin"][0])
         
-        # Merge items into a unified "Line" object for layout analysis
         if not group: continue
-        first = group[0]
-        full_content = "".join(it["content"] for it in group)
-        x0 = first["origin"][0]
-        x1 = max(it["bbox"][2] for it in group)
         
-        lines.append({
-            "y": y_key,
-            "x0": x0,
-            "x1": x1,
-            "height": max(it["height"] for it in group),
-            "font": first["font"],
-            "size": first["size"],
+        # Merge basic metrics
+        first_origin = group[0]["origin"]
+        line_content = "".join(it["content"] for it in group)
+        max_height = max(it["height"] for it in group)
+        max_size = max(it["size"] for it in group)
+        
+        processed_lines.append({
+            "y": y_val,
+            "x0": first_origin[0],
+            "x1": max(it["bbox"][2] for it in group),
+            "height": max_height,
+            "size": max_size,
             "items": group,
-            "content": full_content
+            "content": line_content
         })
 
-    # 2. COLUMN CLUSTERING (Detect consistent X anchors)
-    x_coords = [line["x0"] for line in lines]
+    # --- PHASE 2: ADAPTIVE COLUMN CLUSTERING ---
+    # Cluster X-coordinates to find common indent anchors (threshold = 10px).
+    x0_coords = [line["x0"] for line in processed_lines]
     anchors = []
-    if x_coords:
-        x_coords.sort()
-        # Simple clustering: if diff < 5px, it's the same column anchor
-        current_cluster = [x_coords[0]]
-        for i in range(1, len(x_coords)):
-            if x_coords[i] - current_cluster[-1] < 5:
-                current_cluster.append(x_coords[i])
+    if x0_coords:
+        x0_coords.sort()
+        current_cluster = [x0_coords[0]]
+        for i in range(1, len(x0_coords)):
+            # 10px threshold usually catches bullet drift (~7px) and minor alignment jitter
+            if x0_coords[i] - current_cluster[-1] < 10:
+                current_cluster.append(x0_coords[i])
             else:
                 anchors.append(sum(current_cluster) / len(current_cluster))
-                current_cluster = [x_coords[i]]
+                current_cluster = [x0_coords[i]]
         anchors.append(sum(current_cluster) / len(current_cluster))
 
-    # 3. PARAGRAPH ANALYSIS & DRIFT FIX
-    # We look for lines that are close vertically and adjust their X to the nearest anchor
+    # --- PHASE 3: GEOMETRIC STABILIZATION ---
+    # Snap each line to its nearest anchor for pixel-perfect alignment.
     final_text_items = []
     
-    # helper to check if a string is a bullet
-    def is_bullet(text):
-        bullets = ["•", "·", "⋆", "*", "-", "o"]
-        return text.strip() in bullets or (len(text.strip()) == 1 and ord(text.strip()[0]) > 127)
-
-    for line in lines:
-        # Snap X0 to nearest anchor if within drift threshold (10px)
+    for line in processed_lines:
+        # Finding the optimal anchor
         best_anchor = line["x0"]
-        min_dist = 999
+        min_dist = float('inf')
         for a in anchors:
             dist = abs(line["x0"] - a)
-            if dist < 10 and dist < min_dist:
+            # Threshold to prevent snapping unrelated elements (e.g. page numbers)
+            if dist < 12 and dist < min_dist:
                 min_dist = dist
                 best_anchor = a
         
         shift = best_anchor - line["x0"]
         
-        # Apply shift to all items in this line
+        # Apply normalization shift to all constituent items
         for item in line["items"]:
-            # Update origin
+            # Correct origin X (The main coordinate used by the renderer)
             item["origin"][0] += shift
-            item["x"] = item["origin"][0]
-            # Update bbox
+            item["x"] = item["origin"][0] # Sync property for convenience
+            
+            # Correct bbox (used for selection/hit-test)
             item["bbox"][0] += shift
             item["bbox"][2] += shift
             
             final_text_items.append(item)
 
+    # Return stabilized text items merged with original vector/image items
     return other_items + final_text_items

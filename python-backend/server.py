@@ -172,53 +172,67 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                                 "bbox": bbox
                             })
 
-            # 2. VECTOR EXTRACTION (Granular Operators)
+            # 2. VECTOR EXTRACTION (Continuous Path Refinement)
             drawings = page.get_drawings()
             for draw in drawings:
+                current_path = []
+                
                 for item in draw["items"]:
                     kind = item[0]
-                    if kind == "l": # line
-                        p1 = [coord * PT_TO_PX for coord in item[1]]
-                        p2 = [coord * PT_TO_PX for coord in item[2]]
-                        items.append({ "id": str(uuid.uuid4()), "type": "path_move", "x": p1[0], "y": p1[1] })
-                        items.append({ "id": str(uuid.uuid4()), "type": "path_line", "x": p2[0], "y": p2[1] })
-                    elif kind == "c": # curve
-                        p1 = [coord * PT_TO_PX for coord in item[1]]
-                        p2 = [coord * PT_TO_PX for coord in item[2]]
-                        p3 = [coord * PT_TO_PX for coord in item[3]]
-                        p4 = [coord * PT_TO_PX for coord in item[4]]
-                        items.append({ "id": str(uuid.uuid4()), "type": "path_move", "x": p1[0], "y": p1[1] })
-                        items.append({
-                            "id": str(uuid.uuid4()),
-                            "type": "path_curve",
-                            "pts": [p2[0], p2[1], p3[0], p3[1], p4[0], p4[1]]
+                    if kind == "m": # move
+                        current_path.append({ "type": "m", "x": item[1].x * PT_TO_PX, "y": item[1].y * PT_TO_PX })
+                    elif kind == "l": # line
+                        p1 = item[1]
+                        p2 = item[2]
+                        # Ensure continuity: if no segments yet, start with move
+                        if not current_path:
+                            current_path.append({ "type": "m", "x": p1.x * PT_TO_PX, "y": p1.y * PT_TO_PX })
+                        current_path.append({ "type": "l", "pts": [[p1.x * PT_TO_PX, p1.y * PT_TO_PX], [p2.x * PT_TO_PX, p2.y * PT_TO_PX]] })
+                    elif kind == "c": # curve (bezier)
+                        p1, p2, p3, p4 = item[1], item[2], item[3], item[4]
+                        if not current_path:
+                            current_path.append({ "type": "m", "x": p1.x * PT_TO_PX, "y": p1.y * PT_TO_PX })
+                        current_path.append({
+                            "type": "c",
+                            "pts": [
+                                [p1.x * PT_TO_PX, p1.y * PT_TO_PX],
+                                [p2.x * PT_TO_PX, p2.y * PT_TO_PX],
+                                [p3.x * PT_TO_PX, p3.y * PT_TO_PX],
+                                [p4.x * PT_TO_PX, p4.y * PT_TO_PX]
+                            ]
                         })
                     elif kind == "re": # rect
-                        r = [coord * PT_TO_PX for coord in item[1]]
-                        # PyMuPDF 're' is (x0, y0, x1, y1). Engine expects (x, y, w, h).
-                        items.append({
-                            "id": str(uuid.uuid4()),
-                            "op": "re",
-                            "pts": [r[0], r[1], r[2] - r[0], r[3] - r[1]]
+                        r = item[1]
+                        current_path.append({ 
+                            "type": "re", 
+                            "pts": [[r.x0 * PT_TO_PX, r.y0 * PT_TO_PX, (r.x1-r.x0) * PT_TO_PX, (r.y1-r.y0) * PT_TO_PX]] 
                         })
-                    elif kind == "qu": # quad
-                        pass
-                
-                # Check for fill and/or stroke - Combine into one "paint" op
-                if draw["fill"] is not None or draw["color"] is not None:
-                    paint_op = {
-                        "id": str(uuid.uuid4()),
-                        "type": "paint",
+
+                # Check for path closing command
+                if draw.get("closePath"):
+                    current_path.append({ "type": "close" })
+
+                if current_path:
+                    path_item = {
+                        "type": "path",
+                        "segments": current_path,
+                        "fill_opacity": draw.get("fill_opacity", 1.0),
+                        "stroke_opacity": draw.get("stroke_opacity", 1.0)
                     }
+
                     if draw["fill"] is not None:
-                        paint_op["fill"] = parse_color(draw["fill"])
-                        paint_op["fill_opacity"] = draw.get("fill_opacity", 1.0)
+                        path_item["fill_color"] = parse_color(draw["fill"])
                     if draw["color"] is not None:
-                        paint_op["stroke"] = parse_color(draw["color"])
-                        paint_op["stroke_width"] = (draw.get("width") or 1.0) * PT_TO_PX
-                        paint_op["stroke_opacity"] = draw.get("stroke_opacity", 1.0)
-                    
-                    items.append(paint_op)
+                        path_item["stroke_color"] = parse_color(draw["color"])
+                        path_item["stroke_width"] = (draw.get("width") or 1.0) * PT_TO_PX
+
+                    items.append({
+                        "id": str(uuid.uuid4()),
+                        "type": "pdf_path",
+                        "x": 0, "y": 0,
+                        "items": [path_item],
+                        "height": 0
+                    })
 
             # 3. LINK EXTRACTION (Legacy/Visual Layer)
             for lnk in links:

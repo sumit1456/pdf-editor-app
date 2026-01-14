@@ -79,7 +79,7 @@ export const mergeFragmentsIntoLines = (items) => {
     const groups = Array.from(groupsMap.values());
     const lines = [];
 
-    // 2. Process each group
+    // 2. Process each horizontal group with STYLE-AWARE merging
     groups.forEach(group => {
         // Sort items in group by X (left to right)
         group.items.sort((a, b) => {
@@ -90,36 +90,65 @@ export const mergeFragmentsIntoLines = (items) => {
 
         if (group.items.length === 0) return;
 
-        // Create a single line from the group
-        // If they share a line_id, we treat them as one coherent line
-        const first = group.items[0];
-        const line = {
-            id: first.line_id || first.id || `line-${Math.round(first.x)}-${Math.round(first.y)}`,
-            content: group.items.map(it => it.content).join(""),
-            x: first.x,
-            y: first.y,
-            bbox: [...first.bbox],
-            origin: first.origin ? [...first.origin] : null,
-            font: first.font,
-            size: first.size,
-            color: first.color,
-            is_bold: first.is_bold,
-            is_italic: first.is_italic,
-            type: 'text',
-            items: group.items // DRAWS EACH FRAGMENT SEPARATELY
+        let currentSubGroup = [];
+
+        const flushLine = () => {
+            if (currentSubGroup.length === 0) return;
+            const first = currentSubGroup[0];
+            const line = {
+                // Combine original ID with geometric data to ensure uniqueness if we split a backend line
+                id: (first.line_id || first.id || "line") + `-${Math.round(first.x)}-${Math.round(first.y)}`,
+                content: currentSubGroup.map(it => it.content).join(""),
+                x: first.x,
+                y: first.y,
+                bbox: [...first.bbox],
+                origin: first.origin ? [...first.origin] : null,
+                font: first.font,
+                size: first.size,
+                color: first.color,
+                is_bold: first.is_bold,
+                is_italic: first.is_italic,
+                type: 'text',
+                items: [...currentSubGroup]
+            };
+
+            // Calculate total bbox for the sub-group
+            currentSubGroup.forEach(it => {
+                line.bbox[0] = Math.min(line.bbox[0], it.bbox[0]);
+                line.bbox[1] = Math.min(line.bbox[1], it.bbox[1]);
+                line.bbox[2] = Math.max(line.bbox[2], it.bbox[2]);
+                line.bbox[3] = Math.max(line.bbox[3], it.bbox[3]);
+            });
+            line.width = line.bbox[2] - line.bbox[0];
+            line.height = line.bbox[3] - line.bbox[1];
+
+            lines.push(line);
+            currentSubGroup = [];
         };
 
-        // Calculate total bbox
-        group.items.forEach(it => {
-            line.bbox[0] = Math.min(line.bbox[0], it.bbox[0]);
-            line.bbox[1] = Math.min(line.bbox[1], it.bbox[1]);
-            line.bbox[2] = Math.max(line.bbox[2], it.bbox[2]);
-            line.bbox[3] = Math.max(line.bbox[3], it.bbox[3]);
-        });
-        line.width = line.bbox[2] - line.bbox[0];
-        line.height = line.bbox[3] - line.bbox[1];
+        group.items.forEach((item, idx) => {
+            if (idx === 0) {
+                currentSubGroup.push(item);
+            } else {
+                const prev = group.items[idx - 1];
+                const styleChanged = item.font !== prev.font ||
+                    Math.abs(item.size - prev.size) > 0.1 ||
+                    item.is_bold !== prev.is_bold ||
+                    item.is_italic !== prev.is_italic;
 
-        lines.push(line);
+                // Also split on significant horizontal gaps (> 25px) to keep columns distinct
+                const currentX = item.origin ? item.origin[0] : item.bbox[0];
+                const prevX1 = prev.bbox[2];
+                const isGap = (currentX - prevX1) > 25;
+
+                if (styleChanged || isGap) {
+                    flushLine();
+                }
+                currentSubGroup.push(item);
+            }
+        });
+
+        flushLine();
     });
 
     const sortedLines = lines.sort((a, b) => {

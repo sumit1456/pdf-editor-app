@@ -14,16 +14,28 @@ export default function EditorPage() {
     // We merge fragments into lines ONCE at the start to create a persistent "Node Tree"
     const [pages, setPages] = useState(() => {
         const rawPages = location.state?.sceneGraph?.data?.pages || location.state?.sceneGraph?.pages || [];
-        // If it's python backend, data is nested in .data
-        return rawPages.map(page => ({
-            ...page,
-            items: mergeFragmentsIntoLines(page.items)
-        }));
+
+        return rawPages.map((page, pIdx) => {
+            // CRITICAL: Ensure every raw item has a stable unique ID before merging.
+            // This prevents the "leak" where geometric collisions in LineMerger created duplicate IDs.
+            const itemsWithIds = (page.items || []).map((item, iIdx) => ({
+                id: item.id || item.line_id || `page${pIdx}-item${iIdx}`,
+                ...item
+            }));
+
+            return {
+                ...page,
+                items: mergeFragmentsIntoLines(itemsWithIds)
+            };
+        });
     });
 
     const [fontsKey] = useState(location.state?.sceneGraph?.data?.fonts_key || location.state?.sceneGraph?.fonts_key || '');
     const [activePageIndex, setActivePageIndex] = useState(0);
     const [isAdvanced, setIsAdvanced] = useState(true);
+
+    // NODE-BASED EDITING STATE: Persistent edits keyed by unique item ID
+    const [nodeEdits, setNodeEdits] = useState({});
 
     // Persistent canvas for measurement
     const [measureCanvas] = useState(() => document.createElement('canvas'));
@@ -59,47 +71,31 @@ export default function EditorPage() {
     };
 
     const handleSidebarEdit = (lineId, newText) => {
-        setPages(prev => {
-            const next = [...prev];
-            const activePage = { ...next[activePageIndex] };
+        if (!lineId) {
+            console.warn('[EditorPage] Cannot edit node without stable ID');
+            return;
+        }
 
-            activePage.items = activePage.items.map(item => {
-                if (item.id === lineId) {
-                    const fontSize = Math.abs(item.size || 12);
-                    const newWidth = getTextWidth(newText, item.font, fontSize);
-
-                    // CRASH FIX: Ensure bbox exists before accessing [0]
-                    const currentBbox = item.bbox || [0, 0, 0, 0];
-
-                    return {
-                        ...item,
-                        content: newText,
-                        bbox: [currentBbox[0], currentBbox[1], currentBbox[0] + newWidth, currentBbox[3]]
-                    };
-                }
-                return item;
-            });
-
-            next[activePageIndex] = activePage;
-            return next;
-        });
+        setNodeEdits(prev => ({
+            ...prev,
+            [lineId]: {
+                ...(prev[lineId] || {}),
+                content: newText,
+                isModified: true
+            }
+        }));
     };
 
     const handleLinkEdit = (lineId, newUri) => {
-        setPages(prev => {
-            const next = [...prev];
-            const activePage = { ...next[activePageIndex] };
-
-            activePage.items = activePage.items.map(item => {
-                if (item.id === lineId) {
-                    return { ...item, uri: newUri };
-                }
-                return item;
-            });
-
-            next[activePageIndex] = activePage;
-            return next;
-        });
+        if (!lineId) return;
+        setNodeEdits(prev => ({
+            ...prev,
+            [lineId]: {
+                ...(prev[lineId] || {}),
+                uri: newUri,
+                isModified: true
+            }
+        }));
     };
 
     if (pages.length === 0) {
@@ -142,41 +138,48 @@ export default function EditorPage() {
                 </div>
 
                 <div className="structure-list" style={{ scrollBehavior: 'smooth' }}>
-                    {textLines.slice().reverse().map((line, i) => (
-                        <div
-                            key={line.id || i}
-                            id={`input-card-${line.dataIndex}`}
-                            className="premium-input-card"
-                        >
-                            <div className="input-card-header">
-                                <span className="object-label">
-                                    Object {String(textLines.length - i).padStart(2, '0')}
-                                </span>
-                            </div>
-                            <textarea
-                                id={`input-${line.id}`}
-                                value={line.content}
-                                onChange={(e) => handleSidebarEdit(line.id, e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        e.target.blur();
-                                    }
-                                }}
-                            />
-                            {line.uri !== undefined && (
-                                <div className="link-input-wrapper">
-                                    <label>Link URL</label>
-                                    <input
-                                        type="text"
-                                        value={line.uri}
-                                        placeholder="https://..."
-                                        onChange={(e) => handleLinkEdit(line.id, e.target.value)}
-                                    />
+                    {textLines.slice().reverse().map((line, i) => {
+                        const edit = nodeEdits[line.id] || {};
+                        const displayContent = edit.content !== undefined ? edit.content : line.content;
+                        const displayUri = edit.uri !== undefined ? edit.uri : line.uri;
+
+                        return (
+                            <div
+                                key={line.id || i}
+                                id={`input-card-${line.dataIndex}`}
+                                className={`premium-input-card ${edit.isModified ? 'modified' : ''}`}
+                            >
+                                <div className="input-card-header">
+                                    <span className="object-label">
+                                        Object {String(textLines.length - i).padStart(2, '0')}
+                                        {edit.isModified && <span className="modified-badge">Edited</span>}
+                                    </span>
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                                <textarea
+                                    id={`input-${line.id}`}
+                                    value={displayContent}
+                                    onChange={(e) => handleSidebarEdit(line.id, e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            e.target.blur();
+                                        }
+                                    }}
+                                />
+                                {(line.uri !== undefined || displayUri !== undefined) && (
+                                    <div className="link-input-wrapper">
+                                        <label>Link URL</label>
+                                        <input
+                                            type="text"
+                                            value={displayUri || ''}
+                                            placeholder="https://..."
+                                            onChange={(e) => handleLinkEdit(line.id, e.target.value)}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 
@@ -195,6 +198,7 @@ export default function EditorPage() {
                                 page={activePageData}
                                 pageIndex={activePageIndex}
                                 fontsKey={fontsKey}
+                                nodeEdits={nodeEdits}
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}
                             />
