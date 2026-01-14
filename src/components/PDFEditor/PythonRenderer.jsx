@@ -8,7 +8,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-    const [camera, setCamera] = useState({ scale: 1.1, x: 0, y: 0 }); // Match WebGLRenderer default
+    const [camera, setCamera] = useState({ scale: 1.0, x: 0, y: 0 }); // Fixed 1.0
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
 
@@ -63,7 +63,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
         };
     }, []);
 
-    // 2. Resize Canvas and Calculate Auto-Fit
+    // 2. Resize Canvas (No Auto-Fit)
     useEffect(() => {
         if (!engineRef.current || !page) return;
 
@@ -75,17 +75,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
         if (engine.app && engine.app.renderer) {
             engine.app.renderer.resize(renderWidth, renderHeight);
         }
-
-        // PERFECT PREVIEW: Replicate WebGLRenderer's auto-fit logic
-        // Only run if we have a valid viewport measurement (> 300px)
-        if (renderWidth > 0 && viewportSize.width > 300 && !engineRef.current._initialFitDone) {
-            const fitScale = (viewportSize.width - 40) / renderWidth;
-            const finalScale = Math.min(fitScale, 1.3);
-            setCamera(prev => ({ ...prev, scale: finalScale }));
-            engineRef.current._initialFitDone = true;
-            console.log(`[PythonRenderer] Perfect Preview Scale: ${finalScale} (measured from ${viewportSize.width}px)`);
-        }
-    }, [page, viewportSize.width]);
+    }, [page]);
 
     // 2. Render Single Active Page
     const renderActivePage = useCallback(async () => {
@@ -330,13 +320,14 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, nodeEdits, o
                     width: renderWidth + 'px',
                     height: renderHeight + 'px',
                     backgroundColor: 'white',
-                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)', // Match WebGL shadow
-                    transform: `scale(${camera.scale})`,
+                    boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                    transform: 'scale(1.0)',
                     transformOrigin: 'top center',
                     flexShrink: 0,
                     margin: '0 auto',
-                    marginBottom: (renderHeight * (camera.scale - 1) + 40) + 'px', // Compensation
-                    transition: 'transform 0.1s ease-out'
+                    marginBottom: '40px',
+                    transition: 'none',
+                    opacity: 1
                 }}
             >
                 {/* 1. WebGL Canvas (Vectors) */}
@@ -425,11 +416,11 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDo
                             y={rectY}
                             width={rectW}
                             height={rectH}
-                            fill={isModified ? "rgba(79, 70, 229, 0.1)" : "transparent"}
+                            fill="transparent"
                             cursor="text"
                             pointerEvents="all"
-                            stroke={isModified ? "rgba(79, 70, 229, 0.4)" : "none"}
-                            strokeWidth="1"
+                            stroke="none"
+                            strokeWidth="0"
                             onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -461,19 +452,29 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, onDo
                             {isModified ? (
                                 <tspan x={startX} y={baselineY}>{content}</tspan>
                             ) : (
-                                (item.items || [item]).map((span, si) => (
-                                    <tspan
-                                        key={si}
-                                        x={span.origin ? span.origin[0] : (span.x || item.x)}
-                                        y={span.origin ? span.origin[1] : (span.y || item.y)}
-                                        fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : color}
-                                        fontWeight={span.is_bold ? 'bold' : undefined}
-                                        fontStyle={span.is_italic ? 'italic' : undefined}
-                                        fontFamily={span.font ? `"${span.font}", serif` : undefined}
-                                    >
-                                        {span.content}
-                                    </tspan>
-                                ))
+                                (item.items || [item]).map((span, si) => {
+                                    // PROXIMITY-AWARE FLOW:
+                                    // Only force X if there's a significant geometric gap (> 2px)
+                                    // otherwise let the browser handle the kerning to prevent "gaps after bold"
+                                    const prevSpan = si > 0 ? item.items[si - 1] : null;
+                                    const spanX = span.origin ? span.origin[0] : (span.x || item.x);
+                                    const prevX1 = prevSpan ? (prevSpan.bbox ? prevSpan.bbox[2] : prevSpan.x + 10) : -1;
+                                    const forceX = si === 0 || (spanX - prevX1 > 2);
+
+                                    return (
+                                        <tspan
+                                            key={si}
+                                            x={forceX ? spanX : undefined}
+                                            y={span.origin ? span.origin[1] : (span.y || item.y)}
+                                            fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : color}
+                                            fontWeight={span.is_bold ? 'bold' : undefined}
+                                            fontStyle={span.is_italic ? 'italic' : undefined}
+                                            fontFamily={span.font ? `"${span.font}", serif` : undefined}
+                                        >
+                                            {span.content}
+                                        </tspan>
+                                    );
+                                })
                             )}
                         </text>
 
