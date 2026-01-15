@@ -402,7 +402,8 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }
                                     userSelect: 'none',
                                     pointerEvents: 'none',
                                     cursor: 'text',
-                                    touchAction: 'none' // Prevent scrolling while tapping text
+                                    touchAction: 'none', // Prevent scrolling while tapping text
+                                    whiteSpace: 'pre'
                                 }}
                             >
                                 {item.content}

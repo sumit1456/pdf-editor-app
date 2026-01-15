@@ -92,8 +92,49 @@ export class ReflowEngine {
     }
 
     _estimateReflow(block, newText) {
-        // Fallback using average character width (60% of font size)
-        console.log("[ReflowEngine] Using Estimation Fallback");
-        return block.lines; // For now, just return original until logic is verified
+        // Fallback using average character width (approx 0.5 of font size for serif/sans)
+        console.log("[ReflowEngine] Using Estimation Fallback for block:", block.id);
+
+        const fontSize = block.style.size;
+        const avgCharWidth = fontSize * 0.5;
+        const maxWidth = block.bbox[2] - block.bbox[0];
+        const indentX = block.indentX;
+        const textX = block.textX || indentX;
+
+        const words = newText.split(/(\s+)/);
+        const newLines = [];
+        let currentLineText = "";
+        let currentLineWidth = 0;
+        let currentY = (block.lines[0] && block.lines[0].y) || block.bbox[1] + fontSize;
+        const lineHeight = fontSize * 1.25;
+
+        for (let word of words) {
+            const wordWidth = word.length * avgCharWidth;
+            const availableWidth = (newLines.length === 0) ? (block.bbox[2] - indentX) : (block.bbox[2] - textX);
+
+            if (currentLineWidth + wordWidth > availableWidth && currentLineText !== "") {
+                newLines.push({
+                    content: currentLineText.trimEnd(),
+                    y: currentY,
+                    items: this._createItemsFromLine(currentLineText.trimEnd(), (newLines.length === 0 ? indentX : textX), currentY, block.style)
+                });
+                currentLineText = word.trimStart();
+                currentLineWidth = word.trimStart().length * avgCharWidth;
+                currentY += lineHeight;
+            } else {
+                currentLineText += word;
+                currentLineWidth += wordWidth;
+            }
+        }
+
+        if (currentLineText) {
+            newLines.push({
+                content: currentLineText,
+                y: currentY,
+                items: this._createItemsFromLine(currentLineText, (newLines.length === 0 ? indentX : textX), currentY, block.style)
+            });
+        }
+
+        return newLines;
     }
 }

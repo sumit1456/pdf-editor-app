@@ -580,7 +580,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
                         <LineRenderer
                             line={line}
                             block={block}
-                            edit={edit}
+                            nodeEdits={nodeEdits}
                             pageIndex={pageIndex}
                             onDoubleClick={onDoubleClick}
                         />
@@ -591,7 +591,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
     );
 }
 
-function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
+function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
     const normalizeFont = (fontName) => {
         if (!fontName) return '"Latin Modern Roman", "Times New Roman", serif';
         const name = fontName.toLowerCase();
@@ -616,8 +616,11 @@ function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
     // If it's a wrapped line in a list, it should anchor to the text column
     const isWrappedLine = isListItem && !line.is_bullet_start;
     const initialStartX = isWrappedLine ? textAnchorX : (firstItem.origin ? firstItem.origin[0] : firstItem.bbox[0]);
-
     const baselineY = firstItem.origin ? firstItem.origin[1] : firstItem.bbox[1];
+
+    const edit = nodeEdits[line.id] || {};
+    const isModified = !!edit.isModified;
+    const content = edit.content !== undefined ? edit.content : line.content;
 
     return (
         <text
@@ -627,76 +630,80 @@ function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
             fontFamily={normalizeFont(firstItem.font)}
             fill="black"
             dominantBaseline="alphabetic"
-            style={{ userSelect: 'none', pointerEvents: 'all', cursor: 'text' }}
+            style={{ userSelect: 'none', pointerEvents: 'all', cursor: 'text', whiteSpace: 'pre' }}
             onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 onDoubleClick(pageIndex, line.id, firstItem, e.target.getBoundingClientRect(), {});
             }}
         >
-            {line.items.map((span, si) => {
-                const fontName = span.font || '';
-                const isSmallCaps = fontName.toLowerCase().includes('cmcsc');
+            {isModified ? (
+                <tspan x={initialStartX} y={baselineY}>{content}</tspan>
+            ) : (
+                line.items.map((span, si) => {
+                    const fontName = span.font || '';
+                    const isSmallCaps = fontName.toLowerCase().includes('cmcsc');
 
-                // LANE ANCHORING LOGIC
-                const prev = si > 0 ? line.items[si - 1] : null;
-                const currentX = span.origin ? span.origin[0] : span.bbox[0];
-                const prevX1 = prev ? prev.bbox[2] : -1;
+                    // LANE ANCHORING LOGIC
+                    const prev = si > 0 ? line.items[si - 1] : null;
+                    const currentX = span.origin ? span.origin[0] : span.bbox[0];
+                    const prevX1 = prev ? prev.bbox[2] : -1;
 
-                // Thresholds for Lane Anchoring:
-                // 1. Large Gaps (> 8px) usually mean a shift to a new column (like Dates/Locations)
-                // 2. The shift from Bullet -> Content in a List Item should be pinned to textAnchorX
-                // 3. Any wrapped line start is already handled by initialStartX.
+                    // Thresholds for Lane Anchoring:
+                    // 1. Large Gaps (> 8px) usually mean a shift to a new column (like Dates/Locations)
+                    // 2. The shift from Bullet -> Content in a List Item should be pinned to textAnchorX
+                    // 3. Any wrapped line start is already handled by initialStartX.
 
-                let forceX = undefined;
+                    let forceX = undefined;
 
-                // Case A: Large jump (Date/Location lane)
-                if (prev && (currentX - prevX1) > 8) {
-                    forceX = currentX;
-                }
-
-                // Case B: Bullet -> Content transition in the first line of a list
-                if (isListItem && line.is_bullet_start && si > 0) {
-                    const prevTxt = prev.content.trim();
-                    const BULLET_CHARS = ["•", "·", "*", "-", "ΓÇó", "├»", "Γêù"];
-                    if (BULLET_CHARS.includes(prevTxt)) {
-                        forceX = textAnchorX;
+                    // Case A: Large jump (Date/Location lane)
+                    if (prev && (currentX - prevX1) > 8) {
+                        forceX = currentX;
                     }
-                }
 
-                let content = span.content;
-                const isIconFont = fontName.toLowerCase().includes('awesome') || fontName.toLowerCase().includes('fa-');
-
-                if (isIconFont || content.length === 1) {
-                    // Map common broken icon glyphs to Font Awesome codes
-                    if (content === 'ï' || content === '\u00ef') content = '\uf08c'; // LinkedIn
-                    if (content === 'Ð' || content === '\u00d0') content = '\uf09b'; // GitHub
-                    if (content === '§' || content === '\u00a7') content = '\uf0e0'; // Email
-                    if (content === ')' || content === '\u0029') { // Sometimes Phone maps to bracket in some fonts
-                        if (fontName.toLowerCase().includes('symbol') || isIconFont) content = '\uf095';
+                    // Case B: Bullet -> Content transition in the first line of a list
+                    if (isListItem && line.is_bullet_start && si > 0) {
+                        const prevTxt = prev.content.trim();
+                        const BULLET_CHARS = ["•", "·", "*", "-", "ΓÇó", "├»", "Γêù"];
+                        if (BULLET_CHARS.includes(prevTxt)) {
+                            forceX = textAnchorX;
+                        }
                     }
-                    if (content === '#' || content === 'phone') content = '\uf095'; // Phone
-                    if (content === 'L' && isIconFont) content = '\uf3a5'; // LeetCode or similar
-                }
 
-                return (
-                    <tspan
-                        key={si}
-                        x={forceX}
-                        y={baselineY} // BASELINE SYNC: Force shared baseline to prevent shivering
-                        fontSize={Math.max(1, Math.abs(span.size))}
-                        fontWeight={span.is_bold ? 'bold' : 'normal'}
-                        fontStyle={span.is_italic ? 'italic' : 'normal'}
-                        fontFamily={normalizeFont(span.font)}
-                        fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
-                        style={{
-                            fontVariant: isSmallCaps ? 'small-caps' : 'normal'
-                        }}
-                    >
-                        {content}
-                    </tspan>
-                );
-            })}
+                    let content = span.content;
+                    const isIconFont = fontName.toLowerCase().includes('awesome') || fontName.toLowerCase().includes('fa-');
+
+                    if (isIconFont || content.length === 1) {
+                        // Map common broken icon glyphs to Font Awesome codes
+                        if (content === 'ï' || content === '\u00ef') content = '\uf08c'; // LinkedIn
+                        if (content === 'Ð' || content === '\u00d0') content = '\uf09b'; // GitHub
+                        if (content === '§' || content === '\u00a7') content = '\uf0e0'; // Email
+                        if (content === ')' || content === '\u0029') { // Sometimes Phone maps to bracket in some fonts
+                            if (fontName.toLowerCase().includes('symbol') || isIconFont) content = '\uf095';
+                        }
+                        if (content === '#' || content === 'phone') content = '\uf095'; // Phone
+                        if (content === 'L' && isIconFont) content = '\uf3a5'; // LeetCode or similar
+                    }
+
+                    return (
+                        <tspan
+                            key={si}
+                            x={forceX}
+                            y={baselineY} // BASELINE SYNC: Force shared baseline to prevent shivering
+                            fontSize={Math.max(1, Math.abs(span.size))}
+                            fontWeight={span.is_bold ? 'bold' : 'normal'}
+                            fontStyle={span.is_italic ? 'italic' : 'normal'}
+                            fontFamily={normalizeFont(span.font)}
+                            fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
+                            style={{
+                                fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+                            }}
+                        >
+                            {content}
+                        </tspan>
+                    );
+                })
+            )}
         </text>
     );
 }

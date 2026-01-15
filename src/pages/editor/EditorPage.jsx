@@ -67,8 +67,10 @@ export default function EditorPage() {
         });
     };
 
-    const scrollToNode = (index) => {
-        const element = document.getElementById(`input-card-${index}`);
+    const scrollToNode = (idOrIndex) => {
+        // Try to find by stable ID or index
+        const element = document.getElementById(`input-card-${idOrIndex}`);
+
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
@@ -79,45 +81,24 @@ export default function EditorPage() {
         }
     };
 
-    const handleSidebarEdit = (blockId, newText) => {
-        if (!blockId) {
+    const handleSidebarEdit = (lineId, newText) => {
+        if (!lineId) {
             console.warn('[EditorPage] Cannot edit node without stable ID');
             return;
         }
 
         // Logic:
-        // 1. Update visual edit state
+        // 1. Update visual edit state for the SPECIFIC line
         setNodeEdits(prev => ({
             ...prev,
-            [blockId]: {
-                ...(prev[blockId] || {}),
+            [lineId]: {
+                ...(prev[lineId] || {}),
                 content: newText,
                 isModified: true
             }
         }));
 
-        // 2. REFLOW: Calculate new lines for this block
-        setPages(prev => {
-            const next = [...prev];
-            const page = { ...next[activePageIndex] };
-
-            if (page.blocks) {
-                const blockIndex = page.blocks.findIndex(b => b.id === blockId);
-                if (blockIndex !== -1) {
-                    const block = page.blocks[blockIndex];
-                    const newLines = reflowEngine.reflowBlock(block, newText);
-
-                    // Update the block in the page structure
-                    page.blocks[blockIndex] = {
-                        ...block,
-                        lines: newLines
-                    };
-                }
-            }
-
-            next[activePageIndex] = page;
-            return next;
-        });
+        // NO REFLOW: We allow the user to manualy type at specific lines
     };
 
     const handleLinkEdit = (lineId, newUri) => {
@@ -149,14 +130,22 @@ export default function EditorPage() {
         if (!activePageData) return [];
 
         if (activePageData.blocks) {
-            return activePageData.blocks.map((block, index) => ({
-                id: block.id,
-                content: block.lines.map(l => l.content).join("\n"),
-                type: 'text',
-                dataIndex: index,
-                isBlock: true,
-                marker: block.marker
-            }));
+            // Flatten all lines from all blocks for granular editing
+            const flattenedLines = [];
+            activePageData.blocks.forEach(block => {
+                block.lines.forEach(line => {
+                    flattenedLines.push({
+                        id: line.id,
+                        content: line.content,
+                        type: 'text',
+                        dataIndex: line.id,
+                        isBlock: false,
+                        marker: line.is_bullet_start ? block.marker : null,
+                        blockId: block.id
+                    });
+                });
+            });
+            return flattenedLines;
         }
 
         return (activePageData.items || [])
@@ -194,7 +183,7 @@ export default function EditorPage() {
                         return (
                             <div
                                 key={line.id || i}
-                                id={`input-card-${line.dataIndex}`}
+                                id={`input-card-${line.id || line.dataIndex}`}
                                 className={`premium-input-card ${edit.isModified ? 'modified' : ''}`}
                             >
                                 <div className="input-card-header">
