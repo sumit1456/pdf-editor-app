@@ -249,12 +249,15 @@
     padding-bottom: 10px;
 }
 
-.input-card-header .object-label {
+.input-card-header .line-label {
     font-size: 0.65rem;
     color: var(--studio-silver);
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .input-card-header .size-tag {
@@ -272,13 +275,18 @@
     background: transparent;
     border: none;
     color: var(--studio-white);
-    font-size: 0.9rem;
-    line-height: 1.6;
+    font-size: 0.95rem;
+    line-height: 1.5;
     resize: none;
     outline: none;
-    padding: 0;
+    padding: 4px 0;
     font-family: inherit;
     font-weight: 400;
+    transition: all 0.2s ease;
+}
+
+.premium-input-card textarea:focus {
+    color: #ffffff;
 }
 
 .btn-toggle {

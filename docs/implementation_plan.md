@@ -32,11 +32,16 @@ The user wants to make the text items in the "Structure" sidebar editable. Edits
 #### [MODIFY] [EditorPage.jsx](file:///c:/Users/SUMIT/Downloads/pdf-editor-app/src/pages/editor/EditorPage.jsx)
 - Replace static text in the `structure-sidebar` with an editable interface (e.g., `contentEditable` or `<textarea>`).
 - Implement `handleSidebarEdit(itemIndex, newText)`:
-    - Locate the original line in the `textLines` array.
-    - Map the line back to its original fragments in the `pages` state.
-    - Replace the fragments with a new merged text item containing the updated content.
-    - Update the `pages` state.
-- Add debouncing or save-on-blur to prevent excessive re-renders during typing.
+    - Locate the original- [/] **Refine Bullet Aesthetics & Indentation**
+    - [x] Narrow marker list to prevent false positives (remove icons)
+    - [ ] Remove manual bullet size boosting (1:1 scaling)
+    - [ ] Replace hardcoded `fontWeight="bold"` with PDF metadata flags
+    - [ ] Implement Vector Dots for standard markers (`•`, `·`)
+- [/] **Preserve Styles during Editing**
+    - [ ] Fix color loss for edited text in `PythonRenderer.jsx`
+    - [ ] Ensure font-weight/style consistency in split-line path
+- [x] **Hierarchical Nesting Detection**
+r save-on-blur to prevent excessive re-renders during typing.
 
 ## Verification Plan
 

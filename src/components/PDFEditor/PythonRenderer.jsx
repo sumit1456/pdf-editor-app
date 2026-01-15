@@ -622,23 +622,131 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
     const isModified = !!edit.isModified;
     const content = edit.content !== undefined ? edit.content : line.content;
 
+    const isSmallCaps = (firstItem.font || '').toLowerCase().includes('cmcsc');
+
+    const mapContentToIcons = (content, fontName) => {
+        const lowerFont = (fontName || '').toLowerCase();
+        const isIconFont = lowerFont.includes('awesome') || lowerFont.includes('fa-') || lowerFont.includes('symbol') || lowerFont.includes('webdings');
+
+        const c = content.trim();
+        if (isIconFont || c.length === 1) {
+            // Map common broken icon glyphs to Font Awesome codes
+            if (c === 'ï' || c === '\u00ef') return '\uf08c'; // LinkedIn
+            if (c === 'Ð' || c === '\u00d0') return '\uf09b'; // GitHub
+            if (c === '§' || c === '\u00a7') return '\uf0e0'; // Email
+            if (c === ')' || c === '\u0029' || c === '#' || c === 'phone') return '\uf095'; // Phone
+            if (c === 'L' && (isIconFont || lowerFont.includes('serif'))) return '\uf3a5'; // LeetCode
+            if (c === 'y' && isIconFont) return '\uf167'; // YouTube
+            if (c === 'f' && isIconFont) return '\uf09a'; // Facebook
+        }
+        return content;
+    };
+
     return (
         <text
             x={initialStartX}
             y={baselineY}
             fontSize={Math.max(1, Math.abs(firstItem.size))}
             fontFamily={normalizeFont(firstItem.font)}
-            fill="black"
+            fill={firstItem.color ? `rgb(${firstItem.color[0] * 255}, ${firstItem.color[1] * 255}, ${firstItem.color[2] * 255})` : 'black'}
+            fontWeight={firstItem.is_bold ? 'bold' : 'normal'}
+            fontStyle={firstItem.is_italic ? 'italic' : 'normal'}
             dominantBaseline="alphabetic"
-            style={{ userSelect: 'none', pointerEvents: 'all', cursor: 'text', whiteSpace: 'pre' }}
+            style={{
+                userSelect: 'none',
+                pointerEvents: 'all',
+                cursor: 'text',
+                whiteSpace: 'pre',
+                fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+            }}
             onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onDoubleClick(pageIndex, line.id, firstItem, e.target.getBoundingClientRect(), {});
+
+                // --- STYLE SAFETY MECHANIC ---
+                // Capture the original PDF metadata at the moment of edit
+                const safetyStyle = {
+                    size: line.size,
+                    font: firstItem.font,
+                    color: firstItem.color,
+                    is_bold: firstItem.is_bold,
+                    is_italic: firstItem.is_italic,
+                    uri: line.uri
+                };
+
+                console.log("--------------------------------------");
+                console.log("[Style Capture] Saved styles for Line", line.id, ":", safetyStyle);
+                console.log("--------------------------------------");
+
+                onDoubleClick(pageIndex, line.id, firstItem, e.target.getBoundingClientRect(), {
+                    safetyStyle
+                });
             }}
         >
             {isModified ? (
-                <tspan x={initialStartX} y={baselineY}>{content}</tspan>
+                (() => {
+                    const mapped = mapContentToIcons(content, firstItem.font);
+                    const isMappedIcon = mapped !== content;
+                    const sStyle = edit.safetyStyle || {};
+                    const isMarkerLine = isListItem && line.is_bullet_start;
+                    const bMetrics = block.bullet_metrics || {};
+
+                    // Use Safety Styles if available, fallback to line.size (which is the max size/height)
+                    // This prevents shrinking if capture is missing.
+                    const safeSize = Math.abs(sStyle.size || line.size || firstItem.size);
+                    const safeFont = sStyle.font || firstItem.font;
+                    const safeColor = sStyle.color || firstItem.color;
+
+                    console.log("--------------------------------------");
+                    console.log(`[Style Render] Line ${line.id}: size=${safeSize}, font=${safeFont}`);
+                    console.log("--------------------------------------");
+
+                    if (isMarkerLine) {
+                        const firstSpaceIdx = mapped.search(/\s/);
+                        const markerPart = firstSpaceIdx > -1 ? mapped.substring(0, firstSpaceIdx) : (mapped.length > 2 ? mapped.substring(0, 1) : mapped);
+                        const restPart = mapped.substring(markerPart.length);
+
+                        return (
+                            <tspan x={initialStartX} y={baselineY}>
+                                <tspan
+                                    fontSize={Math.abs(bMetrics.size || safeSize)}
+                                    fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(safeFont)}
+                                    fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                    fontWeight={(block.style?.is_bold || sStyle.is_bold) ? 'bold' : 'normal'}
+                                    fontStyle={(block.style?.is_italic || sStyle.is_italic) ? 'italic' : 'normal'}
+                                    dy={-((firstItem.size - (bMetrics.size || safeSize)) * 0.4) + "px"}
+                                >
+                                    {markerPart}
+                                </tspan>
+                                <tspan
+                                    x={textAnchorX}
+                                    y={baselineY}
+                                    fontSize={safeSize}
+                                    fontFamily={normalizeFont(safeFont)}
+                                    fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                    fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
+                                    fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
+                                >
+                                    {restPart}
+                                </tspan>
+                            </tspan>
+                        );
+                    }
+
+                    return (
+                        <tspan
+                            x={initialStartX}
+                            y={baselineY}
+                            fontSize={safeSize}
+                            fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(safeFont)}
+                            fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                            fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
+                            fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
+                        >
+                            {mapped}
+                        </tspan>
+                    );
+                })()
             ) : (
                 line.items.map((span, si) => {
                     const fontName = span.font || '';
@@ -648,11 +756,6 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                     const prev = si > 0 ? line.items[si - 1] : null;
                     const currentX = span.origin ? span.origin[0] : span.bbox[0];
                     const prevX1 = prev ? prev.bbox[2] : -1;
-
-                    // Thresholds for Lane Anchoring:
-                    // 1. Large Gaps (> 8px) usually mean a shift to a new column (like Dates/Locations)
-                    // 2. The shift from Bullet -> Content in a List Item should be pinned to textAnchorX
-                    // 3. Any wrapped line start is already handled by initialStartX.
 
                     let forceX = undefined;
 
@@ -664,42 +767,41 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                     // Case B: Bullet -> Content transition in the first line of a list
                     if (isListItem && line.is_bullet_start && si > 0) {
                         const prevTxt = prev.content.trim();
-                        const BULLET_CHARS = ["•", "·", "*", "-", "ΓÇó", "├»", "Γêù"];
-                        if (BULLET_CHARS.includes(prevTxt)) {
+                        // Sync with backend SUB_BULLET_CHARS to prevent false positives (removed icons)
+                        const BULLET_CHARS = ["•", "·", "*", "-", "∗", "»", "ΓÇó", "├»", "Γêù"];
+                        if (BULLET_CHARS.includes(prevTxt) || prevTxt.length === 1 && prevTxt.charCodeAt(0) === 0x2217) {
                             forceX = textAnchorX;
                         }
                     }
 
-                    let content = span.content;
-                    const isIconFont = fontName.toLowerCase().includes('awesome') || fontName.toLowerCase().includes('fa-');
+                    const content = span.content;
+                    const mapped = mapContentToIcons(content, span.font);
+                    const isMappedIcon = mapped !== content;
 
-                    if (isIconFont || content.length === 1) {
-                        // Map common broken icon glyphs to Font Awesome codes
-                        if (content === 'ï' || content === '\u00ef') content = '\uf08c'; // LinkedIn
-                        if (content === 'Ð' || content === '\u00d0') content = '\uf09b'; // GitHub
-                        if (content === '§' || content === '\u00a7') content = '\uf0e0'; // Email
-                        if (content === ')' || content === '\u0029') { // Sometimes Phone maps to bracket in some fonts
-                            if (fontName.toLowerCase().includes('symbol') || isIconFont) content = '\uf095';
-                        }
-                        if (content === '#' || content === 'phone') content = '\uf095'; // Phone
-                        if (content === 'L' && isIconFont) content = '\uf3a5'; // LeetCode or similar
-                    }
+                    const isMarker = isListItem && line.is_bullet_start && si === 0;
+                    const bMetrics = block.bullet_metrics || {};
+                    const customSize = isMarker ? (bMetrics.size || span.size) : span.size;
+                    const isStandardDot = isMarker && (span.content === '•' || span.content === '·');
+
+                    // Dynamic vertical centering: Lift bullets up (negative dy)
+                    const verticalShift = isMarker ? -((line.size - customSize) * 0.4) : 0;
 
                     return (
                         <tspan
                             key={si}
                             x={forceX}
-                            y={baselineY} // BASELINE SYNC: Force shared baseline to prevent shivering
-                            fontSize={Math.max(1, Math.abs(span.size))}
+                            y={baselineY}
+                            dy={verticalShift + "px"}
+                            fontSize={Math.max(1, Math.abs(customSize))}
                             fontWeight={span.is_bold ? 'bold' : 'normal'}
                             fontStyle={span.is_italic ? 'italic' : 'normal'}
-                            fontFamily={normalizeFont(span.font)}
+                            fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(span.font)}
                             fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
                             style={{
                                 fontVariant: isSmallCaps ? 'small-caps' : 'normal'
                             }}
                         >
-                            {content}
+                            {mapped}
                         </tspan>
                     );
                 })

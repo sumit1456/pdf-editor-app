@@ -67,6 +67,32 @@ export default function EditorPage() {
         });
     };
 
+    const handleDoubleClick = (pIdx, lineId, item, rect, extraData) => {
+        // --- STYLE SAFETY MECHANIC ---
+        // Capture and store original styles if not already set
+        setNodeEdits(prev => {
+            if (prev[lineId]?.safetyStyle) return prev; // Don't overwrite once set
+
+            return {
+                ...prev,
+                [lineId]: {
+                    ...(prev[lineId] || {}),
+                    safetyStyle: extraData?.safetyStyle || {
+                        size: item.size,
+                        font: item.font,
+                        color: item.color,
+                        is_bold: item.is_bold,
+                        is_italic: item.is_italic
+                    },
+                    isModified: prev[lineId]?.isModified || false
+                }
+            };
+        });
+
+        // Trigger existing scroll logic
+        scrollToNode(lineId);
+    };
+
     const scrollToNode = (idOrIndex) => {
         // Try to find by stable ID or index
         const element = document.getElementById(`input-card-${idOrIndex}`);
@@ -81,7 +107,7 @@ export default function EditorPage() {
         }
     };
 
-    const handleSidebarEdit = (lineId, newText) => {
+    const handleSidebarEdit = (lineId, newText, originalStyle) => {
         if (!lineId) {
             console.warn('[EditorPage] Cannot edit node without stable ID');
             return;
@@ -94,6 +120,7 @@ export default function EditorPage() {
             [lineId]: {
                 ...(prev[lineId] || {}),
                 content: newText,
+                safetyStyle: prev[lineId]?.safetyStyle || originalStyle,
                 isModified: true
             }
         }));
@@ -101,13 +128,14 @@ export default function EditorPage() {
         // NO REFLOW: We allow the user to manualy type at specific lines
     };
 
-    const handleLinkEdit = (lineId, newUri) => {
+    const handleLinkEdit = (lineId, newUri, originalStyle) => {
         if (!lineId) return;
         setNodeEdits(prev => ({
             ...prev,
             [lineId]: {
                 ...(prev[lineId] || {}),
                 uri: newUri,
+                safetyStyle: prev[lineId]?.safetyStyle || originalStyle,
                 isModified: true
             }
         }));
@@ -141,7 +169,16 @@ export default function EditorPage() {
                         dataIndex: line.id,
                         isBlock: false,
                         marker: line.is_bullet_start ? block.marker : null,
-                        blockId: block.id
+                        level: block.level || 0,
+                        blockId: block.id,
+                        uri: line.uri,
+                        originalStyle: {
+                            size: line.size,
+                            font: line.items[0]?.font,
+                            color: line.items[0]?.color,
+                            is_bold: line.items[0]?.is_bold,
+                            is_italic: line.items[0]?.is_italic
+                        }
                     });
                 });
             });
@@ -169,7 +206,7 @@ export default function EditorPage() {
                             Content <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Studio</span>
                         </h3>
                         <p>
-                            Page {activePageIndex + 1}
+                            Page {activePageIndex + 1} &middot; {textLines.length} Lines
                         </p>
                     </div>
                 </div>
@@ -185,17 +222,18 @@ export default function EditorPage() {
                                 key={line.id || i}
                                 id={`input-card-${line.id || line.dataIndex}`}
                                 className={`premium-input-card ${edit.isModified ? 'modified' : ''}`}
+                                style={{ marginLeft: `${(line.level || 0) * 20}px` }}
                             >
                                 <div className="input-card-header">
-                                    <span className="object-label">
-                                        Object {String(textLines.length - i).padStart(2, '0')}
+                                    <span className="line-label">
+                                        Line {String(textLines.length - i).padStart(2, '0')}
                                         {edit.isModified && <span className="modified-badge">Edited</span>}
                                     </span>
                                 </div>
                                 <textarea
                                     id={`input-${line.id}`}
                                     value={displayContent}
-                                    onChange={(e) => handleSidebarEdit(line.id, e.target.value)}
+                                    onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter' && !e.shiftKey) {
                                             e.preventDefault();
@@ -203,14 +241,14 @@ export default function EditorPage() {
                                         }
                                     }}
                                 />
-                                {(line.uri !== undefined || displayUri !== undefined) && (
+                                {!!displayUri && (
                                     <div className="link-input-wrapper">
                                         <label>Link URL</label>
                                         <input
                                             type="text"
                                             value={displayUri || ''}
                                             placeholder="https://..."
-                                            onChange={(e) => handleLinkEdit(line.id, e.target.value)}
+                                            onChange={(e) => handleLinkEdit(line.id, e.target.value, line.originalStyle)}
                                         />
                                     </div>
                                 )}
@@ -239,6 +277,7 @@ export default function EditorPage() {
                                 nodeEdits={nodeEdits}
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}
+                                onDoubleClick={handleDoubleClick}
                             />
                         ) : (
                             <WebGLRenderer

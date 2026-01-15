@@ -16,12 +16,11 @@ def normalize_layout(items):
     if not text_items:
         return items
 
-    # --- PHASE 1: LINE AGGREGATION ---
-    # Group raw PDF text spans into logical lines based on baseline (Y) proximity.
+    # --- PHASE 1: LINE AGGREGATION & GRANULAR SPLITTING ---
+    # Group raw PDF text spans into logical lines, but split them if they cross URI boundaries.
     lines_map = defaultdict(list)
     for item in text_items:
         y = item["origin"][1]
-        # Cluster baselines within 4.5px jitter (increased to catch mixed-style baseline drift)
         y_group = None
         for existing_y in lines_map.keys():
             if abs(existing_y - y) < 4.5:
@@ -29,7 +28,6 @@ def normalize_layout(items):
                 break
         if y_group is None:
             y_group = y
-            
         lines_map[y_group].append(item)
 
     processed_lines = []
@@ -39,32 +37,53 @@ def normalize_layout(items):
         
         if not group: continue
         
-        # Merge basic metrics
-        first_origin = group[0]["origin"]
-        line_content = "".join(it["content"] for it in group)
-        max_height = max(it["height"] for it in group)
-        max_size = max(it["size"] for it in group)
+        # Split group into segments if URIs change (to give each link its own input)
+        current_segment = [group[0]]
+        for i in range(1, len(group)):
+            prev_it = group[i-1]
+            curr_it = group[i]
+            
+            # Split if URI changes (Link-to-Text or Link-to-Link)
+            if prev_it.get("uri") != curr_it.get("uri"):
+                # Close segment
+                seg_content = "".join(it["content"] for it in current_segment)
+                processed_lines.append({
+                    "y": y_val,
+                    "x0": current_segment[0]["origin"][0],
+                    "x1": max(it["bbox"][2] for it in current_segment),
+                    "height": max(it["height"] for it in current_segment),
+                    "size": max(it["size"] for it in current_segment),
+                    "items": current_segment,
+                    "content": seg_content,
+                    "uri": next((it["uri"] for it in current_segment if it.get("uri")), None)
+                })
+                current_segment = [curr_it]
+            else:
+                current_segment.append(curr_it)
         
+        # Add final segment
+        seg_content = "".join(it["content"] for it in current_segment)
         processed_lines.append({
             "y": y_val,
-            "x0": first_origin[0],
-            "x1": max(it["bbox"][2] for it in group),
-            "height": max_height,
-            "size": max_size,
-            "items": group,
-            "content": line_content
+            "x0": current_segment[0]["origin"][0],
+            "x1": max(it["bbox"][2] for it in current_segment),
+            "height": max(it["height"] for it in current_segment),
+            "size": max(it["size"] for it in current_segment),
+            "items": current_segment,
+            "content": seg_content,
+            "uri": next((it["uri"] for it in current_segment if it.get("uri")), None)
         })
 
     # --- PHASE 2: HANGING INDENT & COLUMN ANCHORING ---
     # Identification of bullet points and calculation of content anchors.
     # Revised Bullet Characters
     BULLET_CHARS = [
-        "·", "-", "▪", "▫", "◦", "‣", "⁃", "■", "□", 
+        "·", "▪", "▫", "◦", "‣", "⁃", "■", "□", 
         "ΓÇó", "├»", "Γêù",  # Common encoding glitches
         "\u2022", "\u2023", "\u2043", "\u2219", "\u22c5", "\u25cb", "\u25cf", "\u25e6", "\u25a0", "\u25a1"
     ]
     # Special markers that shouldn't always be dots
-    SUB_BULLET_CHARS = ["*", "»", ">"]
+    SUB_BULLET_CHARS = ["*", "»", ">", "-", "\u2217", "\u2013"]
     
     ALL_MARKERS = BULLET_CHARS + SUB_BULLET_CHARS
     
@@ -88,58 +107,53 @@ def normalize_layout(items):
         
         if content in ALL_MARKERS:
             is_bullet = True
-            # Normalize common bullet characters to a standard dot, but leave SUB_BULLETS alone
-            if content in ["·", "-", "ΓÇó", "├»", "Γêù"] or content == NORM_BULLET:
-                first_item["content"] = NORM_BULLET
-                line["content"] = NORM_BULLET + line["content"][len(content):]
+            marker_char = content
         elif any(content.startswith(b) for b in ALL_MARKERS):
             is_bullet = True
             for b in ALL_MARKERS:
                 if content.startswith(b):
-                    if b in ["·", "-", "ΓÇó", "├»", "Γêù"] or b == NORM_BULLET:
-                        new_content = NORM_BULLET + content[len(b):]
-                        first_item["content"] = new_content
-                        line["content"] = new_content + line["content"][len(content):]
+                    marker_char = b
+                    # If it's a primary bullet and we want to normalize it
+                    if b in BULLET_CHARS and b not in SUB_BULLET_CHARS:
+                         new_content = NORM_BULLET + content[len(b):]
+                         first_item["content"] = new_content
+                         line["content"] = new_content + line["content"][len(content):]
+                         marker_char = NORM_BULLET
                     break
-            
+        
         if is_bullet:
             line["is_bullet_start"] = True
-            
             # Use marker character if it's in SUB_BULLET_CHARS
             marker_char = first_item["content"][0] if first_item["content"] else NORM_BULLET
             line["marker_char"] = marker_char
-            
+
             # Find the actual text content that follows the bullet
             anchor_x = None
             bullet_item = items[0]
             font_size = bullet_item.get("size", 10.0)
             
-            # Heuristic: Find first non-empty text that isn't the marker
-            for i, item in enumerate(items):
-                txt = item.get("content", "").strip()
-                if not txt or txt in BULLET_CHARS:
-                    continue
-                anchor_x = item["origin"][0]
-                break
-                
-            if anchor_x is None:
-                # If everything is in one span, or no text after bullet, calculate based on character width
-                anchor_x = bullet_item["bbox"][2] + (font_size * 0.4) 
+            # Tighten the gap for a professional look (approx 0.4x font size)
+            fixed_gap = font_size * 0.4
             
-            # Distance (Gap) between bullet and content
-            raw_gap = max(0, anchor_x - bullet_item["bbox"][2])
-            
-            # Dynamic Gap: Proportional to font size (e.g., 30% of font size)
-            # This ensures consistent visual weight across different scales.
-            min_gap = font_size * 0.3
-            line["content_gap"] = max(min_gap, raw_gap)
-            line["bullet_size"] = font_size
-            
-            # Adjust anchor if we enforced a minimum gap
-            if line["content_gap"] > raw_gap:
-                line["content_anchor"] = bullet_item["bbox"][2] + line["content_gap"]
+            # If marker is part of the first item, anchor starts after the marker
+            if len(bullet_item["content"]) > len(marker_char):
+                anchor_x = bullet_item["bbox"][0] + (font_size * 0.3) + fixed_gap
             else:
-                line["content_anchor"] = anchor_x
+                for i in range(1, len(items)):
+                    it = items[i]
+                    if it.get("content", "").strip():
+                         anchor_x = it["origin"][0]
+                         break
+                
+                # If we detected an anchor but it's too close, push it
+                if anchor_x is None or (anchor_x - bullet_item["bbox"][0]) < fixed_gap:
+                    anchor_x = bullet_item["bbox"][0] + fixed_gap
+            
+            line["content_anchor"] = anchor_x
+            line["content_gap"] = anchor_x - bullet_item["bbox"][0]
+            
+            # Use 1:1 scaling. No more manual boosting.
+            line["bullet_size"] = font_size
         else:
             line["is_bullet_start"] = False
 
@@ -151,7 +165,8 @@ def normalize_layout(items):
         x0_coords.sort()
         current_cluster = [x0_coords[0]]
         for i in range(1, len(x0_coords)):
-            if x0_coords[i] - current_cluster[-1] < 10:
+            # Tighter clustering (6px) to keep nested levels distinct
+            if x0_coords[i] - current_cluster[-1] < 6:
                 current_cluster.append(x0_coords[i])
             else:
                 anchors.append(sum(current_cluster) / len(current_cluster))
@@ -160,12 +175,17 @@ def normalize_layout(items):
         
     # Snap line x0 to nearest anchor to fix drift
     for line in processed_lines:
+        if line.get("is_bullet_start"):
+            continue # Bullets define columns, they shouldn't snap to them
+            
         current_x = line["x0"]
         # Find closest anchor
         if anchors:
             closest_anchor = min(anchors, key=lambda a: abs(a - current_x))
-            if abs(closest_anchor - current_x) < 12:
+            # Tighten snap threshold to 3px to avoid collapsing nested levels
+            if abs(closest_anchor - current_x) < 3:
                 line["x0"] = closest_anchor
+
 
     # --- PHASE 3: SEMANTIC BLOCK RECONSTRUCTION ---
     blocks = []
@@ -223,17 +243,21 @@ def normalize_layout(items):
                 "textX": line.get("content_anchor", line["x0"]),
                 "style": {
                     "font": line["items"][0].get("font"),
-                    "size": line["size"]
-                }
+                    "size": line["size"],
+                    "is_bold": any(item.get("flags", 0) & 16 for item in line["items"]),
+                    "is_italic": any(item.get("flags", 0) & 2 for item in line["items"])
+                },
+                "uri": line.get("uri")
             }
-            if block_type == "list-item":
+            if line.get("is_bullet_start"):
                 marker_item = line["items"][0]
                 current_block["marker"] = line.get("marker_char", marker_item["content"])
                 current_block["textX"] = line.get("content_anchor", line["x0"] + 15)
                 current_block["bullet_metrics"] = {
                     "size": line.get("bullet_size", line["size"]),
                     "gap": line.get("content_gap", 5.0),
-                    "marker_width": marker_item["bbox"][2] - marker_item["bbox"][0]
+                    "marker_width": marker_item["bbox"][2] - marker_item["bbox"][0],
+                    "marker_char": line.get("marker_char")
                 }
                 current_block["level"] = 0
         
@@ -274,24 +298,26 @@ def normalize_layout(items):
             # Regular paragraph: Snap to indentX
             shift = target_x - line["x0"]
 
-        if shift != 0:
-            for it in line["items"]:
+        for it in line["items"]:
+            if shift != 0:
                 it["origin"][0] += shift
                 it["x"] = it["origin"][0]
                 it["bbox"][0] += shift
                 it["bbox"][2] += shift
-        
-        # Tags for legacy compatibility
-        for it in line["items"]:
             it["block_id"] = current_block["id"]
 
         # Add line data to block
+        li_id = line.get("id") or str(uuid.uuid4())
         current_block["lines"].append({
-            "id": f"{current_block['id']}_{len(current_block['lines'])}",
+            "id": li_id,
             "content": line["content"],
             "y": line["y"],
+            "x0": line["x0"],
+            "x1": line["x1"],
+            "size": line["size"],
             "is_bullet_start": line.get("is_bullet_start", False),
-            "items": line["items"]
+            "items": line["items"],
+            "uri": line.get("uri")
         })
         
         # Update block bbox using the ACTUAL NEW COORDINATES of items
@@ -305,6 +331,29 @@ def normalize_layout(items):
 
     if current_block:
         blocks.append(current_block)
+
+    # --- PHASE 4: IDENTIFY NESTING LEVELS ---
+    list_blocks = [b for b in blocks if b["type"] == "list-item"]
+    if list_blocks:
+        indents = sorted(list(set(b["indentX"] for b in list_blocks)))
+        # Cluster indents that are very close (within 5px)
+        clustered_indents = []
+        if indents:
+            current_group = indents[0]
+            clustered_indents.append(current_group)
+            for x in indents[1:]:
+                if x - current_group > 5:
+                    clustered_indents.append(x)
+                    current_group = x
+        
+        for b in list_blocks:
+            # Find closest cluster
+            level = 0
+            for i, cluster in enumerate(clustered_indents):
+                if abs(b["indentX"] - cluster) < 4:
+                    level = i
+                    break
+            b["level"] = level
 
     # Convert blocks and other items (images/paths) into one tree
     return {
