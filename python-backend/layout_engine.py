@@ -78,10 +78,26 @@ def normalize_layout(items):
             
         if is_bullet:
             # Bullet found at line["x0"].
-            # The Content Anchor for this paragraph is usually X_bullet + fixed padding.
-            # In your PDF, it seems to be around 13-15px.
+            # Find the actual start of text after the bullet to set the anchor.
             line["is_bullet_start"] = True
-            line["content_anchor"] = line["x0"] + 13.5 # Standard width for most fonts
+            
+            anchor_x = None
+            for i, item in enumerate(items):
+                txt = item.get("content", "").strip()
+                if not txt: continue
+                # Skip if this item is JUST a bullet
+                if txt in BULLET_CHARS:
+                    continue
+                # Found the first content span! Use its origin.
+                anchor_x = item["origin"][0]
+                break
+                
+            if anchor_x is None:
+                # Fallback: End of bullet item + minimal padding
+                bullet_item = items[0]
+                anchor_x = bullet_item["bbox"][2] + 4.0
+                
+            line["content_anchor"] = anchor_x
         else:
             line["is_bullet_start"] = False
 
@@ -153,6 +169,7 @@ def normalize_layout(items):
                 "lines": [],
                 "bbox": [line["x0"], line["y"] - line["size"], line["x1"], line["y"]],
                 "indentX": line["x0"],
+                "textX": line.get("content_anchor", line["x0"]),
                 "style": {
                     "font": line["items"][0].get("font"),
                     "size": line["size"]
@@ -207,8 +224,10 @@ def normalize_layout(items):
 
         # Add line data to block
         current_block["lines"].append({
+            "id": f"{current_block['id']}_{len(current_block['lines'])}",
             "content": line["content"],
             "y": line["y"],
+            "is_bullet_start": line.get("is_bullet_start", False),
             "items": line["items"]
         })
         

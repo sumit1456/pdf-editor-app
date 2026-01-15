@@ -609,19 +609,19 @@ function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
     };
 
     const firstItem = line.items[0];
-    const startX = firstItem.origin ? firstItem.origin[0] : firstItem.bbox[0];
+    const isListItem = block.type === 'list-item';
+    const textAnchorX = block.textX || firstItem.bbox[0];
+
+    // Determine Lane for the first item
+    // If it's a wrapped line in a list, it should anchor to the text column
+    const isWrappedLine = isListItem && !line.is_bullet_start;
+    const initialStartX = isWrappedLine ? textAnchorX : (firstItem.origin ? firstItem.origin[0] : firstItem.bbox[0]);
+
     const baselineY = firstItem.origin ? firstItem.origin[1] : firstItem.bbox[1];
-
-    // Calculate total PDF width for this line to enforce "Squeeze"
-    const x0 = Math.min(...line.items.map(it => it.bbox[0]));
-    const x1 = Math.max(...line.items.map(it => it.bbox[2]));
-    const targetWidth = x1 - x0;
-
-    const content = edit.isModified ? edit.content : line.content;
 
     return (
         <text
-            x={startX}
+            x={initialStartX}
             y={baselineY}
             fontSize={Math.max(1, Math.abs(firstItem.size))}
             fontFamily={normalizeFont(firstItem.font)}
@@ -638,11 +638,31 @@ function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
                 const fontName = span.font || '';
                 const isSmallCaps = fontName.toLowerCase().includes('cmcsc');
 
-                // GAPPING LOGIC: Detect large horizontal jumps to preserve PDF alignment
+                // LANE ANCHORING LOGIC
                 const prev = si > 0 ? line.items[si - 1] : null;
                 const currentX = span.origin ? span.origin[0] : span.bbox[0];
                 const prevX1 = prev ? prev.bbox[2] : -1;
-                const isGap = prev && (currentX - prevX1) > 8; // Threshold for flow
+
+                // Thresholds for Lane Anchoring:
+                // 1. Large Gaps (> 8px) usually mean a shift to a new column (like Dates/Locations)
+                // 2. The shift from Bullet -> Content in a List Item should be pinned to textAnchorX
+                // 3. Any wrapped line start is already handled by initialStartX.
+
+                let forceX = undefined;
+
+                // Case A: Large jump (Date/Location lane)
+                if (prev && (currentX - prevX1) > 8) {
+                    forceX = currentX;
+                }
+
+                // Case B: Bullet -> Content transition in the first line of a list
+                if (isListItem && line.is_bullet_start && si > 0) {
+                    const prevTxt = prev.content.trim();
+                    const BULLET_CHARS = ["•", "·", "*", "-", "ΓÇó", "├»", "Γêù"];
+                    if (BULLET_CHARS.includes(prevTxt)) {
+                        forceX = textAnchorX;
+                    }
+                }
 
                 let content = span.content;
                 const isIconFont = fontName.toLowerCase().includes('awesome') || fontName.toLowerCase().includes('fa-');
@@ -657,7 +677,7 @@ function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
                 return (
                     <tspan
                         key={si}
-                        x={isGap ? currentX : undefined}
+                        x={forceX}
                         fontSize={Math.max(1, Math.abs(span.size))}
                         fontWeight={span.is_bold ? 'bold' : 'normal'}
                         fontStyle={span.is_italic ? 'italic' : 'normal'}
