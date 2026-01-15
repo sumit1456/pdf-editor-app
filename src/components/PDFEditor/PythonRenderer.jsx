@@ -667,17 +667,23 @@ function LineRenderer({ line, block, edit, pageIndex, onDoubleClick }) {
                 let content = span.content;
                 const isIconFont = fontName.toLowerCase().includes('awesome') || fontName.toLowerCase().includes('fa-');
 
-                if (isIconFont) {
-                    if (content === 'ï' || content.includes('\u00ef')) content = '\uf08c'; // LinkedIn
-                    if (content === 'Ð' || content.includes('\u00d0')) content = '\uf09b'; // GitHub
-                    if (content === '§' || content.includes('\u00a7')) content = '\uf0e0'; // Email
+                if (isIconFont || content.length === 1) {
+                    // Map common broken icon glyphs to Font Awesome codes
+                    if (content === 'ï' || content === '\u00ef') content = '\uf08c'; // LinkedIn
+                    if (content === 'Ð' || content === '\u00d0') content = '\uf09b'; // GitHub
+                    if (content === '§' || content === '\u00a7') content = '\uf0e0'; // Email
+                    if (content === ')' || content === '\u0029') { // Sometimes Phone maps to bracket in some fonts
+                        if (fontName.toLowerCase().includes('symbol') || isIconFont) content = '\uf095';
+                    }
                     if (content === '#' || content === 'phone') content = '\uf095'; // Phone
+                    if (content === 'L' && isIconFont) content = '\uf3a5'; // LeetCode or similar
                 }
 
                 return (
                     <tspan
                         key={si}
                         x={forceX}
+                        y={baselineY} // BASELINE SYNC: Force shared baseline to prevent shivering
                         fontSize={Math.max(1, Math.abs(span.size))}
                         fontWeight={span.is_bold ? 'bold' : 'normal'}
                         fontStyle={span.is_italic ? 'italic' : 'normal'}

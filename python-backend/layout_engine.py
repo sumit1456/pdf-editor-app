@@ -57,10 +57,22 @@ def normalize_layout(items):
 
     # --- PHASE 2: HANGING INDENT & COLUMN ANCHORING ---
     # Identification of bullet points and calculation of content anchors.
-    BULLET_CHARS = ["•", "·", "*", "-", "ΓÇó", "├»", "Γêù"] # common bullet symbols
+    # Revised Bullet Characters
+    BULLET_CHARS = [
+        "·", "-", "▪", "▫", "◦", "‣", "⁃", "■", "□", 
+        "ΓÇó", "├»", "Γêù",  # Common encoding glitches
+        "\u2022", "\u2023", "\u2043", "\u2219", "\u22c5", "\u25cb", "\u25cf", "\u25e6", "\u25a0", "\u25a1"
+    ]
+    # Special markers that shouldn't always be dots
+    SUB_BULLET_CHARS = ["*", "»", ">"]
+    
+    ALL_MARKERS = BULLET_CHARS + SUB_BULLET_CHARS
     
     # 1. First pass: Identify bullets and set anchors
     bullet_anchors = {} # Map Y coordinate to anchor X
+    
+    # Normalize bullet characters to solid dots for professional appearance
+    NORM_BULLET = "•"
     
     for line in processed_lines:
         items = line["items"]
@@ -68,36 +80,66 @@ def normalize_layout(items):
         
         # Check if the first item is a bullet or the content starts with a bullet
         first_item = items[0]
-        content = first_item["content"].strip()
-        
+        content = first_item.get("content", "").strip()
         is_bullet = False
-        if content in BULLET_CHARS:
+        
+        # Normalize primary bullet characters to solid dots
+        NORM_BULLET = "•"
+        
+        if content in ALL_MARKERS:
             is_bullet = True
-        elif any(content.startswith(b) for b in BULLET_CHARS):
+            # Normalize common bullet characters to a standard dot, but leave SUB_BULLETS alone
+            if content in ["·", "-", "ΓÇó", "├»", "Γêù"] or content == NORM_BULLET:
+                first_item["content"] = NORM_BULLET
+                line["content"] = NORM_BULLET + line["content"][len(content):]
+        elif any(content.startswith(b) for b in ALL_MARKERS):
             is_bullet = True
+            for b in ALL_MARKERS:
+                if content.startswith(b):
+                    if b in ["·", "-", "ΓÇó", "├»", "Γêù"] or b == NORM_BULLET:
+                        new_content = NORM_BULLET + content[len(b):]
+                        first_item["content"] = new_content
+                        line["content"] = new_content + line["content"][len(content):]
+                    break
             
         if is_bullet:
-            # Bullet found at line["x0"].
-            # Find the actual start of text after the bullet to set the anchor.
             line["is_bullet_start"] = True
             
+            # Use marker character if it's in SUB_BULLET_CHARS
+            marker_char = first_item["content"][0] if first_item["content"] else NORM_BULLET
+            line["marker_char"] = marker_char
+            
+            # Find the actual text content that follows the bullet
             anchor_x = None
+            bullet_item = items[0]
+            font_size = bullet_item.get("size", 10.0)
+            
+            # Heuristic: Find first non-empty text that isn't the marker
             for i, item in enumerate(items):
                 txt = item.get("content", "").strip()
-                if not txt: continue
-                # Skip if this item is JUST a bullet
-                if txt in BULLET_CHARS:
+                if not txt or txt in BULLET_CHARS:
                     continue
-                # Found the first content span! Use its origin.
                 anchor_x = item["origin"][0]
                 break
                 
             if anchor_x is None:
-                # Fallback: End of bullet item + minimal padding
-                bullet_item = items[0]
-                anchor_x = bullet_item["bbox"][2] + 4.0
-                
-            line["content_anchor"] = anchor_x
+                # If everything is in one span, or no text after bullet, calculate based on character width
+                anchor_x = bullet_item["bbox"][2] + (font_size * 0.4) 
+            
+            # Distance (Gap) between bullet and content
+            raw_gap = max(0, anchor_x - bullet_item["bbox"][2])
+            
+            # Dynamic Gap: Proportional to font size (e.g., 30% of font size)
+            # This ensures consistent visual weight across different scales.
+            min_gap = font_size * 0.3
+            line["content_gap"] = max(min_gap, raw_gap)
+            line["bullet_size"] = font_size
+            
+            # Adjust anchor if we enforced a minimum gap
+            if line["content_gap"] > raw_gap:
+                line["content_anchor"] = bullet_item["bbox"][2] + line["content_gap"]
+            else:
+                line["content_anchor"] = anchor_x
         else:
             line["is_bullet_start"] = False
 
@@ -115,6 +157,15 @@ def normalize_layout(items):
                 anchors.append(sum(current_cluster) / len(current_cluster))
                 current_cluster = [x0_coords[i]]
         anchors.append(sum(current_cluster) / len(current_cluster))
+        
+    # Snap line x0 to nearest anchor to fix drift
+    for line in processed_lines:
+        current_x = line["x0"]
+        # Find closest anchor
+        if anchors:
+            closest_anchor = min(anchors, key=lambda a: abs(a - current_x))
+            if abs(closest_anchor - current_x) < 12:
+                line["x0"] = closest_anchor
 
     # --- PHASE 3: SEMANTIC BLOCK RECONSTRUCTION ---
     blocks = []
@@ -176,9 +227,15 @@ def normalize_layout(items):
                 }
             }
             if block_type == "list-item":
-                current_block["marker"] = line["items"][0]["content"]
-                current_block["textX"] = line["content_anchor"]
-                current_block["level"] = 0 # Future: detect nesting
+                marker_item = line["items"][0]
+                current_block["marker"] = line.get("marker_char", marker_item["content"])
+                current_block["textX"] = line.get("content_anchor", line["x0"] + 15)
+                current_block["bullet_metrics"] = {
+                    "size": line.get("bullet_size", line["size"]),
+                    "gap": line.get("content_gap", 5.0),
+                    "marker_width": marker_item["bbox"][2] - marker_item["bbox"][0]
+                }
+                current_block["level"] = 0
         
         # Normalize and add line to current block
         shift = 0
@@ -186,22 +243,30 @@ def normalize_layout(items):
         
         if current_block["type"] == "list-item":
             if line.get("is_bullet_start"):
-                # First line of a list: First item is marker, others snap to textX
+                # First line of a list: First item is marker, others snap to textX relative to first non-empty
                 marker_item = line["items"][0]
-                # Snap marker to indentX
                 marker_shift = target_x - marker_item["origin"][0]
                 marker_item["origin"][0] += marker_shift
                 marker_item["x"] = marker_item["origin"][0]
                 marker_item["bbox"][0] += marker_shift
                 marker_item["bbox"][2] += marker_shift
                 
-                # Others snap to textX
-                for it in line["items"][1:]:
-                    it_shift = current_block["textX"] - it["origin"][0]
-                    it["origin"][0] += it_shift
-                    it["x"] = it["origin"][0]
-                    it["bbox"][0] += it_shift
-                    it["bbox"][2] += it_shift
+                # Find the first item after the bullet that actually has content (the anchor item)
+                anchor_idx = 1
+                for i in range(1, len(line["items"])):
+                    if line["items"][i].get("content", "").strip():
+                        anchor_idx = i
+                        break
+                
+                # Calculate shift for all subsequent items based on the first content item's new anchor
+                if anchor_idx < len(line["items"]):
+                    content_shift = current_block["textX"] - line["items"][anchor_idx]["origin"][0]
+                    for it in line["items"][1:]:
+                        it["origin"][0] += content_shift
+                        it["x"] = it["origin"][0]
+                        it["bbox"][0] += content_shift
+                        it["bbox"][2] += content_shift
+                shift = 0 # Handled individually
             else:
                 # Wrapped lines in a list: Snap to textX
                 shift = current_block["textX"] - line["x0"]
@@ -211,8 +276,6 @@ def normalize_layout(items):
 
         if shift != 0:
             for it in line["items"]:
-                if current_block["type"] == "list-item" and line.get("is_bullet_start") and it == line["items"][0]:
-                    continue # Already handled marker
                 it["origin"][0] += shift
                 it["x"] = it["origin"][0]
                 it["bbox"][0] += shift
@@ -231,10 +294,12 @@ def normalize_layout(items):
             "items": line["items"]
         })
         
-        # Update block bbox
-        current_block["bbox"][0] = min(current_block["bbox"][0], line["x0"] + (shift if not line.get("is_bullet_start") else 0))
-        current_block["bbox"][2] = max(current_block["bbox"][2], line["x1"] + (shift if not line.get("is_bullet_start") else 0))
-        current_block["bbox"][3] = line["y"]
+        # Update block bbox using the ACTUAL NEW COORDINATES of items
+        for it in line["items"]:
+            current_block["bbox"][0] = min(current_block["bbox"][0], it["bbox"][0])
+            current_block["bbox"][1] = min(current_block["bbox"][1], it["bbox"][1])
+            current_block["bbox"][2] = max(current_block["bbox"][2], it["bbox"][2])
+            current_block["bbox"][3] = max(current_block["bbox"][3], it["bbox"][3])
         
         last_y = line["y"]
 
