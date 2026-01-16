@@ -26,7 +26,7 @@ const getSVGColor = (c, fallback = 'black') => {
     }
     return `rgb(${r}, ${g}, ${b})`;
 };
-export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) {
+const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
@@ -420,7 +420,15 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
             </div>
         </div>
     );
-}
+}, (prev, next) => {
+    return prev.page === next.page &&
+        prev.pageIndex === next.pageIndex &&
+        prev.scale === next.scale &&
+        prev.nodeEdits === next.nodeEdits &&
+        prev.fontsKey === next.fontsKey;
+});
+
+export default PythonRenderer;
 
 
 function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fontStyles, onDoubleClick }) {

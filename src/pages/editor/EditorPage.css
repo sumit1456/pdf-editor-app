@@ -1,5 +1,5 @@
 :root {
-    /* Core Colors - Dramatic B&W Studio */
+
     --studio-black: #000000;
     --studio-charcoal: #090909;
     --studio-dark-gray: #121212;
@@ -9,31 +9,30 @@
     --studio-bright: #a1a1aa;
     --studio-white: #ffffff;
 
-    /* Accent - Subtle Gold for Premium feel */
-    --studio-gold: #d4af37;
+
+    --studio-gold: #d9af27;
     --studio-gold-glow: rgba(212, 175, 55, 0.2);
 
-    /* Glass & Overlays */
+
     --studio-glass: rgba(255, 255, 255, 0.03);
     --studio-glass-strong: rgba(255, 255, 255, 0.08);
     --studio-border: rgba(255, 255, 255, 0.08);
     --studio-border-strong: rgba(255, 255, 255, 0.15);
 
-    /* Typography */
+
     --font-studio: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 
-    /* Shadows - Cinematic */
+
     --shadow-subtle: 0 2px 12px rgba(0, 0, 0, 0.5);
     --shadow-medium: 0 4px 24px rgba(0, 0, 0, 0.6);
     --shadow-strong: 0 8px 40px rgba(0, 0, 0, 0.7);
     --shadow-cinematic: 0 24px 80px rgba(0, 0, 0, 0.9);
 
-    /* Glows */
+
     --glow-white: 0 0 20px rgba(255, 255, 255, 0.05);
 
-    /* Render Toggle Specific */
-    --toggle-webgl: #ffd27d;
-    --toggle-svg: #a1a1aa;
+    /* Sidebar Thumbnail Specific */
+    --thumb-active: #ecc33c;
 }
 
 .editor-page {
@@ -91,7 +90,7 @@
     font-weight: 800;
 }
 
-/* 1. LEFT PANEL - EDITING */
+
 .editing-panel {
     width: 380px;
     height: 100%;
@@ -172,21 +171,29 @@
     gap: 20px;
 }
 
-/* PREMIUM INPUT CARD */
+
 .premium-input-card {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 16px;
-    padding: 18px;
+    background: rgba(255, 255, 255, 0.015);
+    border-radius: 12px;
+    padding: 16px;
     border: 1px solid var(--studio-border);
     transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
 }
 
 .premium-input-card.modified {
-    border-left: 3px solid var(--studio-gold);
-    background: rgba(212, 175, 55, 0.02);
+    border-left: 1px solid var(--studio-border);
+
+}
+
+.premium-input-card:focus-within,
+.premium-input-card.active {
+    border-left: 4px solid var(--studio-gold);
+    background: rgba(255, 210, 125, 0.03);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
 }
 
 .card-controls-row {
@@ -206,26 +213,24 @@
     -webkit-appearance: none;
     width: 22px;
     height: 22px;
-    border-radius: 5px;
+    border-radius: 4px;
     border: 1px solid var(--studio-border-strong);
     background: none;
     cursor: pointer;
     padding: 0;
+    transition: all 0.2s ease;
 }
 
-.color-swatch-input::-webkit-color-swatch-wrapper {
-    padding: 0;
-}
-
-.color-swatch-input::-webkit-color-swatch {
-    border: none;
-    border-radius: 4px;
+.color-swatch-input:hover {
+    border-color: var(--studio-gold);
+    transform: translateY(-1px);
+    box-shadow: 0 0 10px var(--studio-gold-glow);
 }
 
 .size-control {
     display: flex;
     align-items: center;
-    background: #000;
+    background: #1a1919;
     border-radius: 6px;
     padding: 2px;
     border: 1px solid var(--studio-border);
@@ -276,12 +281,12 @@
 }
 
 .card-id {
-    font-size: 0.6rem;
-    color: #333;
+    font-size: 0.55rem;
+    color: #444;
     font-weight: 800;
+    letter-spacing: 0.1em;
 }
 
-/* INPUT AREA */
 .card-input-area {
     display: flex;
     flex-direction: column;
@@ -289,11 +294,12 @@
 }
 
 .field-label {
-    font-size: 0.6rem;
-    color: var(--studio-silver);
-    font-weight: 800;
+    font-size: 0.55rem;
+    color: #555;
+    font-weight: 900;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
+    margin-bottom: 2px;
 }
 
 .card-input-area textarea {
@@ -308,6 +314,7 @@
     resize: vertical;
     font-family: inherit;
     line-height: 1.5;
+    min-height: 60px;
 }
 
 .inline-link-field {
@@ -329,7 +336,7 @@
     outline: none;
 }
 
-/* 2. CENTER PANEL - WORKSPACE */
+
 .workspace-container {
     flex: 1;
     height: 100%;
@@ -352,7 +359,7 @@
     align-items: center;
 }
 
-/* 3. RIGHT PANEL - NAVIGATOR */
+
 .navigator-sidebar {
     width: 340px;
     height: 100%;
@@ -396,10 +403,10 @@
 }
 
 .sidebar-thumb.active {
-    background: #ffd27d;
+    background: var(--thumb-active);
     color: #000;
-    border-color: #ffd27d;
-    box-shadow: 0 4px 15px rgba(255, 210, 125, 0.3);
+    border-color: var(--thumb-active);
+    box-shadow: 0 4px 20px var(--studio-gold-glow);
 }
 
 /* MISC */

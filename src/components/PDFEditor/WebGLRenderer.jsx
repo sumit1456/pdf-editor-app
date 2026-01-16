@@ -4,7 +4,7 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
-export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onSelect, scale }) {
+const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, onUpdate, onSelect, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 3000 });
@@ -338,7 +338,14 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onS
             </div>
         </div>
     );
-}
+}, (prev, next) => {
+    return prev.page === next.page &&
+        prev.pageIndex === next.pageIndex &&
+        prev.scale === next.scale &&
+        prev.fontsKey === next.fontsKey;
+});
+
+export default WebGLRenderer;
 
 
 function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }) {

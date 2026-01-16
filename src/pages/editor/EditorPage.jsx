@@ -92,9 +92,9 @@ export default function EditorPage() {
 
     // NODE-BASED EDITING STATE: Persistent edits keyed by unique item ID
     const [nodeEdits, setNodeEdits] = useState({});
-    const [renderMode, setRenderMode] = useState('webgl'); // 'webgl' or 'svg'
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'links'
     const [zoom, setZoom] = useState(0.85); // Master zoom state
+    const [activeNodeId, setActiveNodeId] = useState(null); // Track currently focused node
 
     const handleZoom = (delta) => {
         setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
@@ -157,15 +157,19 @@ export default function EditorPage() {
 
     const scrollToNode = (idOrIndex) => {
         // Try to find by stable ID or index
+        setActiveNodeId(idOrIndex);
         const element = document.getElementById(`input-card-${idOrIndex}`);
 
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // Add a temporary highlight effect
+            // Add a temporary highlight effect (keep class for flash animation)
             element.classList.add('highlight-flash');
 
-            setTimeout(() => element.classList.remove('highlight-flash'), 1500);
+            setTimeout(() => {
+                element.classList.remove('highlight-flash');
+                // Optional: Clear active node after a while? No, let it stay until next click.
+            }, 2000);
         }
     };
 
@@ -355,7 +359,7 @@ export default function EditorPage() {
                             <div
                                 key={line.id || i}
                                 id={`input-card-${line.id || line.dataIndex}`}
-                                className={`premium-input-card ${edit.isModified ? 'modified' : ''}`}
+                                className={`premium-input-card ${edit.isModified ? 'modified' : ''} ${activeNodeId === (line.id || line.dataIndex) ? 'active' : ''}`}
                             >
                                 <div className="card-controls-row">
                                     <div className="style-tools">
@@ -418,17 +422,8 @@ export default function EditorPage() {
             <div className="workspace-container">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
                     <h2 className="highlight" style={{ margin: 0 }}>
-                        {renderMode === 'webgl' ? 'WebGL' : 'SVG'} <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Engine</span>
+                        Studio <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Workspace</span>
                     </h2>
-                    <div
-                        className={`render-toggle ${renderMode}`}
-                        onClick={() => setRenderMode(prev => prev === 'webgl' ? 'svg' : 'webgl')}
-                        title="Switch Rendering Engine"
-                    >
-                        <div className="toggle-thumb"></div>
-                        <span className="toggle-label-webgl">WebGL</span>
-                        <span className="toggle-label-svg">SVG</span>
-                    </div>
 
                     <div className="zoom-controls">
                         <button className="zoom-btn" onClick={() => handleZoom(-0.1)}>−</button>
@@ -439,13 +434,7 @@ export default function EditorPage() {
 
                 <div className="preview-stage">
                     <div className="preview-content-wrapper">
-                        {renderMode === 'svg' ? (
-                            <PDFRenderer
-                                data={{ pages, fonts }}
-                                activePageIndex={activePageIndex}
-                                nodeEdits={nodeEdits}
-                            />
-                        ) : backend === 'python' ? (
+                        {backend === 'python' ? (
                             <PythonRenderer
                                 page={activePageData}
                                 pageIndex={activePageIndex}
