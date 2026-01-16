@@ -1,963 +1,179 @@
 {
-  "total_lines": 60,
+  "total_lines": 11,
   "report": [
     {
-      "line_content": "Yagyik Raghuwanshi",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 234.60661045640566,
-        "y": 56.18398660504151
+        "x0": 95.999976,
+        "y": 113.4270549765625
       },
       "rendered": {
-        "x0": 234.60661045640566,
-        "y": 56.18398660504151
+        "x0": 96.0033345,
+        "y": 113.4270549765625
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.003358499999990272,
         "y": 0.0
       }
     },
     {
-      "line_content": "Software Developer",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 351.9692316691284,
-        "y": 74.78131268487549
+        "x0": 95.999976,
+        "y": 167.7603747265625
       },
       "rendered": {
-        "x0": 351.9692316691284,
-        "y": 74.78131268487549
+        "x0": 96.0033345,
+        "y": 167.7603747265625
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.003358499999990272,
         "y": 0.0
       }
     },
     {
-      "line_content": "\u0083",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 80.91196707669069,
-        "y": 93.37863876470948
+        "x0": 143.999964,
+        "y": 222.09629864257815
       },
       "rendered": {
-        "x0": 80.91196707669069,
-        "y": 93.37863876470948
+        "x0": 144.0033345,
+        "y": 222.09629864257815
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.0033704999999883967,
         "y": 0.0
       }
     },
     {
-      "line_content": "+91 91113 41641",
-      "block_type": "paragraph",
+      "line_content": "\u200b",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 94.19543136650086,
-        "y": 93.37863876470948
+        "x0": 143.999964,
+        "y": 276.43092047558594
       },
       "rendered": {
-        "x0": 94.19543136650086,
-        "y": 93.37863876470948
+        "x0": 144.0033345,
+        "y": 276.43092047558594
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.0033704999999883967,
         "y": 0.0
       }
     },
     {
-      "line_content": "|#",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 215.22260244433596,
-        "y": 93.37863876470948
+        "x0": 143.999964,
+        "y": 314.76684839160157
       },
       "rendered": {
-        "x0": 215.22260244433596,
-        "y": 93.37863876470948
+        "x0": 144.0033345,
+        "y": 314.76684839160157
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.0033704999999883967,
         "y": 0.0
       }
     },
     {
-      "line_content": "raghuwanshiyagyik@gmail.com",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 245.47939012753298,
-        "y": 93.37863876470948
+        "x0": 95.999976,
+        "y": 369.1014702246094
       },
       "rendered": {
-        "x0": 245.47939012753298,
-        "y": 93.37863876470948
+        "x0": 96.0033345,
+        "y": 369.1014702246094
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.003358499999990272,
         "y": 0.0
       }
     },
     {
-      "line_content": "|\u00a7",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 446.6891786922608,
-        "y": 93.37863876470948
+        "x0": 143.999964,
+        "y": 424.770727140625
       },
       "rendered": {
-        "x0": 446.6891786922608,
-        "y": 93.37863876470948
+        "x0": 144.0033345,
+        "y": 424.770727140625
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.0033704999999883967,
         "y": 0.0
       }
     },
     {
-      "line_content": "Github",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 476.520917653595,
-        "y": 93.37863876470948
+        "x0": 143.999964,
+        "y": 480.43868197363287
       },
       "rendered": {
-        "x0": 476.520917653595,
-        "y": 93.37863876470948
+        "x0": 144.0033345,
+        "y": 480.43868197363287
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.0033704999999883967,
         "y": 0.0
       }
     },
     {
-      "line_content": "|\u00ef",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 539.7091749685059,
-        "y": 93.37863876470948
+        "x0": 95.999976,
+        "y": 532.1066378066407
       },
       "rendered": {
-        "x0": 539.7091749685059,
-        "y": 93.37863876470948
+        "x0": 96.0033345,
+        "y": 532.1066378066407
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.003358499999990272,
         "y": 0.0
       }
     },
     {
-      "line_content": "LinkedIn",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 568.305562676178,
-        "y": 93.37863876470948
+        "x0": 95.999976,
+        "y": 583.7758957226563
       },
       "rendered": {
-        "x0": 568.305562676178,
-        "y": 93.37863876470948
+        "x0": 96.0033345,
+        "y": 583.7758957226563
       },
       "delta": {
-        "x": 0.0,
+        "x": 0.003358499999990272,
         "y": 0.0
       }
     },
     {
-      "line_content": "|\u00d0",
-      "block_type": "paragraph",
+      "line_content": "",
+      "block_type": "metadata",
       "extracted": {
-        "x0": 641.9185000021058,
-        "y": 93.37863876470948
+        "x0": 95.999976,
+        "y": 635.4425494726563
       },
       "rendered": {
-        "x0": 641.9185000021058,
-        "y": 93.37863876470948
+        "x0": 96.0033345,
+        "y": 635.4425494726563
       },
       "delta": {
-        "x": 0.0,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "LeetCode",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 675.4974710995484,
-        "y": 93.37863876470948
-      },
-      "rendered": {
-        "x0": 675.4974710995484,
-        "y": 93.37863876470948
-      },
-      "delta": {
-        "x": 0.0,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Profile Summary",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.79995424792481,
-        "y": 115.29733445690918
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 115.29733445690918
-      },
-      "delta": {
-        "x": 4.575207518797697e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Full Stack Developer passionate about designing an",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 142.3799285977173
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 142.3799285977173
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Spring Boot, React.js, and modern development prac",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 158.31994739916993
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 158.31994739916993
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "integration, and high-performance solutions.",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 174.25996620062259
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 174.25996620062259
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Technical Skills",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 196.1799639758301
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 196.1799639758301
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Programming Languages: Python, Java",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.599986617252355,
-        "y": 224.13861584033205
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 224.13861584033205
-      },
-      "delta": {
-        "x": 1.3382747646062398e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Python Fundamentals: Data Types, Control Flow, Fun",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.599981530990604,
-        "y": 242.20395963128664
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 242.20395963128664
-      },
-      "delta": {
-        "x": 1.846900939739271e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Scripting & Automation: File Handling, Exception H",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.599981530990604,
-        "y": 260.26930342224125
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 260.26930342224125
-      },
-      "delta": {
-        "x": 1.846900939739271e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Data Handling (Basic): Lists, Dictionaries, Tuples",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.599981530990604,
-        "y": 278.3346472131958
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 278.3346472131958
-      },
-      "delta": {
-        "x": 1.846900939739271e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Databases: MySQL, Postgres (CRUD, Queries)",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.599981530990604,
-        "y": 296.3999910041504
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 296.3999910041504
-      },
-      "delta": {
-        "x": 1.846900939739271e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Tools: Git, GitHub, VS Code",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.59997644472885,
-        "y": 314.4666368781128
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 314.4666368781128
-      },
-      "delta": {
-        "x": 2.3555271148723023e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Practices: Problem Solving, Debugging, Clean Code ",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 57.59997644472885,
-        "y": 332.5319806690674
-      },
-      "rendered": {
-        "x0": 57.6,
-        "y": 332.5319806690674
-      },
-      "delta": {
-        "x": 2.3555271148723023e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Experience",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 354.45067636126714
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 354.45067636126714
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Java full stack Booster Program (Jspiders)",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 384.95457498529055
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 384.95457498529055
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Aug 2024 \u2013 Sept 2025",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 616.8931563235474,
-        "y": 384.95457498529055
-      },
-      "rendered": {
-        "x0": 616.8931563235474,
-        "y": 384.95457498529055
-      },
-      "delta": {
-        "x": 0.0,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Java Full Stack Trainee (Pune, Maharashtra)",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 403.01991877624516
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 403.01991877624516
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Completed an intensive, industry-aligned Java Fu",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 421.24126838757326
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 421.24126838757326
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "applications and RESTful API design.",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 79.56397038406755,
-        "y": 438.9185914421997
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 438.9185914421997
-      },
-      "delta": {
-        "x": -0.003970384067542909,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Built and deployed full stack projects using Jav",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 454.7652671680298
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 454.7652671680298
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Capstone projects:",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 472.03459065017705
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 472.03459065017705
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2217Sky Dominance: Aviation platform with real-time q",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 79.56397038406755,
-        "y": 489.395914434845
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 489.395914434845
-      },
-      "delta": {
-        "x": -0.003970384067542909,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2217Ultimate Resume: Interactive resume builder with ",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 79.5639754703293,
-        "y": 506.66389514389044
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 506.66389514389044
-      },
-      "delta": {
-        "x": -0.0039754703292942395,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Agricapita Innotech Private Limited",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.1999648894577,
-        "y": 531.3718967793885
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 531.3718967793885
-      },
-      "delta": {
-        "x": 3.511054229932142e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "May 2023 \u2013 Aug 2023",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 617.2971682668152,
-        "y": 531.3718967793885
-      },
-      "rendered": {
-        "x0": 617.2971682668152,
-        "y": 531.3718967793885
-      },
-      "delta": {
-        "x": 0.0,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Intern (Bhopal, Madhya Pradesh)",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 549.4372405703431
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 549.4372405703431
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Enhanced website performance and reliability by ",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 567.6585494915772
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 567.6585494915772
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "measures, improving page load speed by 50%.",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 79.56397038406755,
-        "y": 585.3345297731018
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 585.3345297731018
-      },
-      "delta": {
-        "x": -0.003970384067542909,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Managed server deployments and uptime monitoring",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 601.1825075819397
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 601.1825075819397
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Key Projects",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.79997459297181,
-        "y": 624.5225082573547
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 624.5225082573547
-      },
-      "delta": {
-        "x": 2.540702818976115e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Sky Dominance \u2013 Full Stack Web Application",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 655.0264882615662
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 655.0264882615662
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Engineered a Full Stack Aviation Platform for Priv",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 673.0918320525208
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 673.0918320525208
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Implemented secure backend services for authenti",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 691.3131409737549
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 691.3131409737549
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "real-time quote generation.",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 79.56398055659103,
-        "y": 708.9890805651856
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 708.9890805651856
-      },
-      "delta": {
-        "x": -0.003980556591031359,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Developed a responsive frontend with dynamic con",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 724.8371397542115
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 724.8371397542115
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "experience and engagement.",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 79.56398055659103,
-        "y": 742.1984635388794
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 742.1984635388794
-      },
-      "delta": {
-        "x": -0.003980556591031359,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Tech Stack: Java, Spring Boot, Hibernate, REST A",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 758.0464413477173
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 758.0464413477173
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Personalized Movie Discovery Platform",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 784.1744458834229
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 784.1744458834229
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "ML-Based Personalized Movie Recommender",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 802.2397896743774
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 802.2397896743774
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Built a personalized recommendation engine using",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 820.4610579055177
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 820.4610579055177
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "recommendation accuracy by 30%.",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 79.56398055659103,
-        "y": 838.1384623403321
-      },
-      "rendered": {
-        "x0": 79.56,
-        "y": 838.1384623403321
-      },
-      "delta": {
-        "x": -0.003980556591031359,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "\u2022 Tech Stack: Python, Scikit-learn, Pandas, HTML, ",
-      "block_type": "list-item",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 853.98644014917
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 853.98644014917
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Education",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.799994938018806,
-        "y": 877.3250573613892
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 877.3250573613892
-      },
-      "delta": {
-        "x": 5.061981191545328e-06,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Bachelor of Technology (Computer Science and Engin",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.19998523450471,
-        "y": 907.8291187457886
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 907.8291187457886
-      },
-      "delta": {
-        "x": 1.4765495294000175e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "2020 \u2013 2024",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 681.1358160441284,
-        "y": 907.8291187457886
-      },
-      "rendered": {
-        "x0": 681.1358160441284,
-        "y": 907.8291187457886
-      },
-      "delta": {
-        "x": 0.0,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Shri Ram Institute of Technology, Jabalpur",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 67.1999750619812,
-        "y": 925.8944625367433
-      },
-      "rendered": {
-        "x0": 67.2,
-        "y": 925.8944625367433
-      },
-      "delta": {
-        "x": 2.49380187966608e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Certifications & Achievements",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.79997967923355,
-        "y": 948.9824287699586
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 948.9824287699586
-      },
-      "delta": {
-        "x": 2.0320766445536265e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Certifications: Google Agile Project Management (2",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 976.8037922573243
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 976.8037922573243
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
-        "y": 0.0
-      }
-    },
-    {
-      "line_content": "Achievements: 5\u22c6SQL & CSS on HackerRank; Completed",
-      "block_type": "paragraph",
-      "extracted": {
-        "x0": 52.7999847654953,
-        "y": 996.729080244751
-      },
-      "rendered": {
-        "x0": 52.8,
-        "y": 996.729080244751
-      },
-      "delta": {
-        "x": 1.5234504694205953e-05,
+        "x": 0.003358499999990272,
         "y": 0.0
       }
     }

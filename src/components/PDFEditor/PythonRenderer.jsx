@@ -4,6 +4,28 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer for Python Backend
+
+const getSVGColor = (c, fallback = 'black') => {
+    if (!c) return fallback;
+    if (typeof c === 'string') return c; // Already a color string
+    if (!Array.isArray(c)) return fallback;
+    let r = 0, g = 0, b = 0;
+    if (c.length === 3) { // RGB
+        r = Math.round(c[0] * 255);
+        g = Math.round(c[1] * 255);
+        b = Math.round(c[2] * 255);
+    } else if (c.length === 4) { // CMYK
+        r = Math.round(255 * (1 - c[0]) * (1 - c[3]));
+        g = Math.round(255 * (1 - c[1]) * (1 - c[3]));
+        b = Math.round(255 * (1 - c[2]) * (1 - c[3]));
+    } else if (c.length === 1) { // Gray
+        r = Math.round(c[0] * 255);
+        g = r; b = r;
+    } else {
+        return fallback;
+    }
+    return `rgb(${r}, ${g}, ${b})`;
+};
 export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
@@ -114,7 +136,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
         let currentPath = []; // Accumulate segments
         let lastPoint = { x: 0, y: 0 };
 
-        // Helper to parse color
+
         const parseColor = (c) => {
             if (!c) return 0x000000;
             if (Array.isArray(c)) {
@@ -250,8 +272,6 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
             }
         });
 
-        console.log(`[PythonRenderer] Rendering ${nodes.length} nodes to WebGL and ${page.blocks ? page.blocks.length : 0} text blocks to SVG`);
-        console.log(`[PythonRenderer] Page Dimensions: ${page.width}x${page.height}`);
 
         // Flush remaining if any (rare for valid PDF)
 
@@ -433,9 +453,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                 // Visual Deletion support
                 if (content === "" && isModified) return null;
 
-                const color = item.color
-                    ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})`
-                    : 'black';
+                const color = getSVGColor(item.color, 'black');
 
                 // Construct baseline and hit-area metrics
                 const baselineY = item.origin ? item.origin[1] : item.bbox[1];
@@ -464,9 +482,13 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                 e.stopPropagation();
                                 const rect = e.target.getBoundingClientRect();
                                 onDoubleClick(pageIndex, i, item, rect, {
-                                    fontWeight: item.is_bold ? 'bold' : 'normal',
-                                    fontStyle: item.is_italic ? 'italic' : 'normal',
-                                    color: color
+                                    safetyStyle: {
+                                        size: item.size,
+                                        font: item.font,
+                                        color: item.color,
+                                        is_bold: item.is_bold,
+                                        is_italic: item.is_italic
+                                    }
                                 });
                             }}
                         />
@@ -505,7 +527,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             x={forceX ? spanX : undefined}
                                             y={span.origin ? span.origin[1] : (span.y || item.y)}
                                             fontSize={Math.max(1, Math.abs(span.size))}
-                                            fill={span.color ? `rgb(${span.color[0] * 255}, ${span.color[1] * 255}, ${span.color[2] * 255})` : color}
+                                            fill={getSVGColor(span.color, color)}
                                             fontWeight={span.is_bold ? 'bold' : undefined}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
                                             fontFamily={span.font ? normalizeFont(span.font) : undefined}
@@ -608,9 +630,29 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         return `"${fontName.replace(/^[A-Z]{6}\+/, '')}", "Latin Modern Roman", serif`;
     };
 
+    // ROBUST STYLE CAPTURE: Look for the first span that actually contains content/color
+    const styleItem = useMemo(() => {
+        if (!line.items || line.items.length === 0) return line.items[0] || {};
+
+        let candidates = [];
+        let searchIndex = (block.type === 'list-item' && line.is_bullet_start && line.items.length > 1) ? 1 : 0;
+
+        for (let i = searchIndex; i < line.items.length; i++) {
+            const it = line.items[i];
+            if (it.content && it.content.trim().length > 0 && it.color) {
+                // If it's a vibrant color (not a standard dark gray/black), return it immediately
+                const [r, g, b] = it.color;
+                const isGray = Math.abs(r - g) < 0.05 && Math.abs(g - b) < 0.05;
+                if (!isGray || (r > 0.4 || g > 0.4 || b > 0.4)) return it;
+                candidates.push(it);
+            }
+        }
+        return candidates[0] || line.items[searchIndex] || line.items[0];
+    }, [line, block]);
+
     const firstItem = line.items[0];
     const isListItem = block.type === 'list-item';
-    const textAnchorX = block.textX || firstItem.bbox[0];
+    const textAnchorX = block.textX || (firstItem?.bbox ? firstItem.bbox[0] : 0);
 
     // Determine Lane for the first item
     // If it's a wrapped line in a list, it should anchor to the text column
@@ -657,18 +699,21 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 e.stopPropagation();
 
                 // Trigger clicking on the invisible hitbox as if it were the text
-                const contentItem = (isListItem && line.is_bullet_start && line.items.length > 1) ? line.items[1] : firstItem;
-                const safetyStyle = {
-                    size: contentItem.size || line.size,
-                    font: contentItem.font,
-                    color: contentItem.color,
-                    is_bold: contentItem.is_bold,
-                    is_italic: contentItem.is_italic,
-                    uri: line.uri
-                };
+                console.log(`==================== CLICKED LINE ====================`);
+                console.log(`Line ID: ${line.id}`);
+                console.log(`Style Master:`, styleItem);
+                console.log(`Raw Color Array:`, JSON.stringify(styleItem.color));
+                console.log(`=======================================================`);
 
-                onDoubleClick(pageIndex, line.id, contentItem, e.currentTarget.getBoundingClientRect(), {
-                    safetyStyle
+                onDoubleClick(pageIndex, line.id, styleItem, e.currentTarget.getBoundingClientRect(), {
+                    safetyStyle: {
+                        size: styleItem.size || line.size,
+                        font: styleItem.font,
+                        color: styleItem.color,
+                        is_bold: styleItem.is_bold,
+                        is_italic: styleItem.is_italic,
+                        uri: line.uri
+                    }
                 });
             }}
         >
@@ -684,11 +729,11 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             <text
                 x={initialStartX}
                 y={baselineY}
-                fontSize={Math.max(1, Math.abs(firstItem.size))}
-                fontFamily={normalizeFont(firstItem.font)}
-                fill={firstItem.color ? `rgb(${firstItem.color[0] * 255}, ${firstItem.color[1] * 255}, ${firstItem.color[2] * 255})` : 'black'}
-                fontWeight={firstItem.is_bold ? 'bold' : 'normal'}
-                fontStyle={firstItem.is_italic ? 'italic' : 'normal'}
+                fontSize={Math.max(1, Math.abs(styleItem.size))}
+                fontFamily={normalizeFont(styleItem.font)}
+                fill={getSVGColor(styleItem.color, 'black')}
+                fontWeight={styleItem.is_bold ? 'bold' : 'normal'}
+                fontStyle={styleItem.is_italic ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic"
                 xmlSpace="preserve"
                 style={{
@@ -700,31 +745,39 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             >
                 {isModified ? (
                     (() => {
-                        const mapped = mapContentToIcons(content, firstItem.font);
+                        const mapped = mapContentToIcons(content, styleItem.font);
                         const isMappedIcon = mapped !== content;
                         const sStyle = edit.safetyStyle || {};
                         const isMarkerLine = isListItem && line.is_bullet_start;
                         const bMetrics = block.bullet_metrics || {};
 
                         // Use Safety Styles if available, fallback to line.size (which is the max size/height)
-                        const safeSize = Math.abs(sStyle.size || line.size || firstItem.size);
-                        const safeFont = sStyle.font || firstItem.font;
-                        const safeColor = sStyle.color || firstItem.color;
+                        const safeSize = Math.abs(sStyle.size || line.size || styleItem.size);
+                        const safeFont = sStyle.font || styleItem.font;
+                        const safeColor = sStyle.color || styleItem.color;
+
+                        if (isModified) {
+                            console.log(`==================== RENDERING MODIFIED ====================`);
+                            console.log(`Line ID: ${line.id}`);
+                            console.log(`State Color:`, JSON.stringify(sStyle.color));
+                            console.log(`Computed CSS:`, getSVGColor(safeColor));
+                            console.log(`============================================================`);
+                        }
 
                         if (isMarkerLine) {
                             const markerPart = line.bullet || '';
                             const restPart = content;
 
                             // Bullet size correction: if extraction says 6 but it's a primary bullet, ensure it's at least 70% of text size
-                            const rawBSize = Math.abs(bMetrics.size || firstItem.size);
+                            const rawBSize = Math.abs(bMetrics.size || styleItem.size);
                             const safeBSize = (rawBSize < safeSize * 0.7) ? safeSize * 0.8 : rawBSize;
 
                             return (
                                 <tspan x={initialStartX} y={baselineY}>
                                     <tspan
                                         fontSize={safeBSize}
-                                        fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(firstItem.font)}
-                                        fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                        fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(styleItem.font)}
+                                        fill={getSVGColor(safeColor, 'black')}
                                         fontWeight={(block.style?.is_bold || sStyle.is_bold) ? 'bold' : 'normal'}
                                         fontStyle={(block.style?.is_italic || sStyle.is_italic) ? 'italic' : 'normal'}
                                         dy={-((safeSize - safeBSize) * 0.4) + "px"}
@@ -737,7 +790,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         y={baselineY}
                                         fontSize={safeSize}
                                         fontFamily={normalizeFont(safeFont)}
-                                        fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                        fill={getSVGColor(safeColor, 'black')}
                                         fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
                                         fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                         xmlSpace="preserve"
@@ -754,7 +807,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 y={baselineY}
                                 fontSize={safeSize}
                                 fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(safeFont)}
-                                fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                fill={getSVGColor(safeColor, 'black')}
                                 fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
                                 fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                             >
@@ -819,7 +872,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 fontWeight={span.is_bold ? 'bold' : 'normal'}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(span.font)}
-                                fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
+                                fill={getSVGColor(span.color, 'black')}
                                 style={{
                                     fontVariant: isSmallCaps ? 'small-caps' : 'normal'
                                 }}

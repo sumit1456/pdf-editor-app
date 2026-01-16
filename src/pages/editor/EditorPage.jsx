@@ -280,7 +280,9 @@ export default function EditorPage() {
                 });
         }
 
-        return flattenedLines.filter(line => activeTab === 'links' ? !!line.uri : !line.uri);
+        return flattenedLines
+            .filter(line => activeTab === 'links' ? !!line.uri : !line.uri)
+            .reverse();
     }, [activePageData, activeTab]);
 
     return (
