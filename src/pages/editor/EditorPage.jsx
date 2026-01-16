@@ -7,6 +7,27 @@ import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import './EditorPage.css';
 
+// Helper to decouple bullets from content (Global for use in initializers)
+const splitBullet = (content) => {
+    if (!content) return { bullet: '', text: '' };
+
+    // Robust pattern for bullet markers:
+    // 1. Common symbols: • · * ∗ ⋆ – - »
+    // 2. Ordered markers: 1. 1) a. a)
+    // Matches the marker and all trailing whitespace
+    const match = content.match(/^([•·*∗⋆–\-»]|[\da-zA-Z]+[.)])\s*/);
+
+    if (match) {
+        const bulletPart = match[0];
+        return {
+            bullet: bulletPart,
+            text: content.substring(bulletPart.length)
+        };
+    }
+
+    return { bullet: '', text: content };
+};
+
 export default function EditorPage() {
     const location = useLocation();
     const backend = location.state?.backend || 'java';
@@ -19,7 +40,20 @@ export default function EditorPage() {
         return rawPages.map((page, pIdx) => {
             // Check if backend already provided blocks (Python)
             if (page.blocks) {
-                return page;
+                // Sanitize Python blocks: separate bullets from content at the root
+                const newBlocks = page.blocks.map(block => ({
+                    ...block,
+                    lines: block.lines.map(line => {
+                        const isBullet = !!line.is_bullet_start;
+                        const { bullet, text } = isBullet ? splitBullet(line.content) : { bullet: '', text: line.content };
+                        return {
+                            ...line,
+                            content: text,
+                            bullet: bullet
+                        };
+                    })
+                }));
+                return { ...page, blocks: newBlocks };
             }
 
             // Legacy Logic (Java): Manual fragment merging
@@ -28,9 +62,25 @@ export default function EditorPage() {
                 ...item
             }));
 
+            const mergedItems = mergeFragmentsIntoLines(itemsWithIds);
+
+            // Apply bullet splitting to Java items as well
+            const processedItems = mergedItems.map(item => {
+                if (item.type === 'text') {
+                    const { bullet, text } = splitBullet(item.content);
+                    return {
+                        ...item,
+                        bullet: bullet,
+                        content: text,
+                        is_bullet_start: !!bullet
+                    };
+                }
+                return item;
+            });
+
             return {
                 ...page,
-                items: mergeFragmentsIntoLines(itemsWithIds)
+                items: processedItems
             };
         });
     });
@@ -42,8 +92,13 @@ export default function EditorPage() {
 
     // NODE-BASED EDITING STATE: Persistent edits keyed by unique item ID
     const [nodeEdits, setNodeEdits] = useState({});
+    const [renderMode, setRenderMode] = useState('webgl'); // 'webgl' or 'svg'
+    const [activeTab, setActiveTab] = useState('text'); // 'text' or 'links'
+    const [zoom, setZoom] = useState(0.85); // Master zoom state
 
-    // Persistent canvas for measurement
+    const handleZoom = (delta) => {
+        setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
+    };
     const [measureCanvas] = useState(() => document.createElement('canvas'));
 
     // Initialize Reflow Engine with font metrics
@@ -68,6 +123,13 @@ export default function EditorPage() {
     };
 
     const handleDoubleClick = (pIdx, lineId, item, rect, extraData) => {
+        // --- AUTO-TAB SWITCHING ---
+        // If the clicked line isn't in the current tab, flip tabs
+        const nodeInCurrentTab = textLines.find(l => l.id === lineId);
+        if (!nodeInCurrentTab) {
+            setActiveTab(prev => prev === 'text' ? 'links' : 'text');
+        }
+
         // --- STYLE SAFETY MECHANIC ---
         // Capture and store original styles if not already set
         setNodeEdits(prev => {
@@ -89,8 +151,8 @@ export default function EditorPage() {
             };
         });
 
-        // Trigger existing scroll logic
-        scrollToNode(lineId);
+        // Trigger existing scroll logic with a slight delay to allow tab render
+        setTimeout(() => scrollToNode(lineId), 100);
     };
 
     const scrollToNode = (idOrIndex) => {
@@ -157,38 +219,69 @@ export default function EditorPage() {
     const textLines = useMemo(() => {
         if (!activePageData) return [];
 
+        const flattenedLines = [];
+
         if (activePageData.blocks) {
             // Flatten all lines from all blocks for granular editing
-            const flattenedLines = [];
             activePageData.blocks.forEach(block => {
                 block.lines.forEach(line => {
+                    const isBullet = !!(line.bullet || line.is_bullet_start);
+                    // Safety: Even if initializer missed it, try splitting here for the sidebar projection
+                    const { bullet, text } = isBullet ?
+                        { bullet: line.bullet, text: line.content } :
+                        splitBullet(line.content);
+
+                    // Style Safety: Use the second item (actual text) for the content style if it's a bullet
+                    const contentItem = (isBullet && line.items.length > 1) ? line.items[1] : (line.items[0] || {});
+
                     flattenedLines.push({
                         id: line.id,
-                        content: line.content,
+                        content: text,
+                        bullet: bullet || line.bullet,
                         type: 'text',
                         dataIndex: line.id,
                         isBlock: false,
-                        marker: line.is_bullet_start ? block.marker : null,
+                        marker: (line.is_bullet_start || bullet) ? (line.bullet_char || bullet?.trim() || block.marker) : null,
                         level: block.level || 0,
                         blockId: block.id,
                         uri: line.uri,
                         originalStyle: {
-                            size: line.size,
-                            font: line.items[0]?.font,
-                            color: line.items[0]?.color,
-                            is_bold: line.items[0]?.is_bold,
-                            is_italic: line.items[0]?.is_italic
+                            size: contentItem.size || line.size,
+                            font: contentItem.font,
+                            color: contentItem.color,
+                            is_bold: contentItem.is_bold,
+                            is_italic: contentItem.is_italic
                         }
                     });
                 });
             });
-            return flattenedLines;
+        } else {
+            // Legacy Path (Java)
+            (activePageData.items || [])
+                .filter(it => it.type === 'text')
+                .forEach((item, index) => {
+                    const { bullet, text } = (item.bullet) ?
+                        { bullet: item.bullet, text: item.content } :
+                        splitBullet(item.content);
+
+                    flattenedLines.push({
+                        ...item,
+                        content: text,
+                        bullet: bullet || item.bullet,
+                        dataIndex: index,
+                        originalStyle: {
+                            size: item.size,
+                            font: item.font,
+                            color: item.color,
+                            is_bold: item.is_bold,
+                            is_italic: item.is_italic
+                        }
+                    });
+                });
         }
 
-        return (activePageData.items || [])
-            .map((item, index) => ({ ...item, dataIndex: index }))
-            .filter(it => it.type === 'text');
-    }, [activePageData]);
+        return flattenedLines.filter(line => activeTab === 'links' ? !!line.uri : !line.uri);
+    }, [activePageData, activeTab]);
 
     return (
         <div className="editor-page">
@@ -200,14 +293,31 @@ export default function EditorPage() {
 
             {/* 1. EDITING PANEL - Premium Editorial Panel (Now on the Left) */}
             <div className="editing-panel">
-                <div className="panel-header">
-                    <div>
+                <div className="panel-header" style={{ flexDirection: 'column', gap: '15px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                         <h3 className="highlight">
                             Content <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Studio</span>
                         </h3>
-                        <p>
-                            Page {activePageIndex + 1} &middot; {textLines.length} Lines
+                        <p style={{ margin: 0 }}>
+                            Page {activePageIndex + 1} &middot; {textLines.length} {activeTab === 'text' ? 'Lines' : 'Links'}
                         </p>
+                    </div>
+
+                    <div className="tab-pill-selector">
+                        <button
+                            className={`tab-pill ${activeTab === 'text' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('text')}
+                        >
+                            <span className="tab-icon">Aa</span>
+                            Text Content
+                        </button>
+                        <button
+                            className={`tab-pill ${activeTab === 'links' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('links')}
+                        >
+                            <span className="tab-icon">🔗</span>
+                            Links
+                        </button>
                     </div>
                 </div>
 
@@ -226,24 +336,28 @@ export default function EditorPage() {
                             >
                                 <div className="input-card-header">
                                     <span className="line-label">
-                                        Line {String(textLines.length - i).padStart(2, '0')}
+                                        {line.uri ? '🔗 Link Node' : `Line ${String(textLines.length - i).padStart(2, '0')}`}
                                         {edit.isModified && <span className="modified-badge">Edited</span>}
                                     </span>
                                 </div>
-                                <textarea
-                                    id={`input-${line.id}`}
-                                    value={displayContent}
-                                    onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            e.target.blur();
-                                        }
-                                    }}
-                                />
+                                <div className="input-group-content">
+                                    {activeTab === 'links' && <label className="field-label">Hypertext</label>}
+                                    <textarea
+                                        id={`input-${line.id}`}
+                                        value={displayContent}
+                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                e.target.blur();
+                                            }
+                                        }}
+                                        placeholder="Text to display..."
+                                    />
+                                </div>
                                 {!!displayUri && (
                                     <div className="link-input-wrapper">
-                                        <label>Link URL</label>
+                                        <label className="field-label">Hyperlink (URL)</label>
                                         <input
                                             type="text"
                                             value={displayUri || ''}
@@ -260,15 +374,38 @@ export default function EditorPage() {
 
             {/* 2. MAIN WORKSPACE - Central WebGL Stage */}
             <div className="workspace-container">
-                <div className="workspace-header">
-                    <h2 className="highlight">
-                        WebGL <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Engine</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <h2 className="highlight" style={{ margin: 0 }}>
+                        {renderMode === 'webgl' ? 'WebGL' : 'SVG'} <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Engine</span>
                     </h2>
+                    <div
+                        className={`render-toggle ${renderMode}`}
+                        onClick={() => setRenderMode(prev => prev === 'webgl' ? 'svg' : 'webgl')}
+                        title="Switch Rendering Engine"
+                    >
+                        <div className="toggle-thumb"></div>
+                        <span className="toggle-label-webgl">WebGL</span>
+                        <span className="toggle-label-svg">SVG</span>
+                    </div>
+
+                    {/* ZOOM CONTROLS */}
+                    <div className="zoom-controls">
+                        <button className="zoom-btn" onClick={() => handleZoom(-0.1)} title="Zoom Out">−</button>
+                        <span className="zoom-level">{Math.round(zoom * 100)}%</span>
+                        <button className="zoom-btn" onClick={() => handleZoom(0.1)} title="Zoom In">+</button>
+                    </div>
                 </div>
 
                 <div className="preview-stage">
                     <div className="preview-content-wrapper">
-                        {backend === 'python' ? (
+                        {renderMode === 'svg' ? (
+                            <PDFRenderer
+                                data={{ pages, fonts }}
+                                isMini={false}
+                                activePageIndex={activePageIndex}
+                                nodeEdits={nodeEdits}
+                            />
+                        ) : backend === 'python' ? (
                             <PythonRenderer
                                 page={activePageData}
                                 pageIndex={activePageIndex}
@@ -278,6 +415,7 @@ export default function EditorPage() {
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}
                                 onDoubleClick={handleDoubleClick}
+                                scale={zoom}
                             />
                         ) : (
                             <WebGLRenderer
@@ -286,6 +424,7 @@ export default function EditorPage() {
                                 fontsKey={fontsKey}
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}
+                                scale={zoom}
                             />
                         )}
                     </div>

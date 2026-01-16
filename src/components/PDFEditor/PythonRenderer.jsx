@@ -4,11 +4,10 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer for Python Backend
-export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect }) {
+export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-    const [camera, setCamera] = useState({ scale: 1.0, x: 0, y: 0 }); // Fixed 1.0
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
 
@@ -100,7 +99,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
         const renderWidth = page.width || A4_WIDTH;
         const renderHeight = page.height || A4_HEIGHT;
 
-        const scaledWidth = renderWidth * camera.scale;
+        const scaledWidth = renderWidth * scale;
 
         // Match Canvas size (which matches wrapper size)
         worldContainer.x = 0;
@@ -260,7 +259,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
         await engine.render({ nodes }, { targetContainer: worldContainer });
         engine.app.render();
 
-    }, [isReady, page, pageIndex, viewportSize]);
+    }, [isReady, page, pageIndex, scale, viewportSize]);
 
     // --- 3. DYNAMIC FONT INJECTION ---
     const fontStyles = useMemo(() => {
@@ -333,7 +332,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
                     height: renderHeight + 'px',
                     backgroundColor: 'white',
                     boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                    transform: 'scale(1.0)',
+                    transform: `scale(${scale})`,
                     transformOrigin: 'top center',
                     flexShrink: 0,
                     margin: '0 auto',
@@ -376,7 +375,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
                             fontStyles={fontStyles}
-                            onDoubleClick={handleDoubleClick}
+                            onDoubleClick={onDoubleClick}
                         />
                     ) : page && (
                         <EditableTextLayer
@@ -386,7 +385,7 @@ export default function PythonRenderer({ page, pageIndex, fontsKey, fonts, nodeE
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
                             fontStyles={fontStyles}
-                            onDoubleClick={handleDoubleClick}
+                            onDoubleClick={onDoubleClick}
                         />
                     )}
                 </svg>
@@ -510,6 +509,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             fontWeight={span.is_bold ? 'bold' : undefined}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
                                             fontFamily={span.font ? normalizeFont(span.font) : undefined}
+                                            xmlSpace="preserve"
                                         >
                                             {span.content}
                                         </tspan>
@@ -624,188 +624,212 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
 
     const isSmallCaps = (firstItem.font || '').toLowerCase().includes('cmcsc');
 
-    const mapContentToIcons = (content, fontName) => {
+    const mapContentToIcons = (text, fontName) => {
+        if (!text) return text;
         const lowerFont = (fontName || '').toLowerCase();
-        const isIconFont = lowerFont.includes('awesome') || lowerFont.includes('fa-') || lowerFont.includes('symbol') || lowerFont.includes('webdings');
 
-        const c = content.trim();
-        if (isIconFont || c.length === 1) {
-            // Map common broken icon glyphs to Font Awesome codes
-            if (c === 'ï' || c === '\u00ef') return '\uf08c'; // LinkedIn
-            if (c === 'Ð' || c === '\u00d0') return '\uf09b'; // GitHub
-            if (c === '§' || c === '\u00a7') return '\uf0e0'; // Email
-            if (c === ')' || c === '\u0029' || c === '#' || c === 'phone') return '\uf095'; // Phone
-            if (c === 'L' && (isIconFont || lowerFont.includes('serif'))) return '\uf3a5'; // LeetCode
-            if (c === 'y' && isIconFont) return '\uf167'; // YouTube
-            if (c === 'f' && isIconFont) return '\uf09a'; // Facebook
+        // LaTeX/Computer Modern Symbol replacements
+        let mapped = text
+            .replace(/\u2022/g, '•')  // Bullet
+            .replace(/\u2217/g, '∗')  // Asterisk bullet
+            .replace(/\u22c6/g, '⋆')  // Star bullet
+            .replace(/\u2013/g, '–')  // En-dash
+            .replace(/\u2014/g, '—'); // Em-dash
+
+        // FontAwesome Mapping (Based on nable_python.pdf findings)
+        if (lowerFont.includes('fontawesome')) {
+            mapped = mapped
+                .replace(/\u0083/g, '\uf095') // ƒ -> Phone (PhoneAlt)
+                .replace(/#/g, '\uf0e0')      // # -> Envelope
+                .replace(/\u00a7/g, '\uf09b') // § -> Github
+                .replace(/\u00ef/g, '\uf08c') // ï -> LinkedIn
+                .replace(/\u00d0/g, '\uf121'); // Ð -> Code / LeetCode
         }
-        return content;
+        return mapped;
     };
 
     return (
-        <text
-            x={initialStartX}
-            y={baselineY}
-            fontSize={Math.max(1, Math.abs(firstItem.size))}
-            fontFamily={normalizeFont(firstItem.font)}
-            fill={firstItem.color ? `rgb(${firstItem.color[0] * 255}, ${firstItem.color[1] * 255}, ${firstItem.color[2] * 255})` : 'black'}
-            fontWeight={firstItem.is_bold ? 'bold' : 'normal'}
-            fontStyle={firstItem.is_italic ? 'italic' : 'normal'}
-            dominantBaseline="alphabetic"
-            style={{
-                userSelect: 'none',
-                pointerEvents: 'all',
-                cursor: 'text',
-                whiteSpace: 'pre',
-                fontVariant: isSmallCaps ? 'small-caps' : 'normal'
-            }}
+        <g
+            className="line-group"
+            style={{ cursor: 'text' }}
             onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // --- STYLE SAFETY MECHANIC ---
-                // Capture the original PDF metadata at the moment of edit
+                // Trigger clicking on the invisible hitbox as if it were the text
+                const contentItem = (isListItem && line.is_bullet_start && line.items.length > 1) ? line.items[1] : firstItem;
                 const safetyStyle = {
-                    size: line.size,
-                    font: firstItem.font,
-                    color: firstItem.color,
-                    is_bold: firstItem.is_bold,
-                    is_italic: firstItem.is_italic,
+                    size: contentItem.size || line.size,
+                    font: contentItem.font,
+                    color: contentItem.color,
+                    is_bold: contentItem.is_bold,
+                    is_italic: contentItem.is_italic,
                     uri: line.uri
                 };
 
-                console.log("--------------------------------------");
-                console.log("[Style Capture] Saved styles for Line", line.id, ":", safetyStyle);
-                console.log("--------------------------------------");
-
-                onDoubleClick(pageIndex, line.id, firstItem, e.target.getBoundingClientRect(), {
+                onDoubleClick(pageIndex, line.id, contentItem, e.currentTarget.getBoundingClientRect(), {
                     safetyStyle
                 });
             }}
         >
-            {isModified ? (
-                (() => {
-                    const mapped = mapContentToIcons(content, firstItem.font);
-                    const isMappedIcon = mapped !== content;
-                    const sStyle = edit.safetyStyle || {};
-                    const isMarkerLine = isListItem && line.is_bullet_start;
-                    const bMetrics = block.bullet_metrics || {};
+            {/* INVISIBLE HITBOX: Covers the entire line area and some padding */}
+            <rect
+                x={line.x0 - 5}
+                y={line.y - (line.height || line.size || 10) - 4}
+                width={Math.max(50, (line.x1 - line.x0) + 10)}
+                height={(line.height || line.size || 12) + 8}
+                fill="transparent"
+                pointerEvents="all"
+            />
+            <text
+                x={initialStartX}
+                y={baselineY}
+                fontSize={Math.max(1, Math.abs(firstItem.size))}
+                fontFamily={normalizeFont(firstItem.font)}
+                fill={firstItem.color ? `rgb(${firstItem.color[0] * 255}, ${firstItem.color[1] * 255}, ${firstItem.color[2] * 255})` : 'black'}
+                fontWeight={firstItem.is_bold ? 'bold' : 'normal'}
+                fontStyle={firstItem.is_italic ? 'italic' : 'normal'}
+                dominantBaseline="alphabetic"
+                xmlSpace="preserve"
+                style={{
+                    userSelect: 'none',
+                    pointerEvents: 'none',  // Pass clicks through to the <g> container
+                    whiteSpace: 'pre',
+                    fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+                }}
+            >
+                {isModified ? (
+                    (() => {
+                        const mapped = mapContentToIcons(content, firstItem.font);
+                        const isMappedIcon = mapped !== content;
+                        const sStyle = edit.safetyStyle || {};
+                        const isMarkerLine = isListItem && line.is_bullet_start;
+                        const bMetrics = block.bullet_metrics || {};
 
-                    // Use Safety Styles if available, fallback to line.size (which is the max size/height)
-                    // This prevents shrinking if capture is missing.
-                    const safeSize = Math.abs(sStyle.size || line.size || firstItem.size);
-                    const safeFont = sStyle.font || firstItem.font;
-                    const safeColor = sStyle.color || firstItem.color;
+                        // Use Safety Styles if available, fallback to line.size (which is the max size/height)
+                        const safeSize = Math.abs(sStyle.size || line.size || firstItem.size);
+                        const safeFont = sStyle.font || firstItem.font;
+                        const safeColor = sStyle.color || firstItem.color;
 
-                    console.log("--------------------------------------");
-                    console.log(`[Style Render] Line ${line.id}: size=${safeSize}, font=${safeFont}`);
-                    console.log("--------------------------------------");
+                        if (isMarkerLine) {
+                            const markerPart = line.bullet || '';
+                            const restPart = content;
 
-                    if (isMarkerLine) {
-                        const firstSpaceIdx = mapped.search(/\s/);
-                        const markerPart = firstSpaceIdx > -1 ? mapped.substring(0, firstSpaceIdx) : (mapped.length > 2 ? mapped.substring(0, 1) : mapped);
-                        const restPart = mapped.substring(markerPart.length);
+                            // Bullet size correction: if extraction says 6 but it's a primary bullet, ensure it's at least 70% of text size
+                            const rawBSize = Math.abs(bMetrics.size || firstItem.size);
+                            const safeBSize = (rawBSize < safeSize * 0.7) ? safeSize * 0.8 : rawBSize;
+
+                            return (
+                                <tspan x={initialStartX} y={baselineY}>
+                                    <tspan
+                                        fontSize={safeBSize}
+                                        fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(firstItem.font)}
+                                        fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                        fontWeight={(block.style?.is_bold || sStyle.is_bold) ? 'bold' : 'normal'}
+                                        fontStyle={(block.style?.is_italic || sStyle.is_italic) ? 'italic' : 'normal'}
+                                        dy={-((safeSize - safeBSize) * 0.4) + "px"}
+                                        xmlSpace="preserve"
+                                    >
+                                        {markerPart}
+                                    </tspan>
+                                    <tspan
+                                        x={textAnchorX}
+                                        y={baselineY}
+                                        fontSize={safeSize}
+                                        fontFamily={normalizeFont(safeFont)}
+                                        fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                        fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
+                                        fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
+                                        xmlSpace="preserve"
+                                    >
+                                        {restPart}
+                                    </tspan>
+                                </tspan>
+                            );
+                        }
 
                         return (
-                            <tspan x={initialStartX} y={baselineY}>
-                                <tspan
-                                    fontSize={Math.abs(bMetrics.size || safeSize)}
-                                    fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(safeFont)}
-                                    fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
-                                    fontWeight={(block.style?.is_bold || sStyle.is_bold) ? 'bold' : 'normal'}
-                                    fontStyle={(block.style?.is_italic || sStyle.is_italic) ? 'italic' : 'normal'}
-                                    dy={-((firstItem.size - (bMetrics.size || safeSize)) * 0.4) + "px"}
-                                >
-                                    {markerPart}
-                                </tspan>
-                                <tspan
-                                    x={textAnchorX}
-                                    y={baselineY}
-                                    fontSize={safeSize}
-                                    fontFamily={normalizeFont(safeFont)}
-                                    fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
-                                    fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
-                                    fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
-                                >
-                                    {restPart}
-                                </tspan>
+                            <tspan
+                                x={initialStartX}
+                                y={baselineY}
+                                fontSize={safeSize}
+                                fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(safeFont)}
+                                fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
+                                fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
+                                fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
+                            >
+                                {mapped}
                             </tspan>
                         );
-                    }
+                    })()
+                ) : (
+                    line.items.map((span, si) => {
+                        const fontName = span.font || '';
+                        const isSmallCaps = fontName.toLowerCase().includes('cmcsc');
 
-                    return (
-                        <tspan
-                            x={initialStartX}
-                            y={baselineY}
-                            fontSize={safeSize}
-                            fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(safeFont)}
-                            fill={safeColor ? `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})` : 'black'}
-                            fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
-                            fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
-                        >
-                            {mapped}
-                        </tspan>
-                    );
-                })()
-            ) : (
-                line.items.map((span, si) => {
-                    const fontName = span.font || '';
-                    const isSmallCaps = fontName.toLowerCase().includes('cmcsc');
+                        // LANE ANCHORING LOGIC
+                        const prev = si > 0 ? line.items[si - 1] : null;
+                        const currentX = span.origin ? span.origin[0] : span.bbox[0];
+                        const prevX1 = prev ? prev.bbox[2] : -1;
 
-                    // LANE ANCHORING LOGIC
-                    const prev = si > 0 ? line.items[si - 1] : null;
-                    const currentX = span.origin ? span.origin[0] : span.bbox[0];
-                    const prevX1 = prev ? prev.bbox[2] : -1;
+                        let forceX = undefined;
 
-                    let forceX = undefined;
-
-                    // Case A: Large jump (Date/Location lane)
-                    if (prev && (currentX - prevX1) > 8) {
-                        forceX = currentX;
-                    }
-
-                    // Case B: Bullet -> Content transition in the first line of a list
-                    if (isListItem && line.is_bullet_start && si > 0) {
-                        const prevTxt = prev.content.trim();
-                        // Sync with backend SUB_BULLET_CHARS to prevent false positives (removed icons)
-                        const BULLET_CHARS = ["•", "·", "*", "-", "∗", "»", "ΓÇó", "├»", "Γêù"];
-                        if (BULLET_CHARS.includes(prevTxt) || prevTxt.length === 1 && prevTxt.charCodeAt(0) === 0x2217) {
-                            forceX = textAnchorX;
+                        // Case A: Large jump (Date/Location lane)
+                        if (prev && (currentX - prevX1) > 8) {
+                            forceX = currentX;
                         }
-                    }
 
-                    const content = span.content;
-                    const mapped = mapContentToIcons(content, span.font);
-                    const isMappedIcon = mapped !== content;
+                        // Case B: Bullet -> Content transition in the first line of a list
+                        if (isListItem && line.is_bullet_start && si > 0) {
+                            const prevTxt = prev.content.trim();
+                            // Sync with backend SUB_BULLET_CHARS to prevent false positives (removed icons)
+                            const BULLET_CHARS = ["•", "·", "*", "-", "∗", "»", "ΓÇó", "├»", "Γêù"];
+                            if (BULLET_CHARS.includes(prevTxt) || prevTxt.length === 1 && prevTxt.charCodeAt(0) === 0x2217) {
+                                forceX = textAnchorX;
+                            }
+                        }
 
-                    const isMarker = isListItem && line.is_bullet_start && si === 0;
-                    const bMetrics = block.bullet_metrics || {};
-                    const customSize = isMarker ? (bMetrics.size || span.size) : span.size;
-                    const isStandardDot = isMarker && (span.content === '•' || span.content === '·');
+                        const content = span.content;
+                        const mapped = mapContentToIcons(content, span.font);
+                        const isMappedIcon = mapped !== content;
 
-                    // Dynamic vertical centering: Lift bullets up (negative dy)
-                    const verticalShift = isMarker ? -((line.size - customSize) * 0.4) : 0;
+                        const isMarker = isListItem && line.is_bullet_start && si === 0;
+                        const bMetrics = block.bullet_metrics || {};
+                        let customSize = isMarker ? (bMetrics.size || span.size) : span.size;
 
-                    return (
-                        <tspan
-                            key={si}
-                            x={forceX}
-                            y={baselineY}
-                            dy={verticalShift + "px"}
-                            fontSize={Math.max(1, Math.abs(customSize))}
-                            fontWeight={span.is_bold ? 'bold' : 'normal'}
-                            fontStyle={span.is_italic ? 'italic' : 'normal'}
-                            fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(span.font)}
-                            fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
-                            style={{
-                                fontVariant: isSmallCaps ? 'small-caps' : 'normal'
-                            }}
-                        >
-                            {mapped}
-                        </tspan>
-                    );
-                })
-            )}
-        </text>
+                        // Bullet size correction: ensure markers are at least 70% of the following text size
+                        if (isMarker && line.items.length > 1) {
+                            const contentSize = Math.abs(line.items[1].size);
+                            if (Math.abs(customSize) < contentSize * 0.7) {
+                                customSize = contentSize * 0.8;
+                            }
+                        }
+                        const isStandardDot = isMarker && (span.content === '•' || span.content === '·');
+
+                        // Dynamic vertical centering: Lift bullets up (negative dy)
+                        const verticalShift = isMarker ? -((line.size - customSize) * 0.4) : 0;
+
+                        return (
+                            <tspan
+                                key={si}
+                                x={forceX}
+                                y={baselineY}
+                                dy={verticalShift + "px"}
+                                fontSize={Math.max(1, Math.abs(customSize))}
+                                fontWeight={span.is_bold ? 'bold' : 'normal'}
+                                fontStyle={span.is_italic ? 'italic' : 'normal'}
+                                fontFamily={isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(span.font)}
+                                fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
+                                style={{
+                                    fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+                                }}
+                            >
+                                {mapped}
+                            </tspan>
+                        );
+                    })
+                )}
+            </text>
+        </g>
     );
 }

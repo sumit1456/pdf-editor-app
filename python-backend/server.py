@@ -9,6 +9,7 @@ import zipfile
 import io
 import json
 from layout_engine import normalize_layout
+from coordinate_diagnostic import run_comparison
 
 app = FastAPI()
 
@@ -162,6 +163,8 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                                     "color": parse_color(span.get("color")), 
                                     "is_bold": is_bold,
                                     "is_italic": is_italic,
+                                    "original_x": origin_px[0],
+                                    "original_y": origin_px[1],
                                     "matrix": [1, 0, 0, 1, 0, 0]
                                 }
                                 if uri:
@@ -262,6 +265,13 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
 
             # 4. LAYOUT NORMALIZATION (Block Tree Reconstruction)
             layout_data = normalize_layout(items)
+
+            # --- RUNTIME DIAGNOSTIC ---
+            # Generate the coordinate comparison report for the current page
+            try:
+                run_comparison(items, layout_data)
+            except Exception as diag_e:
+                print(f"[Diagnostic Error] Failed to generate coordinate report: {diag_e}")
 
             extracted_pages.append({
                 "index": pno,

@@ -30,6 +30,10 @@
 
     /* Glows */
     --glow-white: 0 0 20px rgba(255, 255, 255, 0.05);
+
+    /* Render Toggle Specific */
+    --toggle-webgl: #ffd27d;
+    --toggle-svg: #a1a1aa;
 }
 
 .editor-page {
@@ -174,6 +178,53 @@
     justify-content: space-between;
     align-items: center;
     background: rgba(255, 255, 255, 0.01);
+}
+
+/* Mode Tab Selector */
+.tab-pill-selector {
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--studio-border);
+    width: 100%;
+}
+
+.tab-pill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    border: none;
+    background: transparent;
+    color: var(--studio-silver);
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.tab-pill:hover {
+    color: var(--studio-white);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.tab-pill.active {
+    background: var(--studio-glass-strong);
+    color: var(--studio-white);
+    box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+}
+
+.tab-icon {
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.tab-pill.active .tab-icon {
+    opacity: 1;
 }
 
 .panel-header h3 {
@@ -419,12 +470,20 @@
     gap: 6px;
 }
 
-.link-input-wrapper label {
+.link-input-wrapper label,
+.field-label {
     font-size: 0.6rem;
     color: var(--studio-gold);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.input-group-content {
+    display: flex;
+    flex-direction: column;
 }
 
 .link-input-wrapper input {
@@ -442,4 +501,113 @@
     border-color: var(--studio-gold);
     background: rgba(212, 175, 55, 0.05);
     box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+}
+
+/* RENDERING MODE TOGGLE */
+.render-toggle {
+    width: 140px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--studio-border);
+    border-radius: 100px;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+    transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+    user-select: none;
+}
+
+.render-toggle:hover {
+    border-color: var(--studio-border-strong);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.render-toggle .toggle-thumb {
+    position: absolute;
+    width: 68px;
+    height: 26px;
+    background: var(--studio-white);
+    border-radius: 100px;
+    transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    z-index: 1;
+}
+
+.render-toggle.webgl .toggle-thumb {
+    left: 2px;
+    background: var(--toggle-webgl);
+}
+
+.render-toggle.svg .toggle-thumb {
+    left: 68px;
+    background: var(--toggle-svg);
+}
+
+.render-toggle span {
+    flex: 1;
+    text-align: center;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    z-index: 2;
+    transition: color 0.3s ease;
+}
+
+.render-toggle.webgl .toggle-label-webgl {
+    color: #000;
+}
+
+/* ZOOM CONTROLS */
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--studio-border);
+    border-radius: 100px;
+    padding: 2px 8px;
+    gap: 12px;
+}
+
+.zoom-btn {
+    background: transparent;
+    border: none;
+    color: var(--studio-bright);
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+    color: var(--studio-white);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.zoom-level {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--studio-white);
+    min-width: 45px;
+    text-align: center;
+    user-select: none;
+}
+
+.render-toggle.webgl .toggle-label-svg {
+    color: var(--studio-silver);
+}
+
+.render-toggle.svg .toggle-label-webgl {
+    color: var(--studio-silver);
+}
+
+.render-toggle.svg .toggle-label-svg {
+    color: #000;
 }

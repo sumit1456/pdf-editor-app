@@ -4,11 +4,10 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
-export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onSelect }) {
+export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onSelect, scale }) {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 3000 });
-    const [camera, setCamera] = useState({ scale: 1.1, x: 0, y: 0 });
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
 
@@ -230,7 +229,7 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onS
         // Force a re-render frame
         engine.app.render();
 
-    }, [isReady, page, pageIndex, camera, viewportSize]);
+    }, [isReady, page, pageIndex, scale, viewportSize]);
 
     // 3. Compute Merged Lines for Editing/SVG
     const mergedLines = useMemo(() => {
@@ -287,7 +286,7 @@ export default function WebGLRenderer({ page, pageIndex, fontsKey, onUpdate, onS
                     height: renderHeight + 'px',
                     backgroundColor: 'white',
                     boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                    transform: `scale(${camera.scale})`,
+                    transform: `scale(${scale})`,
                     transformOrigin: 'top center',
                     flexShrink: 0
                 }}
@@ -377,7 +376,7 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }
 
                                 const rect = e.target.getBoundingClientRect();
                                 // Pass text styles, not rect styles
-                                onDoubleClick(pageIndex, i, item, rect, {
+                                onDoubleClick(pageIndex, item.id || i, item, rect, {
                                     fontSize: Math.abs(item.size) + 'px',
                                     fontFamily: item.font,
                                     fontWeight: item.is_bold ? 'bold' : 'normal',
@@ -392,21 +391,27 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }
                             <text
                                 visibility="visible"
                                 transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
-                                fontSize={Math.abs(item.size)}
-                                fontFamily={`"${item.font}", serif`}
-                                fontWeight={item.is_bold ? 'bold' : 'normal'}
-                                fontStyle={item.is_italic ? 'italic' : 'normal'}
-                                fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
                                 dominantBaseline="alphabetic"
-                                style={{
-                                    userSelect: 'none',
-                                    pointerEvents: 'none',
-                                    cursor: 'text',
-                                    touchAction: 'none', // Prevent scrolling while tapping text
-                                    whiteSpace: 'pre'
-                                }}
                             >
-                                {item.content}
+                                <tspan
+                                    fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                    fontSize={Math.abs(item.size)}
+                                    fontFamily={`"${item.font}", serif`}
+                                    fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                    fontStyle={item.is_italic ? 'italic' : 'normal'}
+                                >
+                                    {item.bullet || ''}
+                                </tspan>
+                                <tspan
+                                    fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                    fontSize={Math.abs(item.size)}
+                                    fontFamily={`"${item.font}", serif`}
+                                    fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                    fontStyle={item.is_italic ? 'italic' : 'normal'}
+                                    xmlSpace="preserve"
+                                >
+                                    {item.content}
+                                </tspan>
                             </text>
                         </g>
                     </g>
