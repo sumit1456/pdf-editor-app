@@ -190,6 +190,38 @@ export default function EditorPage() {
         // NO REFLOW: We allow the user to manualy type at specific lines
     };
 
+    const handleStyleUpdate = (lineId, field, value) => {
+        setNodeEdits(prev => {
+            const current = prev[lineId] || {};
+            const sStyle = { ...(current.safetyStyle || {}) };
+            sStyle[field] = value;
+
+            return {
+                ...prev,
+                [lineId]: {
+                    ...current,
+                    safetyStyle: sStyle,
+                    isModified: true
+                }
+            };
+        });
+    };
+
+    const rgbToHex = (c) => {
+        if (!c || !Array.isArray(c)) return '#000000';
+        const r = Math.round(c[0] * 255).toString(16).padStart(2, '0');
+        const g = Math.round(c[1] * 255).toString(16).padStart(2, '0');
+        const b = Math.round(c[2] * 255).toString(16).padStart(2, '0');
+        return `#${r}${g}${b}`;
+    };
+
+    const hexToRgb = (hex) => {
+        const r = parseInt(hex.slice(1, 3), 16) / 255;
+        const g = parseInt(hex.slice(3, 5), 16) / 255;
+        const b = parseInt(hex.slice(5, 7), 16) / 255;
+        return [r, g, b];
+    };
+
     const handleLinkEdit = (lineId, newUri, originalStyle) => {
         if (!lineId) return;
         setNodeEdits(prev => ({
@@ -293,39 +325,29 @@ export default function EditorPage() {
                 <div className="floating-shape shape-2"></div>
             </div>
 
-            {/* 1. EDITING PANEL - Premium Editorial Panel (Now on the Left) */}
+            {/* 1. EDITING PANEL - Left */}
             <div className="editing-panel">
                 <div className="panel-header" style={{ flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                         <h3 className="highlight">
                             Content <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Studio</span>
                         </h3>
-                        <p style={{ margin: 0 }}>
-                            Page {activePageIndex + 1} &middot; {textLines.length} {activeTab === 'text' ? 'Lines' : 'Links'}
-                        </p>
+                        <span className="page-count-mini">Page {activePageIndex + 1} · {textLines.length} {activeTab === 'text' ? 'Nodes' : 'Links'}</span>
                     </div>
-
                     <div className="tab-pill-selector">
-                        <button
-                            className={`tab-pill ${activeTab === 'text' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('text')}
-                        >
-                            <span className="tab-icon">Aa</span>
-                            Text Content
+                        <button className={`tab-pill ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>
+                            <span className="icon">Aa</span> Text Content
                         </button>
-                        <button
-                            className={`tab-pill ${activeTab === 'links' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('links')}
-                        >
-                            <span className="tab-icon">🔗</span>
-                            Links
+                        <button className={`tab-pill ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>
+                            <span className="icon">🔗</span> Links
                         </button>
                     </div>
                 </div>
 
-                <div className="structure-list" style={{ scrollBehavior: 'smooth' }}>
+                <div className="structure-list">
                     {textLines.slice().reverse().map((line, i) => {
                         const edit = nodeEdits[line.id] || {};
+                        const sStyle = edit.safetyStyle || line.originalStyle || {};
                         const displayContent = edit.content !== undefined ? edit.content : line.content;
                         const displayUri = edit.uri !== undefined ? edit.uri : line.uri;
 
@@ -334,49 +356,67 @@ export default function EditorPage() {
                                 key={line.id || i}
                                 id={`input-card-${line.id || line.dataIndex}`}
                                 className={`premium-input-card ${edit.isModified ? 'modified' : ''}`}
-                                style={{ marginLeft: `${(line.level || 0) * 20}px` }}
                             >
-                                <div className="input-card-header">
-                                    <span className="line-label">
-                                        {line.uri ? '🔗 Link Node' : `Line ${String(textLines.length - i).padStart(2, '0')}`}
-                                        {edit.isModified && <span className="modified-badge">Edited</span>}
-                                    </span>
+                                <div className="card-controls-row">
+                                    <div className="style-tools">
+                                        <input
+                                            type="color"
+                                            className="color-swatch-input"
+                                            value={rgbToHex(sStyle.color)}
+                                            onChange={(e) => handleStyleUpdate(line.id, 'color', hexToRgb(e.target.value))}
+                                            title="Override Color"
+                                        />
+                                        <div className="size-control">
+                                            <button onClick={() => handleStyleUpdate(line.id, 'size', (sStyle.size || 10) - 1)}>−</button>
+                                            <span className="size-label">{Math.round(Math.abs(sStyle.size || 10))}</span>
+                                            <button onClick={() => handleStyleUpdate(line.id, 'size', (sStyle.size || 10) + 1)}>+</button>
+                                        </div>
+                                        <div className="format-toggles">
+                                            <button
+                                                className={`toggle-tool ${sStyle.is_bold ? 'active' : ''}`}
+                                                onClick={() => handleStyleUpdate(line.id, 'is_bold', !sStyle.is_bold)}
+                                            >B</button>
+                                            <button
+                                                className={`toggle-tool ${sStyle.is_italic ? 'active' : ''}`}
+                                                onClick={() => handleStyleUpdate(line.id, 'is_italic', !sStyle.is_italic)}
+                                            >I</button>
+                                        </div>
+                                    </div>
+                                    <span className="card-id">L.{textLines.length - i}</span>
                                 </div>
-                                <div className="input-group-content">
-                                    {activeTab === 'links' && <label className="field-label">Hypertext</label>}
+
+                                <div className="card-input-area">
+                                    <label className="field-label">{line.uri ? 'Hypertext' : 'Content'}</label>
                                     <textarea
                                         id={`input-${line.id}`}
                                         value={displayContent}
                                         onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                e.target.blur();
-                                            }
-                                        }}
-                                        placeholder="Text to display..."
+                                        rows={1}
+                                        placeholder="Type text here..."
                                     />
+
+                                    {activeTab === 'links' && (
+                                        <div className="inline-link-field">
+                                            <label className="field-label">Hyperlink (URL)</label>
+                                            <input
+                                                type="text"
+                                                className="link-field"
+                                                value={displayUri || ''}
+                                                placeholder="https://..."
+                                                onChange={(e) => handleLinkEdit(line.id, e.target.value, line.originalStyle)}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                                {!!displayUri && (
-                                    <div className="link-input-wrapper">
-                                        <label className="field-label">Hyperlink (URL)</label>
-                                        <input
-                                            type="text"
-                                            value={displayUri || ''}
-                                            placeholder="https://..."
-                                            onChange={(e) => handleLinkEdit(line.id, e.target.value, line.originalStyle)}
-                                        />
-                                    </div>
-                                )}
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            {/* 2. MAIN WORKSPACE - Central WebGL Stage */}
+            {/* 2. MAIN WORKSPACE - Center */}
             <div className="workspace-container">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
                     <h2 className="highlight" style={{ margin: 0 }}>
                         {renderMode === 'webgl' ? 'WebGL' : 'SVG'} <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Engine</span>
                     </h2>
@@ -390,11 +430,10 @@ export default function EditorPage() {
                         <span className="toggle-label-svg">SVG</span>
                     </div>
 
-                    {/* ZOOM CONTROLS */}
                     <div className="zoom-controls">
-                        <button className="zoom-btn" onClick={() => handleZoom(-0.1)} title="Zoom Out">−</button>
+                        <button className="zoom-btn" onClick={() => handleZoom(-0.1)}>−</button>
                         <span className="zoom-level">{Math.round(zoom * 100)}%</span>
-                        <button className="zoom-btn" onClick={() => handleZoom(0.1)} title="Zoom In">+</button>
+                        <button className="zoom-btn" onClick={() => handleZoom(0.1)}>+</button>
                     </div>
                 </div>
 
@@ -403,7 +442,6 @@ export default function EditorPage() {
                         {renderMode === 'svg' ? (
                             <PDFRenderer
                                 data={{ pages, fonts }}
-                                isMini={false}
                                 activePageIndex={activePageIndex}
                                 nodeEdits={nodeEdits}
                             />
@@ -433,10 +471,10 @@ export default function EditorPage() {
                 </div>
             </div>
 
-            {/* 3. PAGE NAVIGATOR - Grid (Now on the Right as requested) */}
+            {/* 3. NAVIGATOR - Right */}
             <div className="navigator-sidebar">
                 <div className="navigator-header">
-                    <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0 0 10px 0' }}>Pages preview</h3>
+                    <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0 0 10px 0' }}>Pages Preview</h3>
                 </div>
                 <div className="navigator-grid">
                     {pages.map((_, i) => (
