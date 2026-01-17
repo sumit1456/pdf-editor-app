@@ -18,6 +18,15 @@ from layout_engine import normalize_layout
 
 app = FastAPI()
 
+class TextSpan(BaseModel):
+    text: str
+    font: Optional[str] = None
+    size: Optional[float] = None
+    color: Optional[List[float]] = None
+    is_bold: Optional[bool] = False
+    is_italic: Optional[bool] = False
+    font_variant: Optional[str] = "normal"
+
 class Modification(BaseModel):
     id: str
     pageIndex: int
@@ -26,6 +35,7 @@ class Modification(BaseModel):
     origin: List[float]
     style: dict
     uri: Optional[str] = None
+    spans: Optional[List[TextSpan]] = None
 
 class SavePDFRequest(BaseModel):
     pdf_name: str
@@ -144,7 +154,7 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
 
                                 # DETECT SMALL-CAPS
                                 font_variant = "normal"
-                                if any(x in font_name for x in ["csc", "smallcaps", "small-caps"]):
+                                if any(x in font_name for x in ["csc", "smallcaps", "small-caps", "caps"]):
                                     font_variant = "small-caps"
 
                                 span_bbox = span["bbox"]
@@ -169,7 +179,7 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                                     "id": str(uuid.uuid4()), 
                                     "line_id": line_id,
                                     "type": "text",
-                                    "content": span["text"],
+                                    "content": span["text"].title() if font_variant == "small-caps" and (span["text"].isupper() or span["text"].istitle() or len(span["text"]) > 5) else span["text"],
                                     "origin": origin_px,
                                     "x": origin_px[0],
                                     "y": origin_px[1],
@@ -326,7 +336,6 @@ async def save_pdf(request: SavePDFRequest):
         PT_TO_PX = 1.333333  # Scale factor used during extraction
 
         # 2. Apply modifications surgically
-        # COLLECT REDACTIONS BY PAGE
         page_redactions = {} # page_index -> list of rects
         for mod in request.modifications:
             if mod.pageIndex not in page_redactions:
@@ -341,15 +350,13 @@ async def save_pdf(request: SavePDFRequest):
             for r in rects:
                 page.add_redact_annot(r, fill=(1,1,1))
             page.apply_redactions()
-            print(f"[BACKEND] Batch Redacted {len(rects)} items on Page {p_idx}")
 
         # B. INJECT NEW CONTENT
         for mod in request.modifications:
             page = doc[mod.pageIndex]
             origin_pt = [coord / PT_TO_PX for coord in mod.origin]
             
-            # Use original text normalization
-            injection_text = mod.text if mod.text else ""
+            # --- SMART SPAN PREPARATION ---
             symbol_map = {
                 "\u2022": "\u2022", # Standard Bullet
                 "\u25cf": "\u2022", # Black Circle
@@ -361,114 +368,93 @@ async def save_pdf(request: SavePDFRequest):
                 "\u00a7": "\u2022", # Github placeholder
                 "\u0083": "\u2022", # Phone placeholder
                 "\u2192": "->",     # Right Arrow
-                "\uf0e0": " ",      # Mail icon (usually too large, space it out)
+                "\uf0e0": " ",      # Mail icon
                 "\uf095": " ",      # Phone icon
                 "\uf08c": " ",      # LinkedIn icon
                 "\uf09b": " ",      # Github icon
             }
-            for sym, rep in symbol_map.items():
-                injection_text = injection_text.replace(sym, rep)
 
-            font_in = mod.style.get("font", "").lower()
-            is_bold = mod.style.get("is_bold", False)
-            is_italic = mod.style.get("is_italic", False)
-            font_variant = mod.style.get("font_variant", "normal")
+            if mod.spans and len(mod.spans) > 0:
+                spans_to_inject = mod.spans
+            else:
+                # Fallback: Treat the whole line as one span
+                spans_to_inject = [TextSpan(
+                    text=mod.text or "",
+                    font=mod.style.get("font"),
+                    size=mod.style.get("size"),
+                    color=mod.style.get("color"),
+                    is_bold=mod.style.get("is_bold"),
+                    is_italic=mod.style.get("is_italic"),
+                    font_variant=mod.style.get("font_variant", "normal")
+                )]
 
-            # Resolve real .ttf path from our optimized assets
+            curr_x, curr_y = origin_pt
             from font_manager import font_manager
-            print(f"\n[BACKEND-SAVE-REQUEST] Node ID: {mod.id}")
-            print(f"  > Content: '{injection_text}'")
-            print(f"  > Font In: {font_in}, Bold: {is_bold}, Italic: {is_italic}, Variant: {font_variant}")
-            font_path, font_key = font_manager.get_font_path(font_in, is_bold, is_italic)
 
-            color = mod.style.get("color", [0, 0, 0])
-            
-            # Injection Stacking
-            success = False
-            
-            # Step 1: Try the mapped Google Font .ttf (Best Quality)
-            if font_path:
-                try:
-                    # DETERMINISTIC REGISTRATION
-                    internal_name = f"f-{font_key.lower()}"
-                    base_fontsize = mod.style.get("size", 10) / PT_TO_PX
-                    is_small_caps = (font_variant == "small-caps")
-                    
-                    if is_small_caps:
-                        # --- TYPOGRAPHIC SMALL-CAPS (Precision Mode) ---
-                        # We use character-by-character positioning ONLY for Small Caps
-                        curr_x, curr_y = origin_pt
-                        temp_font = fitz.Font(fontfile=font_path) # LOAD FONT OBJECT
-                        for char in injection_text:
-                            is_lower_alpha = char.islower() and char.isalpha()
-                            c_size = base_fontsize * (0.75 if is_lower_alpha else 1.0)
-                            c_char = char.upper() if is_lower_alpha else char
-                            
-                            page.insert_text(
-                                (curr_x, curr_y), 
-                                c_char,
-                                fontsize=c_size,
-                                color=tuple(color),
-                                fontfile=font_path,
-                                fontname=internal_name
-                            )
-                            # Advance X: Use font's innate character width + minimal tracking for air
-                            adv = temp_font.text_length(c_char, fontsize=c_size)
-                            if adv <= 0: adv = c_size * 0.3
-                            curr_x += adv + 0.6 
-                    else:
-                        # --- NATIVE PERFORMANCE MODE (The Fix for Drift/Stacking) ---
-                        # Inject as a SINGLE BLOCK. This allows the PDF engine to handle 
-                        # the spacing naturally based on the font file. Fixes Image 1 errors.
-                        page.insert_text(
-                            origin_pt, 
-                            injection_text,
-                            fontsize=base_fontsize,
-                            color=tuple(color),
-                            fontfile=font_path,
-                            fontname=internal_name
-                        )
+            for span in spans_to_inject:
+                s_text = span.text
+                s_font_in = (span.font or mod.style.get("font", "inter")).lower()
+                s_is_bold = span.is_bold if span.is_bold is not None else mod.style.get("is_bold", False)
+                s_is_italic = span.is_italic if span.is_italic is not None else mod.style.get("is_italic", False)
+                s_variant = (span.font_variant or mod.style.get("font_variant", "normal"))
+                s_size = (span.size if span.size else mod.style.get("size", 10)) / PT_TO_PX
+                s_color = span.color if span.color else mod.style.get("color", [0, 0, 0])
 
-                    print(f"  [SUCCESS] Step 1: Injected using NATIVE-FIXED flow.")
-                    success = True
-                except Exception as ef:
-                    print(f"[TTF Error] Failed to inject {font_path}: {ef}")
+                for sym, rep in symbol_map.items():
+                    s_text = s_text.replace(sym, rep)
 
-            # Step 2: Fallback to Original PDF Font Handle
-            if not success:
-                try:
-                    page_fonts = page.get_fonts(full=True)
-                    for f in page_fonts:
-                        if font_in in f[3].lower():
-                            page.insert_text(
-                                origin_pt, injection_text,
-                                fontsize=base_fontsize,
-                                color=tuple(color),
-                                fontname=f[4],
-                                encoding=fitz.TEXT_ENCODING_LATIN
-                            )
-                            print(f"  [SUCCESS] Step 2: Injected using Native: {f[4]}")
-                            success = True
-                            break
-                except: pass
+                font_path, font_key = font_manager.get_font_path(s_font_in, s_is_bold, s_is_italic)
+                success = False
 
-            # Step 3: Ultimate Fallback (Helvetica)
-            if not success:
-                page.insert_text(
-                    origin_pt, injection_text,
-                    fontsize=base_fontsize,
-                    color=tuple(color),
-                    fontname="helv"
-                )
-                print(f"  [SUCCESS] Step 3: Injected using BIG FALLBACK: Helvetica")
+                # STEP 1: GLYPH-PERFECT TTF MODE
+                if font_path:
+                    try:
+                        internal_name = f"f-{font_key.lower()}"
+                        temp_font = fitz.Font(fontfile=font_path)
+                        
+                        if s_variant == "small-caps":
+                            for char in s_text:
+                                is_lower_alpha = char.islower() and char.isalpha()
+                                c_size = s_size * (0.75 if is_lower_alpha else 1.0)
+                                c_char = char.upper() if is_lower_alpha else char
+                                page.insert_text((curr_x, curr_y), c_char, fontsize=c_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
+                                adv = temp_font.text_length(c_char, fontsize=c_size)
+                                curr_x += (adv if adv > 0 else c_size * 0.3) + 0.6
+                        else:
+                            page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
+                            curr_x += temp_font.text_length(s_text, fontsize=s_size)
+                        success = True
+                    except Exception as e:
+                        print(f"  [SPAN ERROR] Step 1 Failure: {e}")
 
-            # C. Update Link if present
+                # STEP 2: NATIVE PDF FONT FALLBACK
+                if not success:
+                    try:
+                        page_fonts = page.get_fonts(full=True)
+                        for f in page_fonts:
+                            if s_font_in in f[3].lower():
+                                page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontname=f[4])
+                                # Heuristic advance using standard metrics
+                                curr_x += (len(s_text) * s_size * 0.5) 
+                                success = True
+                                break
+                    except: pass
+
+                # STEP 3: ULTIMATE FALLBACK (Helvetica)
+                if not success:
+                    page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontname="helv")
+                    curr_x += (len(s_text) * s_size * 0.5)
             if mod.uri:
-                links = page.get_links()
-                for lnk in links:
-                    if fitz.Rect(lnk["from"]).intersects(rect):
-                        lnk["uri"] = mod.uri
-                        page.update_link(lnk)
+                # RE-INSERT LINK (Bypass get_links bug after redaction)
+                try:
+                    bbox_pt = [coord / PT_TO_PX for coord in mod.bbox]
+                    page.insert_link({
+                        "from": fitz.Rect(bbox_pt),
+                        "uri": mod.uri,
+                        "kind": fitz.LINK_URI
+                    })
+                except Exception as e:
+                    pass # Link fail shouldn't block content save
 
         # 3. Save to memory and return
         out_pdf_buffer = io.BytesIO()

@@ -112,6 +112,7 @@ export default function EditorPage() {
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'links'
     const [zoom, setZoom] = useState(0.85); // Master zoom state
     const [activeNodeId, setActiveNodeId] = useState(null); // Track currently focused node
+    const [smartStyling, setSmartStyling] = useState(false); // Toggle for Per-Word Preservation
     const [originalPdfBase64] = useState(location.state?.originalPdfBase64 || null);
     const [pdfName] = useState(location.state?.pdfName || "document.pdf");
 
@@ -129,10 +130,33 @@ export default function EditorPage() {
                 const edit = nodeEdits[id];
                 const original = allOriginalLines.find(l => l.id === id);
 
+                const newText = (edit.content !== undefined && edit.content !== null) ? edit.content : (original?.content || '');
+                const originalSpans = original?.items || original?.spans || [];
+
+                let processedSpans = null;
+                if (smartStyling && originalSpans.length > 1) {
+                    // --- SMART RE-SPANNING ALGORITHM ---
+                    // Try to map new words to existing span styles
+                    const words = newText.split(/(\s+)/); // Keep spaces
+                    processedSpans = words.map((word, idx) => {
+                        // Cycle through original spans or use a heuristic
+                        const styleSource = originalSpans[Math.min(idx, originalSpans.length - 1)];
+                        return {
+                            text: word,
+                            font: styleSource.font,
+                            size: styleSource.size,
+                            color: styleSource.color,
+                            is_bold: styleSource.is_bold,
+                            is_italic: styleSource.is_italic,
+                            font_variant: styleSource.font_variant || "normal"
+                        };
+                    });
+                }
+
                 return {
                     id: id,
                     pageIndex: original?.pageIndex ?? 0,
-                    text: (edit.content !== undefined && edit.content !== null) ? edit.content : (original?.content || ''),
+                    text: newText,
                     originalText: original?.content,
                     bbox: original?.bbox,
                     origin: original?.origin,
@@ -143,7 +167,8 @@ export default function EditorPage() {
                         color: edit.safetyStyle?.color || original?.originalStyle?.color || original?.color || [0, 0, 0],
                         font_variant: edit.safetyStyle?.font_variant || original?.font_variant || 'normal'
                     },
-                    uri: edit.uri || original?.uri
+                    uri: edit.uri || original?.uri,
+                    spans: processedSpans
                 };
             });
 
@@ -158,10 +183,6 @@ export default function EditorPage() {
             modifications: modifiedNodes
         };
 
-        console.log("==================== FRONTEND SENDING TO BACKEND ====================");
-        console.log("PDF Name:", pdfName);
-        console.log("Modifications:", JSON.stringify(modifiedNodes, null, 2));
-        console.log("=====================================================================");
 
         try {
             const result = await savePdfToBackend(payload);
@@ -222,14 +243,16 @@ export default function EditorPage() {
         }
 
         // --- STYLE SAFETY MECHANIC ---
-        // Capture and store original styles if not already set
+        // Capture and store original styles if not already set or not yet modified
         setNodeEdits(prev => {
-            if (prev[lineId]?.safetyStyle) return prev; // Don't overwrite once set
+            const currentEdit = prev[lineId] || {};
+            // If already modified, we don't want to revert the user's manual style choices
+            if (currentEdit.isModified) return prev;
 
             return {
                 ...prev,
                 [lineId]: {
-                    ...(prev[lineId] || {}),
+                    ...currentEdit,
                     safetyStyle: extraData?.safetyStyle || {
                         size: item.size,
                         font: item.font,
@@ -238,7 +261,7 @@ export default function EditorPage() {
                         is_italic: item.is_italic,
                         font_variant: item.font_variant || 'normal'
                     },
-                    isModified: prev[lineId]?.isModified || false
+                    isModified: false
                 }
             };
         });
@@ -378,8 +401,8 @@ export default function EditorPage() {
                             size: contentItem.size || line.size,
                             font: contentItem.font,
                             color: contentItem.color,
-                            is_bold: contentItem.is_bold,
-                            is_italic: contentItem.is_italic
+                            is_bold: line.items?.some(it => it.is_bold) || contentItem.is_bold,
+                            is_italic: line.items?.some(it => it.is_italic) || contentItem.is_italic
                         }
                     });
                 });
@@ -442,9 +465,8 @@ export default function EditorPage() {
                                             return {
                                                 size: contentItem.size || line.size,
                                                 font: contentItem.font,
-                                                color: contentItem.color,
-                                                is_bold: contentItem.is_bold,
-                                                is_italic: contentItem.is_italic,
+                                                is_bold: line.items?.some(it => it.is_bold) || contentItem.is_bold,
+                                                is_italic: line.items?.some(it => it.is_italic) || contentItem.is_italic,
                                                 font_variant: line.font_variant || (contentItem.font || '').toLowerCase().includes('cmcsc') ? 'small-caps' : 'normal'
                                             };
                                         }
@@ -456,8 +478,8 @@ export default function EditorPage() {
                                     size: item.size,
                                     font: item.font,
                                     color: item.color,
-                                    is_bold: item.is_bold,
-                                    is_italic: item.is_italic,
+                                    is_bold: item.is_bold || (item.items?.some(it => it.is_bold)),
+                                    is_italic: item.is_italic || (item.items?.some(it => it.is_italic)),
                                     font_variant: item.font_variant || (item.font || '').toLowerCase().includes('cmcsc') ? 'small-caps' : 'normal'
                                 };
                             }
@@ -516,12 +538,73 @@ export default function EditorPage() {
                                     title="Override Color"
                                 />
 
+                                <div className="style-toggles">
+                                    <button
+                                        disabled={!activeNodeId}
+                                        className={`toggle-btn ${activeStyle?.is_bold ? 'active' : ''}`}
+                                        onClick={() => handleStyleUpdate(activeNodeId, 'is_bold', !activeStyle?.is_bold)}
+                                        title="Toggle Bold"
+                                    >
+                                        B
+                                    </button>
+                                    <button
+                                        disabled={!activeNodeId}
+                                        className={`toggle-btn ${activeStyle?.is_italic ? 'active' : ''}`}
+                                        onClick={() => handleStyleUpdate(activeNodeId, 'is_italic', !activeStyle?.is_italic)}
+                                        title="Toggle Italic"
+                                    >
+                                        I
+                                    </button>
+                                </div>
+
                                 <button
                                     disabled={!activeNodeId}
                                     className={`caps-toggle-btn ${activeStyle?.font_variant === 'small-caps' ? 'active' : ''}`}
                                     onClick={() => handleStyleUpdate(activeNodeId, 'font_variant', activeStyle?.font_variant === 'small-caps' ? 'normal' : 'small-caps')}
+                                    title="Toggle Small Caps Rendering"
                                 >
                                     <span className="icon">Aa</span> Small Caps
+                                </button>
+
+                                <select
+                                    className="case-transform-select"
+                                    disabled={!activeNodeId}
+                                    onChange={(e) => {
+                                        const mode = e.target.value;
+                                        if (!mode) return;
+                                        const edit = nodeEdits[activeNodeId] || {};
+                                        // Find original if edit doesn't exist yet
+                                        let rawContent = edit.content;
+                                        if (rawContent === undefined) {
+                                            for (const p of pages) {
+                                                const found = (p.blocks ? p.blocks.flatMap(b => b.lines) : p.items || []).find(l => l.id === activeNodeId);
+                                                if (found) { rawContent = found.content; break; }
+                                            }
+                                        }
+
+                                        const content = rawContent || "";
+                                        let transformed = content;
+                                        if (mode === 'uppercase') transformed = content.toUpperCase();
+                                        if (mode === 'lowercase') transformed = content.toLowerCase();
+                                        if (mode === 'capitalize') transformed = content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
+                                        if (mode === 'title') transformed = content.replace(/\b\w/g, l => l.toUpperCase());
+
+                                        handleSidebarEdit(activeNodeId, transformed, activeStyle);
+                                    }}
+                                >
+                                    <option value="">Case Transform</option>
+                                    <option value="uppercase">ALL UPPERCASE</option>
+                                    <option value="lowercase">all lowercase</option>
+                                    <option value="capitalize">Sentence case</option>
+                                    <option value="title">Title Case</option>
+                                </select>
+
+                                <button
+                                    className={`caps-toggle-btn ${smartStyling ? 'active' : ''}`}
+                                    onClick={() => setSmartStyling(!smartStyling)}
+                                    title="If ON, we try to keep individual bold/italics in the original line"
+                                >
+                                    <span className="icon">🛡️</span> Preserve Styles
                                 </button>
                             </div>
                         </div>
@@ -572,7 +655,7 @@ export default function EditorPage() {
                                     <textarea
                                         value={displayContent}
                                         onFocus={() => setActiveNodeId(line.id)}
-                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value)}
+                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
                                         placeholder="Enter text..."
                                     />
 
@@ -660,6 +743,6 @@ export default function EditorPage() {
                     ))}
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

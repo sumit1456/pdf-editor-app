@@ -64,8 +64,8 @@ const normalizeFont = (fontName) => {
     ) {
         if (name.includes('merriweather')) return 'var(--serif-academic)';
         if (name.includes('playfair')) return 'var(--serif-high-contrast)';
-        // Crimson Pro is the closest free Google Font to Computer Modern (LaTeX)
-        return "'Crimson Pro', 'Source Serif 4', serif";
+        // Sync with Backend: Use Latin Modern / Source Serif 4 as the LaTeX/Academic primary
+        return "var(--serif-latex)";
     }
 
     // 3. Sans-Serif (Modern/Geometric/System)
@@ -88,12 +88,26 @@ const normalizeFont = (fontName) => {
  * Typographic Helper: Simulate Small-Caps in Preview
  * This allows the preview to accurately match the backend's high-fidelity rendering.
  */
-const renderVisualText = (text, isSmallCaps) => {
-    // PREVIEW FIDELITY FIX: 
-    // Do NOT split every character into a separate <tspan>. This breaks browser shaping,
-    // messes up kerning, and causes the "Stacking" and "Garbage" look in the preview.
-    // Instead, we return the text and let CSS 'font-variant: small-caps' handle the rendering.
-    return text;
+const renderVisualText = (text, isSmallCaps, baseSize) => {
+    if (!isSmallCaps || !text) return text;
+
+    // FIDELITY FIX: Manually simulate the backend's 0.75x scaling for Small Caps.
+    // This provides much better consistency across browsers than CSS 'small-caps'.
+    const chars = text.split('');
+    return chars.map((char, i) => {
+        const isLower = char === char.toLowerCase() && char !== char.toUpperCase();
+        if (!isLower) return char;
+
+        return (
+            <tspan
+                key={i}
+                fontSize={Math.max(1, (baseSize || 10) * 0.75)}
+                style={{ textTransform: 'uppercase' }}
+            >
+                {char.toUpperCase()}
+            </tspan>
+        );
+    });
 };
 const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) => {
     const containerRef = useRef(null);
@@ -612,7 +626,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             y={span.origin ? span.origin[1] : (span.y || item.y)}
                                             fontSize={Math.max(1, Math.abs(span.size))}
                                             fill={getSVGColor(span.color, color)}
-                                            fontWeight={span.is_bold ? (span.size > 18 ? '700' : '650') : '400'}
+                                            fontWeight={span.is_bold ? (span.size > 18 ? '600' : '550') : '400'}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
                                             fontFamily={span.font ? normalizeFont(span.font) : undefined}
                                             xmlSpace="preserve"
@@ -716,7 +730,12 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 candidates.push(it);
             }
         }
-        return candidates[0] || line.items[searchIndex] || line.items[0];
+        const base = candidates[0] || line.items[searchIndex] || line.items[0];
+        return {
+            ...base,
+            is_bold: base.is_bold || line.items.some(it => it.is_bold),
+            is_italic: base.is_italic || line.items.some(it => it.is_italic)
+        };
     }, [line, block]);
 
     const firstItem = line.items[0];
@@ -733,7 +752,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
     const isModified = !!edit.isModified;
     const content = edit.content !== undefined ? edit.content : line.content;
 
-    const isSmallCaps = firstItem.font_variant === 'small-caps' || (firstItem.font || '').toLowerCase().includes('cmcsc');
+    const isSmallCaps = firstItem.font_variant === 'small-caps' ||
+        (firstItem.font || '').toLowerCase().includes('cmcsc') ||
+        (firstItem.font || '').toLowerCase().includes('smallcaps') ||
+        ((firstItem.font || '').toLowerCase().includes('cmr') && content === content.toUpperCase() && content.length > 2);
 
     const mapContentToIcons = (text, fontName, variant) => {
         if (!text) return text;
@@ -778,6 +800,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 onDoubleClick(pageIndex, line.id, styleItem, e.currentTarget.getBoundingClientRect(), {
                     safetyStyle: {
                         size: styleItem.size || line.size,
+                        font: styleItem.font,
+                        color: styleItem.color,
+                        is_bold: styleItem.is_bold,
+                        is_italic: styleItem.is_italic,
                         font_variant: styleItem.font_variant || 'normal',
                         uri: line.uri
                     }
@@ -799,7 +825,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 fontSize={Math.max(1, Math.abs(styleItem.size))}
                 fontFamily={normalizeFont(styleItem.font)}
                 fill={getSVGColor(styleItem.color, 'black')}
-                fontWeight={styleItem.is_bold ? (styleItem.size > 20 ? '800' : '650') : '400'}
+                fontWeight={styleItem.is_bold ? (styleItem.size > 20 ? '700' : '600') : '400'}
                 fontStyle={styleItem.is_italic ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic"
                 xmlSpace="preserve"
@@ -825,16 +851,8 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                         const bMetrics = block.bullet_metrics || {};
 
                         // Dynamic isSmallCaps based on active font + variant
-                        const activeSmallCaps = safeVariant === 'small-caps';
+                        const activeSmallCaps = safeVariant === 'small-caps' || isSmallCaps;
 
-                        if (isModified) {
-                            console.log(`==================== RENDERING MODIFIED ====================`);
-                            console.log(`Line ID: ${line.id}`);
-                            console.log(`State Font: ${safeFont}`);
-                            console.log(`State Color:`, JSON.stringify(sStyle.color));
-                            console.log(`Computed CSS:`, getSVGColor(safeColor));
-                            console.log(`============================================================`);
-                        }
 
                         if (isMarkerLine) {
                             const markerPart = line.bullet || '';
@@ -863,7 +881,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         fontSize={safeSize}
                                         fontFamily={normalizeFont(safeFont)}
                                         fill={getSVGColor(safeColor, 'black')}
-                                        fontWeight={sStyle.is_bold ? 'bold' : 'normal'}
+                                        fontWeight={sStyle.is_bold ? '600' : '400'}
                                         fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                         xmlSpace="preserve"
                                     >
@@ -881,13 +899,14 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 fontSize={safeSize}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont)}
                                 fill={getSVGColor(safeColor, 'black')}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? (safeSize > 18 ? '700' : '650') : '400')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? (safeSize > 18 ? '600' : '550') : '400')}
                                 fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                 style={{
-                                    fontVariant: activeSmallCaps ? 'small-caps' : 'normal'
+                                    // Removed native fontVariant to avoid double-processing
+                                    fontFeatureSettings: activeSmallCaps ? '"smcp"' : 'normal'
                                 }}
                             >
-                                {renderVisualText(mapped, activeSmallCaps)}
+                                {renderVisualText(mapped, activeSmallCaps, safeSize)}
                             </tspan>
                         );
                     })()
@@ -895,7 +914,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                     line.items.map((span, si) => {
                         const fontName = span.font || '';
                         const spanVariant = span.font_variant || 'normal';
-                        const isSmallCaps = spanVariant === 'small-caps';
+                        const isOriginalSmallCaps = spanVariant === 'small-caps' ||
+                            (fontName || '').toLowerCase().includes('cmcsc') ||
+                            (fontName || '').toLowerCase().includes('smallcaps') ||
+                            ((fontName || '').toLowerCase().includes('cmr') && span.content === span.content.toUpperCase() && span.content.length > 2);
 
                         // LANE ANCHORING LOGIC
                         const prev = si > 0 ? line.items[si - 1] : null;
@@ -945,15 +967,16 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 y={baselineY}
                                 dy={verticalShift + "px"}
                                 fontSize={Math.max(1, Math.abs(customSize))}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? (span.size > 18 ? '700' : '650') : '400')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? (span.size > 18 ? '600' : '550') : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(span.font)}
                                 fill={getSVGColor(span.color, 'black')}
                                 style={{
-                                    fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+                                    // Removed native fontVariant to avoid double-processing
+                                    fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal'
                                 }}
                             >
-                                {renderVisualText(mapped, isSmallCaps)}
+                                {renderVisualText(mapped, isOriginalSmallCaps, customSize)}
                             </tspan>
                         );
                     })
