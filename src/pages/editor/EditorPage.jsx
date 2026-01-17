@@ -426,69 +426,107 @@ export default function EditorPage() {
             {/* 1. EDITING PANEL - Left */}
             <div className="editing-panel">
                 {/* 1.1 DESIGN CONFIG TOOLBAR (Global control for active node) */}
-                <div className={`design-config-toolbar ${!activeNodeId ? 'idle' : ''}`}>
-                    <div className="toolbar-header">
-                        <div className="toolbar-label">Design Configuration</div>
-                        {!activeNodeId && <span className="toolbar-status">Selection Required</span>}
-                    </div>
+                {(() => {
+                    const getActiveNodeStyle = () => {
+                        if (!activeNodeId) return null;
+                        const edit = nodeEdits[activeNodeId];
+                        if (edit?.safetyStyle) return edit.safetyStyle;
 
-                    <div className="tools-group">
-                        <select
-                            className="premium-font-select"
-                            disabled={!activeNodeId}
-                            value={(() => {
-                                if (!activeNodeId) return "";
-                                const edit = nodeEdits[activeNodeId] || {};
-                                const sStyle = edit.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {};
-                                return FONT_OPTIONS.find(opt => (sStyle.font || '').toLowerCase().includes(opt.value.toLowerCase()))?.value || '';
-                            })()}
-                            onChange={(e) => handleStyleUpdate(activeNodeId, 'font', e.target.value)}
-                        >
-                            <option value="" disabled>{activeNodeId ? "Change Font Family" : "---"}</option>
-                            {FONT_OPTIONS.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
-                            ))}
-                        </select>
+                        // Deep search in pages if not in edits (handles tab switching latency)
+                        for (const page of pages) {
+                            if (page.blocks) {
+                                for (const block of page.blocks) {
+                                    for (const line of block.lines) {
+                                        if (line.id === activeNodeId) {
+                                            const contentItem = (line.is_bullet_start && line.items?.length > 1) ? line.items[1] : (line.items?.[0] || {});
+                                            return {
+                                                size: contentItem.size || line.size,
+                                                font: contentItem.font,
+                                                color: contentItem.color,
+                                                is_bold: contentItem.is_bold,
+                                                is_italic: contentItem.is_italic,
+                                                font_variant: line.font_variant || (contentItem.font || '').toLowerCase().includes('cmcsc') ? 'small-caps' : 'normal'
+                                            };
+                                        }
+                                    }
+                                }
+                            } else {
+                                const item = (page.items || []).find(it => it.id === activeNodeId);
+                                if (item) return {
+                                    size: item.size,
+                                    font: item.font,
+                                    color: item.color,
+                                    is_bold: item.is_bold,
+                                    is_italic: item.is_italic,
+                                    font_variant: item.font_variant || (item.font || '').toLowerCase().includes('cmcsc') ? 'small-caps' : 'normal'
+                                };
+                            }
+                        }
+                        return null;
+                    };
 
-                        <div className="size-control">
-                            <button disabled={!activeNodeId} onClick={() => {
-                                const edit = nodeEdits[activeNodeId] || {};
-                                const sStyle = edit.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {};
-                                handleStyleUpdate(activeNodeId, 'size', (sStyle.size || 10) - 1);
-                            }}>−</button>
-                            <span className="size-label">
-                                {activeNodeId ?
-                                    Math.round(Math.abs((nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).size || 10))
-                                    : '--'}
-                            </span>
-                            <button disabled={!activeNodeId} onClick={() => {
-                                const edit = nodeEdits[activeNodeId] || {};
-                                const sStyle = edit.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {};
-                                handleStyleUpdate(activeNodeId, 'size', (sStyle.size || 10) + 1);
-                            }}>+</button>
+                    const activeStyle = getActiveNodeStyle();
+
+                    return (
+                        <div className={`design-config-toolbar ${!activeNodeId ? 'idle' : ''}`}>
+                            <div className="toolbar-header">
+                                <div className="toolbar-label">Design Configuration</div>
+                                {!activeNodeId && <span className="toolbar-status">Selection Required</span>}
+                            </div>
+
+                            <div className="tools-group">
+                                <select
+                                    className="premium-font-select"
+                                    disabled={!activeNodeId}
+                                    value={(() => {
+                                        if (!activeStyle || !activeStyle.font) return "";
+                                        const needle = activeStyle.font.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        const match = FONT_OPTIONS.find(opt => {
+                                            const haystack = opt.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                            return needle.includes(haystack) || haystack.includes(needle);
+                                        });
+                                        return match ? match.value : '';
+                                    })()}
+                                    onChange={(e) => handleStyleUpdate(activeNodeId, 'font', e.target.value)}
+                                >
+                                    <option value="" disabled>{activeNodeId ? "Change Font Family" : "---"}</option>
+                                    {FONT_OPTIONS.map(opt => (
+                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                    ))}
+                                </select>
+
+                                <div className="size-control">
+                                    <button disabled={!activeNodeId} onClick={() => {
+                                        handleStyleUpdate(activeNodeId, 'size', (activeStyle?.size || 10) - 1);
+                                    }}>−</button>
+                                    <span className="size-label">
+                                        {activeNodeId ? Math.round(Math.abs(activeStyle?.size || 10)) : '--'}
+                                    </span>
+                                    <button disabled={!activeNodeId} onClick={() => {
+                                        handleStyleUpdate(activeNodeId, 'size', (activeStyle?.size || 10) + 1);
+                                    }}>+</button>
+                                </div>
+
+                                <input
+                                    type="color"
+                                    disabled={!activeNodeId}
+                                    className="premium-color-swatch"
+                                    value={activeNodeId ? rgbToHex(activeStyle?.color || [0, 0, 0]) : '#333333'}
+                                    onChange={(e) => handleStyleUpdate(activeNodeId, 'color', hexToRgb(e.target.value))}
+                                    title="Override Color"
+                                />
+
+                                <button
+                                    disabled={!activeNodeId}
+                                    className={`caps-toggle-btn ${activeStyle?.font_variant === 'small-caps' ? 'active' : ''}`}
+                                    onClick={() => handleStyleUpdate(activeNodeId, 'font_variant', activeStyle?.font_variant === 'small-caps' ? 'normal' : 'small-caps')}
+                                >
+                                    <span className="icon">Aa</span> Small Caps
+                                </button>
+                            </div>
                         </div>
-
-                        <input
-                            type="color"
-                            disabled={!activeNodeId}
-                            className="premium-color-swatch"
-                            value={activeNodeId ? rgbToHex((nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).color || [0, 0, 0]) : '#333333'}
-                            onChange={(e) => handleStyleUpdate(activeNodeId, 'color', hexToRgb(e.target.value))}
-                            title="Override Color"
-                        />
-
-                        <button
-                            disabled={!activeNodeId}
-                            className={`caps-toggle-btn ${(activeNodeId && (nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).font_variant === 'small-caps') ? 'active' : ''}`}
-                            onClick={() => {
-                                const current = (nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).font_variant;
-                                handleStyleUpdate(activeNodeId, 'font_variant', current === 'small-caps' ? 'normal' : 'small-caps');
-                            }}
-                        >
-                            <span className="icon">Aa</span> Small Caps
-                        </button>
-                    </div>
-                </div>
+                    );
+                })()}
 
                 <div className="panel-header" style={{ flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>

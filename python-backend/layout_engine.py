@@ -54,7 +54,9 @@ def normalize_layout(items):
         y = item["origin"][1]
         y_group = None
         for existing_y in lines_map.keys():
-            if abs(existing_y - y) < 4.0:
+            # INCREASE TOLERANCE: LaTeX and professional PDFs often have tiny baseline jitters.
+            # 6.0pt is safe for standard lines without merging multi-columns.
+            if abs(existing_y - y) < 6.0:
                 y_group = existing_y
                 break
         if y_group is None:
@@ -104,7 +106,14 @@ def normalize_layout(items):
             prev_it = raw_group[i-1]
             curr_it = raw_group[i]
             gap = curr_it["origin"][0] - prev_it["bbox"][2]
-            if gap > 50:
+            
+            # MAXIMIZE LINE UNITY:
+            # We use a very high threshold (180+) because modern PDFs/LaTeX can have 
+            # massive internal spaces that shouldn't break the semantic line.
+            avg_font_size = curr_it.get("size", 10)
+            split_threshold = max(200, avg_font_size * 15)
+
+            if gap > split_threshold:
                 sub_groups.append(current_sub)
                 current_sub = [curr_it]
             else:
@@ -209,20 +218,32 @@ def normalize_layout(items):
                 chunked_items.append((current_chunk, current_uri))
 
             for chunk_idx, (chunk, uri) in enumerate(chunked_items):
-                chunk_content = "".join(it["content"] for it in chunk)
+                # ENHANCED CONTENT ASSEMBLY: Preserve internal spacing
+                full_content = ""
+                for i, it in enumerate(chunk):
+                    if i > 0:
+                        prev = chunk[i-1]
+                        gap = it["origin"][0] - prev["bbox"][2]
+                        # If there is a real physical gap but no space character in the text, 
+                        # inject a virtual space so the browser's kerning doesn't cause overlap.
+                        if gap > 1.5 and not full_content.endswith(" ") and not it["content"].startswith(" "):
+                            full_content += " "
+                    full_content += it["content"]
+
                 is_first_chunk = (chunk_idx == 0)
                 
                 processed_lines.append({
                     "y": y_val,
                     "x0": chunk[0]["origin"][0],
                     "x1": max(it["bbox"][2] for it in chunk),
+                    "width": max(it["bbox"][2] for it in chunk) - chunk[0]["origin"][0],
                     "height": max(it.get("height", it["size"]) for it in chunk),
                     "size": max(it["size"] for it in chunk),
                     "items": chunk,
-                    "content": chunk_content,
+                    "content": full_content,
                     "is_bullet_start": is_bullet if is_first_chunk else False,
                     "is_right_aligned": is_right_aligned,
-                    "marker_char": chunk_content.strip()[0] if is_bullet and is_first_chunk else None,
+                    "marker_char": full_content.strip()[0] if is_bullet and is_first_chunk else None,
                     "uri": uri
                 })
 
@@ -233,8 +254,10 @@ def normalize_layout(items):
 
     for line in processed_lines:
         y_gap = line["y"] - last_y
-        max_gap = (canonical_leading * 1.5) if canonical_leading > 0 else (line["size"] * 1.5)
-        is_proximal = abs(y_gap) < max_gap
+        # ROBUST PROXIMITY: LaTeX often has minor oscillations in baselines (~0.5pt)
+        # We allow a slightly wider vertical tolerance while keeping semantic separation.
+        leading_ref = canonical_leading if canonical_leading > 5 else line["size"]
+        is_proximal = abs(y_gap) < (leading_ref * 1.6)
         
         # Metadata or bullet markers trigger new blocks
         should_start_new = (
@@ -304,6 +327,7 @@ def normalize_layout(items):
             "items": line["items"],
             "bbox": [line["x0"], line["y"] - line["size"], line["x1"], line["y"]],
             "origin": [line["x0"], line["y"]],
+            "width": line.get("width"),
             # --- THE FRAGMENT CORE (Inline Styles) ---
             "fragments": [{
                 "text": it["content"],

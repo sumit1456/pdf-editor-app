@@ -14,7 +14,7 @@ import sys
 import contextlib
 
 from layout_engine import normalize_layout
-from coordinate_diagnostic import run_comparison
+# from coordinate_diagnostic import run_comparison
 
 app = FastAPI()
 
@@ -287,10 +287,10 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
 
             # --- RUNTIME DIAGNOSTIC ---
             # Generate the coordinate comparison report for the current page
-            try:
-                run_comparison(items, layout_data)
-            except Exception as diag_e:
-                print(f"[Diagnostic Error] Failed to generate coordinate report: {diag_e}")
+            # try:
+            #     run_comparison(items, layout_data)
+            # except Exception as diag_e:
+            #     print(f"[Diagnostic Error] Failed to generate coordinate report: {diag_e}")
 
             extracted_pages.append({
                 "index": pno,
@@ -326,20 +326,29 @@ async def save_pdf(request: SavePDFRequest):
         PT_TO_PX = 1.333333  # Scale factor used during extraction
 
         # 2. Apply modifications surgically
+        # COLLECT REDACTIONS BY PAGE
+        page_redactions = {} # page_index -> list of rects
+        for mod in request.modifications:
+            if mod.pageIndex not in page_redactions:
+                page_redactions[mod.pageIndex] = []
+            
+            bbox_pt = [coord / PT_TO_PX for coord in mod.bbox]
+            page_redactions[mod.pageIndex].append(fitz.Rect(bbox_pt))
+
+        # APPLY REDACTIONS IN BATCH (Higher Precision/Stability)
+        for p_idx, rects in page_redactions.items():
+            page = doc[p_idx]
+            for r in rects:
+                page.add_redact_annot(r, fill=(1,1,1))
+            page.apply_redactions()
+            print(f"[BACKEND] Batch Redacted {len(rects)} items on Page {p_idx}")
+
+        # B. INJECT NEW CONTENT
         for mod in request.modifications:
             page = doc[mod.pageIndex]
-            
-            # Convert CSS Pixels back to PDF Points
-            bbox_pt = [coord / PT_TO_PX for coord in mod.bbox]
             origin_pt = [coord / PT_TO_PX for coord in mod.origin]
             
-            # A. Redact original text area
-            rect = fitz.Rect(bbox_pt)
-            page.add_redact_annot(rect, fill=(1,1,1)) 
-            page.apply_redactions()
-            
-            # B. Inject new text with High-Fidelity Google Font Mapping
-            # Normalized text for broad font compatibility (e.g. mapping varied bullet types to standard)
+            # Use original text normalization
             injection_text = mod.text if mod.text else ""
             symbol_map = {
                 "\u2022": "\u2022", # Standard Bullet
@@ -348,6 +357,14 @@ async def save_pdf(request: SavePDFRequest):
                 "\u25aa": "\u2022", # Small Square
                 "\u2731": "\u2022", # Asterisk-like
                 "\u2217": "\u2022", # Math Asterisk
+                "\u00ef": "\u2022", # LinkedIn placeholder
+                "\u00a7": "\u2022", # Github placeholder
+                "\u0083": "\u2022", # Phone placeholder
+                "\u2192": "->",     # Right Arrow
+                "\uf0e0": " ",      # Mail icon (usually too large, space it out)
+                "\uf095": " ",      # Phone icon
+                "\uf08c": " ",      # LinkedIn icon
+                "\uf09b": " ",      # Github icon
             }
             for sym, rep in symbol_map.items():
                 injection_text = injection_text.replace(sym, rep)
@@ -372,28 +389,47 @@ async def save_pdf(request: SavePDFRequest):
             # Step 1: Try the mapped Google Font .ttf (Best Quality)
             if font_path:
                 try:
-                    # TYPOGRAPHIC SMALL-CAPS FIX:
-                    # Respect variant first, then font name heuristic.
-                    is_small_caps = (font_variant == "small-caps") or (font_variant != "normal" and "cmcsc" in font_in.lower())
-                    
-                    if is_small_caps and injection_text == injection_text.upper() and len(injection_text) > 1:
-                        injection_text = injection_text.title()
-
                     # DETERMINISTIC REGISTRATION
                     internal_name = f"f-{font_key.lower()}"
-
-                    # Small Caps Height Logic: Simulate true Small-Caps if possible
-                    # (Standard insert_text doesn't support it, so we rely on the casing transformation for now)
-                    # But we'll use the actual user-selected color.
+                    base_fontsize = mod.style.get("size", 10) / PT_TO_PX
+                    is_small_caps = (font_variant == "small-caps")
                     
-                    page.insert_text(
-                        origin_pt, injection_text,
-                        fontsize=mod.style.get("size", 10) / PT_TO_PX,
-                        color=tuple(color), 
-                        fontfile=font_path,
-                        fontname=internal_name
-                    )
-                    print(f"  [SUCCESS] Step 1: Injected '{mod.text[:10]}...' using {font_path}")
+                    if is_small_caps:
+                        # --- TYPOGRAPHIC SMALL-CAPS (Precision Mode) ---
+                        # We use character-by-character positioning ONLY for Small Caps
+                        curr_x, curr_y = origin_pt
+                        temp_font = fitz.Font(fontfile=font_path) # LOAD FONT OBJECT
+                        for char in injection_text:
+                            is_lower_alpha = char.islower() and char.isalpha()
+                            c_size = base_fontsize * (0.75 if is_lower_alpha else 1.0)
+                            c_char = char.upper() if is_lower_alpha else char
+                            
+                            page.insert_text(
+                                (curr_x, curr_y), 
+                                c_char,
+                                fontsize=c_size,
+                                color=tuple(color),
+                                fontfile=font_path,
+                                fontname=internal_name
+                            )
+                            # Advance X: Use font's innate character width + minimal tracking for air
+                            adv = temp_font.text_length(c_char, fontsize=c_size)
+                            if adv <= 0: adv = c_size * 0.3
+                            curr_x += adv + 0.6 
+                    else:
+                        # --- NATIVE PERFORMANCE MODE (The Fix for Drift/Stacking) ---
+                        # Inject as a SINGLE BLOCK. This allows the PDF engine to handle 
+                        # the spacing naturally based on the font file. Fixes Image 1 errors.
+                        page.insert_text(
+                            origin_pt, 
+                            injection_text,
+                            fontsize=base_fontsize,
+                            color=tuple(color),
+                            fontfile=font_path,
+                            fontname=internal_name
+                        )
+
+                    print(f"  [SUCCESS] Step 1: Injected using NATIVE-FIXED flow.")
                     success = True
                 except Exception as ef:
                     print(f"[TTF Error] Failed to inject {font_path}: {ef}")
@@ -404,10 +440,9 @@ async def save_pdf(request: SavePDFRequest):
                     page_fonts = page.get_fonts(full=True)
                     for f in page_fonts:
                         if font_in in f[3].lower():
-                            # Use actual color
                             page.insert_text(
-                                origin_pt, mod.text,
-                                fontsize=mod.style.get("size", 10) / PT_TO_PX,
+                                origin_pt, injection_text,
+                                fontsize=base_fontsize,
                                 color=tuple(color),
                                 fontname=f[4],
                                 encoding=fitz.TEXT_ENCODING_LATIN
@@ -419,10 +454,9 @@ async def save_pdf(request: SavePDFRequest):
 
             # Step 3: Ultimate Fallback (Helvetica)
             if not success:
-                # Use actual color
                 page.insert_text(
-                    origin_pt, mod.text,
-                    fontsize=mod.style.get("size", 10) / PT_TO_PX,
+                    origin_pt, injection_text,
+                    fontsize=base_fontsize,
                     color=tuple(color),
                     fontname="helv"
                 )
@@ -455,4 +489,5 @@ async def save_pdf(request: SavePDFRequest):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Use reload=True for auto-restart on code changes
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

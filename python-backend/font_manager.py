@@ -32,6 +32,7 @@ class FontManager:
             "playfair display": "Playfair_Display",
             "libre baskerville": "Libre_Baskerville",
             "source serif": "Source_Serif_4",
+            "crimson pro": "Crimson_Pro",
             "inter": "Inter",
             "roboto": "Roboto",
             "lora": "Lora",
@@ -41,9 +42,17 @@ class FontManager:
             "oswald": "Oswald",
             "ubuntu": "Ubuntu",
             "mono": "Roboto_Mono",
+            "courier": "Roboto_Mono",
             "times": "Source_Serif_4",
             "roman": "Source_Serif_4",
-            "cm": "Source_Serif_4"
+            "cm": "Source_Serif_4",
+            "sfrm": "Source_Serif_4",
+            "nimbus": "Source_Serif_4",
+            "libertine": "Source_Serif_4",
+            "georgia": "Source_Serif_4",
+            "palatino": "Source_Serif_4",
+            "baskerville": "Libre_Baskerville",
+            "garamond": "Source_Serif_4",
         }
 
         target_family = None
@@ -55,9 +64,9 @@ class FontManager:
         
         # Fallback based on serif/sans if no direct name match
         if not target_family:
-            if "cm" in family_keyword or "sfrm" in family_keyword or "serif" in family_keyword:
+            if any(k in family_keyword for k in ["cm", "sfrm", "serif", "roman", "times", "nimbus"]):
                 target_family = "Source_Serif_4" # Best match for LaTeX Look
-            elif "mono" in family_keyword or "courier" in family_keyword:
+            elif "mono" in family_keyword or "courier" in family_keyword or "fira" in family_keyword:
                 target_family = "Roboto_Mono"
             else:
                 target_family = "Inter"

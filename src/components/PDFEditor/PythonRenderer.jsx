@@ -26,6 +26,75 @@ const getSVGColor = (c, fallback = 'black') => {
     }
     return `rgb(${r}, ${g}, ${b})`;
 };
+
+// ==================== SHARED TYPOGRAPHIC ENGINE ====================
+
+const normalizeFont = (fontName) => {
+    if (!fontName) return "'Source Serif 4', serif";
+    const name = fontName.toLowerCase();
+
+    // 0. EXPLICIT MATCH (For user-selected fonts)
+    if (name === 'inter') return "'Inter', sans-serif";
+    if (name === 'roboto') return "'Roboto', sans-serif";
+    if (name === 'open sans') return "'Open Sans', sans-serif";
+    if (name.includes('montserrat')) return "'Montserrat', sans-serif";
+    if (name.includes('lora')) return "'Lora', serif";
+    if (name.includes('merriweather')) return "'Merriweather', serif";
+    if (name.includes('libre baskerville')) return "'Libre Baskerville', serif";
+    if (name.includes('playfair display')) return "'Playfair Display', serif";
+    if (name === 'oswald') return "'Oswald', sans-serif";
+    if (name === 'roboto mono') return "'Roboto Mono', monospace";
+    if (name === 'jetbrains mono') return "'JetBrains Mono', monospace";
+    if (name === 'fira code') return "'Fira Code', monospace";
+    if (name === 'source serif 4') return "'Source Serif 4', serif";
+    if (name === 'poppins') return "'Poppins', sans-serif";
+
+    // 1. Monospace / Code
+    if (name.includes('mono') || name.includes('courier') || name.includes('consolas') || name.includes('lucida console')) {
+        return 'var(--mono-code)';
+    }
+
+    // 2. Serif (Classic/Academic/LaTeX)
+    if (
+        name.includes('times') || name.includes('serif') || name.includes('roman') ||
+        name.includes('cm') || name.includes('sfrm') || name.includes('nimbus') ||
+        name.includes('georgia') || name.includes('palatino') || name.includes('minion') ||
+        name.includes('baskerville') || name.includes('cambria') || name.includes('garamond') ||
+        name.includes('libertine') || name.includes('antiqua') || name.includes('didot')
+    ) {
+        if (name.includes('merriweather')) return 'var(--serif-academic)';
+        if (name.includes('playfair')) return 'var(--serif-high-contrast)';
+        // Crimson Pro is the closest free Google Font to Computer Modern (LaTeX)
+        return "'Crimson Pro', 'Source Serif 4', serif";
+    }
+
+    // 3. Sans-Serif (Modern/Geometric/System)
+    if (
+        name.includes('inter') || name.includes('poppins') || name.includes('sans') ||
+        name.includes('arial') || name.includes('helvetica') || name.includes('calibri') ||
+        name.includes('verdana') || name.includes('tahoma') || name.includes('ubuntu') ||
+        name.includes('geometric') || name.includes('modern')
+    ) {
+        if (name.includes('poppins')) return 'var(--sans-geometric)';
+        if (name.includes('open') && name.includes('sans')) return 'var(--sans-readable)';
+        return 'var(--sans-modern)'; // Inter
+    }
+
+    // Default: Inter (Clean Modern)
+    return 'var(--sans-modern)';
+};
+
+/**
+ * Typographic Helper: Simulate Small-Caps in Preview
+ * This allows the preview to accurately match the backend's high-fidelity rendering.
+ */
+const renderVisualText = (text, isSmallCaps) => {
+    // PREVIEW FIDELITY FIX: 
+    // Do NOT split every character into a separate <tspan>. This breaks browser shaping,
+    // messes up kerning, and causes the "Stacking" and "Garbage" look in the preview.
+    // Instead, we return the text and let CSS 'font-variant: small-caps' handle the rendering.
+    return text;
+};
 const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
@@ -264,7 +333,22 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
             }
             // Handle high-level paths (New Unified Format)
             else if (item.type === 'pdf_path') {
-                nodes.push(item);
+                // IMPORTANT: Backend sends color as [r, g, b] array. 
+                // Pixi Engine needs 0xRRGGBB hex integer.
+                const clonedPath = JSON.parse(JSON.stringify(item));
+                if (clonedPath.items) {
+                    clonedPath.items.forEach(pi => {
+                        if (Array.isArray(pi.fill_color)) pi.fill_color = parseColor(pi.fill_color);
+                        if (Array.isArray(pi.stroke_color)) pi.stroke_color = parseColor(pi.stroke_color);
+
+                        // ENSURE VISIBILITY: If it has a stroke but width is too thin (or missing),
+                        // force a minimum of 0.8px so it doesn't disappear in the browser/Pixi.
+                        if (pi.stroke_color !== undefined) {
+                            pi.stroke_width = Math.max(0.8, pi.stroke_width || 1);
+                        }
+                    });
+                }
+                nodes.push(clonedPath);
             }
             // Backward compatibility
             else if (item.type === 'path' && item.segments) {
@@ -432,47 +516,6 @@ export default PythonRenderer;
 
 
 function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
-    // Unified Font Mapping (Mirroring Backend Studio Kit)
-    const normalizeFont = (fontName) => {
-        if (!fontName) return 'var(--serif-latex)';
-        const name = fontName.toLowerCase();
-
-        // 0. EXPLICIT MATCH (For user-selected fonts)
-        if (name === 'inter') return "'Inter', sans-serif";
-        if (name === 'roboto') return "'Roboto', sans-serif";
-        if (name === 'open sans') return "'Open Sans', sans-serif";
-        if (name === 'montserrat') return "'Montserrat', sans-serif";
-        if (name.includes('lora')) return "'Lora', serif";
-        if (name.includes('merriweather')) return "'Merriweather', serif";
-        if (name.includes('libre baskerville')) return "'Libre Baskerville', serif";
-        if (name.includes('playfair display')) return "'Playfair Display', serif";
-        if (name === 'oswald') return "'Oswald', sans-serif";
-        if (name === 'roboto mono') return "'Roboto Mono', monospace";
-        if (name === 'jetbrains mono') return "'JetBrains Mono', monospace";
-        if (name === 'fira code') return "'Fira Code', monospace";
-        if (name === 'source serif 4') return "'Source Serif 4', serif";
-        if (name === 'poppins') return "'Poppins', sans-serif";
-
-        // 1. Monospace / Code
-        if (name.includes('mono') || name.includes('courier')) return 'var(--mono-code)';
-
-        // 2. Serif (Classic/Academic)
-        if (name.includes('times') || name.includes('serif') || name.includes('roman') || name.includes('cm') || name.includes('sfrm')) {
-            if (name.includes('merriweather')) return 'var(--serif-academic)';
-            if (name.includes('playfair')) return 'var(--serif-high-contrast)';
-            // Prioritize Source Serif 4 (The Backend Mapping)
-            return 'var(--serif-latex)';
-        }
-
-        // 3. Sans-Serif (Modern/Geometric)
-        if (name.includes('inter')) return 'var(--sans-modern)';
-        if (name.includes('poppins')) return 'var(--sans-geometric)';
-        if (name.includes('open') && name.includes('sans')) return 'var(--sans-readable)';
-
-        // Default: Inter (Clean Modern)
-        return 'var(--sans-modern)';
-    };
-
     return (
         <g className="text-layer" key={fontsKey}>
             {/* Inject dynamic fonts */}
@@ -522,7 +565,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                         color: item.color,
                                         is_bold: item.is_bold,
                                         is_italic: item.is_italic,
-                                        font_variant: item.font_variant || (item.font || '').toLowerCase().includes('cmcsc') ? 'small-caps' : 'normal'
+                                        font_variant: item.font_variant || 'normal'
                                     }
                                 });
                             }}
@@ -537,16 +580,19 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                             fontStyle={item.is_italic ? 'italic' : 'normal'}
                             fill={color}
                             dominantBaseline="alphabetic"
+                            textLength={!isModified ? Math.max(0, item.width || (x1 - x0)) : undefined}
+                            lengthAdjust={!isModified ? "spacingAndGlyphs" : undefined}
                             style={{
                                 userSelect: 'none',
                                 pointerEvents: 'none',
                                 cursor: 'text',
-                                touchAction: 'none',
-                                fontVariant: (item.font_variant === 'small-caps' || (item.font || '').toLowerCase().includes('cmcsc')) ? 'small-caps' : 'normal'
+                                touchAction: 'none'
                             }}
                         >
                             {isModified ? (
-                                <tspan x={startX} y={baselineY}>{content}</tspan>
+                                <tspan x={startX} y={baselineY}>
+                                    {renderVisualText(content, (item.font_variant === 'small-caps'), item.size)}
+                                </tspan>
                             ) : (
                                 (item.items || [item]).map((span, si) => {
                                     // ABSOLUTE POSITIONING:
@@ -566,7 +612,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             y={span.origin ? span.origin[1] : (span.y || item.y)}
                                             fontSize={Math.max(1, Math.abs(span.size))}
                                             fill={getSVGColor(span.color, color)}
-                                            fontWeight={span.is_bold ? 'bold' : undefined}
+                                            fontWeight={span.is_bold ? (span.size > 18 ? '700' : '650') : '400'}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
                                             fontFamily={span.font ? normalizeFont(span.font) : undefined}
                                             xmlSpace="preserve"
@@ -574,7 +620,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                                 fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal'
                                             }}
                                         >
-                                            {span.content}
+                                            {renderVisualText(span.content, spanIsSmallCaps)}
                                         </tspan>
                                     );
                                 })
@@ -653,51 +699,6 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
 }
 
 function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
-    // Unified Font Mapping (Mirroring Backend Studio Kit)
-    const normalizeFont = (fontName) => {
-        if (!fontName) return "'Source Serif 4', serif";
-        const name = fontName.toLowerCase();
-
-        // 0. EXPLICIT MATCH (For user-selected fonts)
-        if (name === 'inter') return "'Inter', sans-serif";
-        if (name === 'roboto') return "'Roboto', sans-serif";
-        if (name === 'open sans') return "'Open Sans', sans-serif";
-        if (name === 'montserrat') return "'Montserrat', sans-serif";
-        if (name.includes('lora')) return "'Lora', serif";
-        if (name.includes('merriweather')) return "'Merriweather', serif";
-        if (name.includes('libre baskerville')) return "'Libre Baskerville', serif";
-        if (name.includes('playfair display')) return "'Playfair Display', serif";
-        if (name === 'oswald') return "'Oswald', sans-serif";
-        if (name === 'roboto mono') return "'Roboto Mono', monospace";
-        if (name === 'jetbrains mono') return "'JetBrains Mono', monospace";
-        if (name === 'fira code') return "'Fira Code', monospace";
-        if (name === 'source serif 4') return "'Source Serif 4', serif";
-        if (name === 'poppins') return "'Poppins', sans-serif";
-
-        // 1. Monospace / Code
-        if (name.includes('mono') || name.includes('courier')) return "'Roboto Mono', monospace";
-
-        // 2. Serif (Classic/Academic/LaTeX)
-        if (name.includes('times') || name.includes('serif') || name.includes('roman') ||
-            name.includes('cm') || name.includes('sfrm') || name.includes('nimbus') ||
-            name.includes('libertine') || name.includes('antiqua')) {
-            if (name.includes('merriweather')) return "'Merriweather', serif";
-            if (name.includes('playfair')) return "'Playfair Display', serif";
-            return "'Source Serif 4', serif";
-        }
-
-        // 3. Sans-Serif (Modern/Geometric)
-        if (name.includes('inter')) return "'Inter', sans-serif";
-        if (name.includes('poppins')) return "'Poppins', sans-serif";
-        if (name.includes('open') && name.includes('sans')) return "'Open Sans', sans-serif";
-
-        // Icon Font Handling
-        if (name.includes('awesome') || name.includes('fa-')) return '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif';
-
-        // Default: Inter (Clean Modern)
-        return "'Inter', sans-serif";
-    };
-
     // ROBUST STYLE CAPTURE: Look for the first span that actually contains content/color
     const styleItem = useMemo(() => {
         if (!line.items || line.items.length === 0) return line.items[0] || {};
@@ -746,23 +747,16 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             .replace(/\u2013/g, '–')  // En-dash
             .replace(/\u2014/g, '—'); // Em-dash
 
-        // FontAwesome Mapping (Greedy Mapping for Symbol Characters)
+        // FontAwesome Mapping (ONLY for high-unicode symbols, NOT standard ASCII)
         mapped = mapped
             .replace(/\u0083/g, '\uf095') // ƒ -> Phone (PhoneAlt)
-            .replace(/#/g, '\uf0e0')      // # -> Envelope
             .replace(/\u00a7/g, '\uf09b') // § -> Github
             .replace(/\u00ef/g, '\uf08c') // ï -> LinkedIn
             .replace(/\u00d0/g, '\uf121'); // Ð -> Code / LeetCode
 
         // TYPOGRAPHIC PREVIEW FIX:
-        // Respect the EXPLICIT variant if set, otherwise fallback to font-name heuristics.
-        const isSmallCaps = variant === 'small-caps' ||
-            (variant !== 'normal' && ((fontName || '').toLowerCase().includes('cmcsc') || (fontName || '').toLowerCase().includes('smallcaps')));
-
-        if (isSmallCaps && mapped === mapped.toUpperCase() && mapped.length > 1) {
-            mapped = mapped.charAt(0) + mapped.slice(1).toLowerCase();
-        }
-
+        // We let the browser's font-variant: small-caps handle the rendering.
+        // It naturally renders lowercase as small caps and uppercase as big caps.
         return mapped;
     };
 
@@ -784,11 +778,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 onDoubleClick(pageIndex, line.id, styleItem, e.currentTarget.getBoundingClientRect(), {
                     safetyStyle: {
                         size: styleItem.size || line.size,
-                        font: styleItem.font,
-                        color: styleItem.color,
-                        is_bold: styleItem.is_bold,
-                        is_italic: styleItem.is_italic,
-                        font_variant: styleItem.font_variant || (styleItem.font || '').toLowerCase().includes('cmcsc') ? 'small-caps' : 'normal',
+                        font_variant: styleItem.font_variant || 'normal',
                         uri: line.uri
                     }
                 });
@@ -809,15 +799,16 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 fontSize={Math.max(1, Math.abs(styleItem.size))}
                 fontFamily={normalizeFont(styleItem.font)}
                 fill={getSVGColor(styleItem.color, 'black')}
-                fontWeight={styleItem.is_bold ? 'bold' : 'normal'}
+                fontWeight={styleItem.is_bold ? (styleItem.size > 20 ? '800' : '650') : '400'}
                 fontStyle={styleItem.is_italic ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic"
                 xmlSpace="preserve"
+                textLength={!isModified ? line.width : undefined}
+                lengthAdjust={!isModified ? "spacingAndGlyphs" : undefined}
                 style={{
                     userSelect: 'none',
                     pointerEvents: 'none',  // Pass clicks through to the <g> container
-                    whiteSpace: 'pre',
-                    fontVariant: isSmallCaps ? 'small-caps' : 'normal'
+                    whiteSpace: 'pre'
                 }}
             >
                 {isModified ? (
@@ -834,7 +825,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                         const bMetrics = block.bullet_metrics || {};
 
                         // Dynamic isSmallCaps based on active font + variant
-                        const activeSmallCaps = safeVariant === 'small-caps' || (safeVariant !== 'normal' && (safeFont || '').toLowerCase().includes('cmcsc'));
+                        const activeSmallCaps = safeVariant === 'small-caps';
 
                         if (isModified) {
                             console.log(`==================== RENDERING MODIFIED ====================`);
@@ -876,7 +867,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                         xmlSpace="preserve"
                                     >
-                                        {restPart}
+                                        {renderVisualText(restPart, activeSmallCaps, safeSize)}
                                     </tspan>
                                 </tspan>
                             );
@@ -890,13 +881,13 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 fontSize={safeSize}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont)}
                                 fill={getSVGColor(safeColor, 'black')}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? 'bold' : 'normal')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? (safeSize > 18 ? '700' : '650') : '400')}
                                 fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                 style={{
                                     fontVariant: activeSmallCaps ? 'small-caps' : 'normal'
                                 }}
                             >
-                                {mapped}
+                                {renderVisualText(mapped, activeSmallCaps)}
                             </tspan>
                         );
                     })()
@@ -904,7 +895,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                     line.items.map((span, si) => {
                         const fontName = span.font || '';
                         const spanVariant = span.font_variant || 'normal';
-                        const isSmallCaps = spanVariant === 'small-caps' || (spanVariant !== 'normal' && fontName.toLowerCase().includes('cmcsc'));
+                        const isSmallCaps = spanVariant === 'small-caps';
 
                         // LANE ANCHORING LOGIC
                         const prev = si > 0 ? line.items[si - 1] : null;
@@ -954,7 +945,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 y={baselineY}
                                 dy={verticalShift + "px"}
                                 fontSize={Math.max(1, Math.abs(customSize))}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? 'bold' : 'normal')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? (span.size > 18 ? '700' : '650') : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(span.font)}
                                 fill={getSVGColor(span.color, 'black')}
@@ -962,7 +953,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                     fontVariant: isSmallCaps ? 'small-caps' : 'normal'
                                 }}
                             >
-                                {mapped}
+                                {renderVisualText(mapped, isSmallCaps)}
                             </tspan>
                         );
                     })
