@@ -31,3 +31,28 @@ export const uploadPdfToBackend = async (file, backend = 'python') => {
         throw error;
     }
 };
+
+export const savePdfToBackend = async (payload) => {
+    const PYTHON_API = "http://localhost:8000";
+    const endpoint = '/save-pdf';
+
+    try {
+        const response = await fetch(`${PYTHON_API}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Export Error ${response.status}: ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("PDF Export Failed:", error);
+        throw error;
+    }
+};

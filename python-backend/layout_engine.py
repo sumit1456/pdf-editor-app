@@ -302,6 +302,8 @@ def normalize_layout(items):
             "is_bullet_start": line.get("is_bullet_start", False),
             "uri": line.get("uri"),
             "items": line["items"],
+            "bbox": [line["x0"], line["y"] - line["size"], line["x1"], line["y"]],
+            "origin": [line["x0"], line["y"]],
             # --- THE FRAGMENT CORE (Inline Styles) ---
             "fragments": [{
                 "text": it["content"],

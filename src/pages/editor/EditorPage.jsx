@@ -5,6 +5,7 @@ import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
 import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
+import { savePdfToBackend } from '../../services/PdfBackendService';
 import './EditorPage.css';
 
 // Helper to decouple bullets from content (Global for use in initializers)
@@ -27,6 +28,22 @@ const splitBullet = (content) => {
 
     return { bullet: '', text: content };
 };
+
+const FONT_OPTIONS = [
+    { label: 'Serif (Latex)', value: 'Source Serif 4' },
+    { label: 'Inter (Sans)', value: 'Inter' },
+    { label: 'Roboto', value: 'Roboto' },
+    { label: 'Open Sans', value: 'Open Sans' },
+    { label: 'Montserrat', value: 'Montserrat' },
+    { label: 'Lora', value: 'Lora' },
+    { label: 'Merriweather', value: 'Merriweather' },
+    { label: 'Libre Basker', value: 'Libre Baskerville' },
+    { label: 'Playfair', value: 'Playfair Display' },
+    { label: 'Oswald', value: 'Oswald' },
+    { label: 'Roboto Mono', value: 'Roboto Mono' },
+    { label: 'JetBrains', value: 'JetBrains Mono' },
+    { label: 'Fira Code', value: 'Fira Code' }
+];
 
 export default function EditorPage() {
     const location = useLocation();
@@ -95,6 +112,80 @@ export default function EditorPage() {
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'links'
     const [zoom, setZoom] = useState(0.85); // Master zoom state
     const [activeNodeId, setActiveNodeId] = useState(null); // Track currently focused node
+    const [originalPdfBase64] = useState(location.state?.originalPdfBase64 || null);
+    const [pdfName] = useState(location.state?.pdfName || "document.pdf");
+
+    const handleDownload = async () => {
+        // Gather all original lines across all pages with their indices
+        const allOriginalLines = pages.flatMap((p, pIdx) =>
+            (p.blocks || []).flatMap(b =>
+                b.lines.map(l => ({ ...l, pageIndex: pIdx }))
+            )
+        );
+
+        const modifiedNodes = Object.keys(nodeEdits)
+            .filter(id => nodeEdits[id].isModified)
+            .map(id => {
+                const edit = nodeEdits[id];
+                const original = allOriginalLines.find(l => l.id === id);
+
+                return {
+                    id: id,
+                    pageIndex: original?.pageIndex ?? 0,
+                    text: (edit.content !== undefined && edit.content !== null) ? edit.content : (original?.content || ''),
+                    originalText: original?.content,
+                    bbox: original?.bbox,
+                    origin: original?.origin,
+                    style: {
+                        ...edit.safetyStyle,
+                        font: edit.safetyStyle?.font || original?.originalStyle?.font || original?.font || '',
+                        size: edit.safetyStyle?.size || original?.originalStyle?.size || original?.size || 10,
+                        color: edit.safetyStyle?.color || original?.originalStyle?.color || original?.color || [0, 0, 0],
+                        font_variant: edit.safetyStyle?.font_variant || original?.font_variant || 'normal'
+                    },
+                    uri: edit.uri || original?.uri
+                };
+            });
+
+        if (modifiedNodes.length === 0) {
+            alert("No changes to export. Try editing some text first!");
+            return;
+        }
+
+        const payload = {
+            pdf_name: pdfName,
+            pdf_base64: originalPdfBase64,
+            modifications: modifiedNodes
+        };
+
+        console.log("==================== FRONTEND SENDING TO BACKEND ====================");
+        console.log("PDF Name:", pdfName);
+        console.log("Modifications:", JSON.stringify(modifiedNodes, null, 2));
+        console.log("=====================================================================");
+
+        try {
+            const result = await savePdfToBackend(payload);
+            if (result.success && result.pdf_base64) {
+                // Convert Base64 back to Blob and Download
+                const byteCharacters = atob(result.pdf_base64);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = result.filename || "edited_document.pdf";
+                link.click();
+            } else {
+                alert("Failed to generate PDF: " + (result.error || "Unknown error"));
+            }
+        } catch (err) {
+            alert("Error during PDF export: " + err.message);
+        }
+    };
 
     const handleZoom = (delta) => {
         setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
@@ -144,7 +235,8 @@ export default function EditorPage() {
                         font: item.font,
                         color: item.color,
                         is_bold: item.is_bold,
-                        is_italic: item.is_italic
+                        is_italic: item.is_italic,
+                        font_variant: item.font_variant || 'normal'
                     },
                     isModified: prev[lineId]?.isModified || false
                 }
@@ -210,6 +302,7 @@ export default function EditorPage() {
             };
         });
     };
+
 
     const rgbToHex = (c) => {
         if (!c || !Array.isArray(c)) return '#000000';
@@ -310,7 +403,8 @@ export default function EditorPage() {
                             font: item.font,
                             color: item.color,
                             is_bold: item.is_bold,
-                            is_italic: item.is_italic
+                            is_italic: item.is_italic,
+                            font_variant: item.font_variant || 'normal'
                         }
                     });
                 });
@@ -331,6 +425,71 @@ export default function EditorPage() {
 
             {/* 1. EDITING PANEL - Left */}
             <div className="editing-panel">
+                {/* 1.1 DESIGN CONFIG TOOLBAR (Global control for active node) */}
+                <div className={`design-config-toolbar ${!activeNodeId ? 'idle' : ''}`}>
+                    <div className="toolbar-header">
+                        <div className="toolbar-label">Design Configuration</div>
+                        {!activeNodeId && <span className="toolbar-status">Selection Required</span>}
+                    </div>
+
+                    <div className="tools-group">
+                        <select
+                            className="premium-font-select"
+                            disabled={!activeNodeId}
+                            value={(() => {
+                                if (!activeNodeId) return "";
+                                const edit = nodeEdits[activeNodeId] || {};
+                                const sStyle = edit.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {};
+                                return FONT_OPTIONS.find(opt => (sStyle.font || '').toLowerCase().includes(opt.value.toLowerCase()))?.value || '';
+                            })()}
+                            onChange={(e) => handleStyleUpdate(activeNodeId, 'font', e.target.value)}
+                        >
+                            <option value="" disabled>{activeNodeId ? "Change Font Family" : "---"}</option>
+                            {FONT_OPTIONS.map(opt => (
+                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                        </select>
+
+                        <div className="size-control">
+                            <button disabled={!activeNodeId} onClick={() => {
+                                const edit = nodeEdits[activeNodeId] || {};
+                                const sStyle = edit.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {};
+                                handleStyleUpdate(activeNodeId, 'size', (sStyle.size || 10) - 1);
+                            }}>−</button>
+                            <span className="size-label">
+                                {activeNodeId ?
+                                    Math.round(Math.abs((nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).size || 10))
+                                    : '--'}
+                            </span>
+                            <button disabled={!activeNodeId} onClick={() => {
+                                const edit = nodeEdits[activeNodeId] || {};
+                                const sStyle = edit.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {};
+                                handleStyleUpdate(activeNodeId, 'size', (sStyle.size || 10) + 1);
+                            }}>+</button>
+                        </div>
+
+                        <input
+                            type="color"
+                            disabled={!activeNodeId}
+                            className="premium-color-swatch"
+                            value={activeNodeId ? rgbToHex((nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).color || [0, 0, 0]) : '#333333'}
+                            onChange={(e) => handleStyleUpdate(activeNodeId, 'color', hexToRgb(e.target.value))}
+                            title="Override Color"
+                        />
+
+                        <button
+                            disabled={!activeNodeId}
+                            className={`caps-toggle-btn ${(activeNodeId && (nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).font_variant === 'small-caps') ? 'active' : ''}`}
+                            onClick={() => {
+                                const current = (nodeEdits[activeNodeId]?.safetyStyle || textLines.find(l => l.id === activeNodeId)?.originalStyle || {}).font_variant;
+                                handleStyleUpdate(activeNodeId, 'font_variant', current === 'small-caps' ? 'normal' : 'small-caps');
+                            }}
+                        >
+                            <span className="icon">Aa</span> Small Caps
+                        </button>
+                    </div>
+                </div>
+
                 <div className="panel-header" style={{ flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                         <h3 className="highlight">
@@ -363,40 +522,20 @@ export default function EditorPage() {
                             >
                                 <div className="card-controls-row">
                                     <div className="style-tools">
-                                        <input
-                                            type="color"
-                                            className="color-swatch-input"
-                                            value={rgbToHex(sStyle.color)}
-                                            onChange={(e) => handleStyleUpdate(line.id, 'color', hexToRgb(e.target.value))}
-                                            title="Override Color"
-                                        />
-                                        <div className="size-control">
-                                            <button onClick={() => handleStyleUpdate(line.id, 'size', (sStyle.size || 10) - 1)}>−</button>
-                                            <span className="size-label">{Math.round(Math.abs(sStyle.size || 10))}</span>
-                                            <button onClick={() => handleStyleUpdate(line.id, 'size', (sStyle.size || 10) + 1)}>+</button>
-                                        </div>
-                                        <div className="format-toggles">
-                                            <button
-                                                className={`toggle-tool ${sStyle.is_bold ? 'active' : ''}`}
-                                                onClick={() => handleStyleUpdate(line.id, 'is_bold', !sStyle.is_bold)}
-                                            >B</button>
-                                            <button
-                                                className={`toggle-tool ${sStyle.is_italic ? 'active' : ''}`}
-                                                onClick={() => handleStyleUpdate(line.id, 'is_italic', !sStyle.is_italic)}
-                                            >I</button>
-                                        </div>
+                                        <span className="node-id-label">Node {line.id?.substring(0, 4) || i}</span>
                                     </div>
-                                    <span className="card-id">L.{textLines.length - i}</span>
+                                    <div className="status-badge">
+                                        {edit.isModified ? 'Edited' : 'Original'}
+                                    </div>
                                 </div>
 
                                 <div className="card-input-area">
                                     <label className="field-label">{line.uri ? 'Hypertext' : 'Content'}</label>
                                     <textarea
-                                        id={`input-${line.id}`}
                                         value={displayContent}
-                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
-                                        rows={1}
-                                        placeholder="Type text here..."
+                                        onFocus={() => setActiveNodeId(line.id)}
+                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value)}
+                                        placeholder="Enter text..."
                                     />
 
                                     {activeTab === 'links' && (
@@ -430,6 +569,12 @@ export default function EditorPage() {
                         <span className="zoom-level">{Math.round(zoom * 100)}%</span>
                         <button className="zoom-btn" onClick={() => handleZoom(0.1)}>+</button>
                     </div>
+
+                    <div style={{ flex: 1 }}></div>
+
+                    <button className="download-btn-premium" onClick={handleDownload}>
+                        <span style={{ fontSize: '1rem' }}>📥</span> Download PDF
+                    </button>
                 </div>
 
                 <div className="preview-stage">

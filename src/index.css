@@ -1,5 +1,8 @@
+@import url('https://cdn.jsdelivr.net/npm/latin-modern-web@1.0.0/style/all.css');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css');
+
 :root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -11,6 +14,18 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Studio Typography Mappings (Mirroring Backend) */
+  --serif-latex: 'Source Serif 4', serif;
+  --serif-primary: 'Lora', serif;
+  --serif-academic: 'Merriweather', serif;
+  --serif-high-contrast: 'Playfair Display', serif;
+
+  --sans-modern: 'Inter', sans-serif;
+  --sans-geometric: 'Poppins', sans-serif;
+  --sans-readable: 'Open Sans', sans-serif;
+
+  --mono-code: 'Roboto Mono', monospace;
 }
 
 * {
@@ -19,10 +34,13 @@
   box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
-  overflow: hidden; /* App shell is fixed height */
+  overflow: hidden;
+  /* App shell is fixed height */
 }
 
 body {

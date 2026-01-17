@@ -17,11 +17,26 @@ export default function HomePage() {
     if (file && file.type === "application/pdf") {
       try {
         console.log(`PDF Selected (${backend}):`, file.name);
+
+        // Convert to Base64 for stateless transfer to Editor
+        const fileBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(file);
+        });
+
         const jsonOutput = await uploadPdfToBackend(file, backend);
         console.log("Extracted Scene Graph JSON:", jsonOutput);
 
-        // Navigate to the editor with the data and backend type
-        navigate('/editor', { state: { sceneGraph: jsonOutput, backend } });
+        // Navigate to the editor with the data, backend type, and original file
+        navigate('/editor', {
+          state: {
+            sceneGraph: jsonOutput,
+            backend,
+            originalPdfBase64: fileBase64,
+            pdfName: file.name
+          }
+        });
       } catch (error) {
         console.error("Error extracting PDF:", error);
         alert(`Failed to extract PDF. Make sure the ${backend} backend is running.`);

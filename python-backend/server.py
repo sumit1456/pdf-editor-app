@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Optional
 import fitz # PyMuPDF
 import uvicorn
 import base64
@@ -8,10 +10,27 @@ import os
 import zipfile
 import io
 import json
+import sys
+import contextlib
+
 from layout_engine import normalize_layout
 from coordinate_diagnostic import run_comparison
 
 app = FastAPI()
+
+class Modification(BaseModel):
+    id: str
+    pageIndex: int
+    text: Optional[str] = "" 
+    bbox: List[float]
+    origin: List[float]
+    style: dict
+    uri: Optional[str] = None
+
+class SavePDFRequest(BaseModel):
+    pdf_name: str
+    pdf_base64: str
+    modifications: List[Modification]
 
 
 # Allow CORS for development
@@ -290,6 +309,144 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                 "fonts": fonts,
                 "fonts_key": str(len(fonts))
             }
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+
+@app.post("/save-pdf")
+async def save_pdf(request: SavePDFRequest):
+    try:
+        # 1. Open original PDF from Base64
+        pdf_data = base64.b64decode(request.pdf_base64)
+        doc = fitz.open(stream=pdf_data, filetype="pdf")
+        
+        PT_TO_PX = 1.333333  # Scale factor used during extraction
+
+        # 2. Apply modifications surgically
+        for mod in request.modifications:
+            page = doc[mod.pageIndex]
+            
+            # Convert CSS Pixels back to PDF Points
+            bbox_pt = [coord / PT_TO_PX for coord in mod.bbox]
+            origin_pt = [coord / PT_TO_PX for coord in mod.origin]
+            
+            # A. Redact original text area
+            rect = fitz.Rect(bbox_pt)
+            page.add_redact_annot(rect, fill=(1,1,1)) 
+            page.apply_redactions()
+            
+            # B. Inject new text with High-Fidelity Google Font Mapping
+            # Normalized text for broad font compatibility (e.g. mapping varied bullet types to standard)
+            injection_text = mod.text if mod.text else ""
+            symbol_map = {
+                "\u2022": "\u2022", # Standard Bullet
+                "\u25cf": "\u2022", # Black Circle
+                "\u25cb": "\u2022", # White Circle
+                "\u25aa": "\u2022", # Small Square
+                "\u2731": "\u2022", # Asterisk-like
+                "\u2217": "\u2022", # Math Asterisk
+            }
+            for sym, rep in symbol_map.items():
+                injection_text = injection_text.replace(sym, rep)
+
+            font_in = mod.style.get("font", "").lower()
+            is_bold = mod.style.get("is_bold", False)
+            is_italic = mod.style.get("is_italic", False)
+            font_variant = mod.style.get("font_variant", "normal")
+
+            # Resolve real .ttf path from our optimized assets
+            from font_manager import font_manager
+            print(f"\n[BACKEND-SAVE-REQUEST] Node ID: {mod.id}")
+            print(f"  > Content: '{injection_text}'")
+            print(f"  > Font In: {font_in}, Bold: {is_bold}, Italic: {is_italic}, Variant: {font_variant}")
+            font_path, font_key = font_manager.get_font_path(font_in, is_bold, is_italic)
+
+            color = mod.style.get("color", [0, 0, 0])
+            
+            # Injection Stacking
+            success = False
+            
+            # Step 1: Try the mapped Google Font .ttf (Best Quality)
+            if font_path:
+                try:
+                    # TYPOGRAPHIC SMALL-CAPS FIX:
+                    # Respect variant first, then font name heuristic.
+                    is_small_caps = (font_variant == "small-caps") or (font_variant != "normal" and "cmcsc" in font_in.lower())
+                    
+                    if is_small_caps and injection_text == injection_text.upper() and len(injection_text) > 1:
+                        injection_text = injection_text.title()
+
+                    # DETERMINISTIC REGISTRATION
+                    internal_name = f"f-{font_key.lower()}"
+
+                    # Small Caps Height Logic: Simulate true Small-Caps if possible
+                    # (Standard insert_text doesn't support it, so we rely on the casing transformation for now)
+                    # But we'll use the actual user-selected color.
+                    
+                    page.insert_text(
+                        origin_pt, injection_text,
+                        fontsize=mod.style.get("size", 10) / PT_TO_PX,
+                        color=tuple(color), 
+                        fontfile=font_path,
+                        fontname=internal_name
+                    )
+                    print(f"  [SUCCESS] Step 1: Injected '{mod.text[:10]}...' using {font_path}")
+                    success = True
+                except Exception as ef:
+                    print(f"[TTF Error] Failed to inject {font_path}: {ef}")
+
+            # Step 2: Fallback to Original PDF Font Handle
+            if not success:
+                try:
+                    page_fonts = page.get_fonts(full=True)
+                    for f in page_fonts:
+                        if font_in in f[3].lower():
+                            # Use actual color
+                            page.insert_text(
+                                origin_pt, mod.text,
+                                fontsize=mod.style.get("size", 10) / PT_TO_PX,
+                                color=tuple(color),
+                                fontname=f[4],
+                                encoding=fitz.TEXT_ENCODING_LATIN
+                            )
+                            print(f"  [SUCCESS] Step 2: Injected using Native: {f[4]}")
+                            success = True
+                            break
+                except: pass
+
+            # Step 3: Ultimate Fallback (Helvetica)
+            if not success:
+                # Use actual color
+                page.insert_text(
+                    origin_pt, mod.text,
+                    fontsize=mod.style.get("size", 10) / PT_TO_PX,
+                    color=tuple(color),
+                    fontname="helv"
+                )
+                print(f"  [SUCCESS] Step 3: Injected using BIG FALLBACK: Helvetica")
+
+            # C. Update Link if present
+            if mod.uri:
+                links = page.get_links()
+                for lnk in links:
+                    if fitz.Rect(lnk["from"]).intersects(rect):
+                        lnk["uri"] = mod.uri
+                        page.update_link(lnk)
+
+        # 3. Save to memory and return
+        out_pdf_buffer = io.BytesIO()
+        doc.save(out_pdf_buffer)
+        doc.close()
+        
+        out_pdf_b64 = base64.b64encode(out_pdf_buffer.getvalue()).decode('utf-8')
+        
+        return {
+            "success": True,
+            "pdf_base64": out_pdf_b64,
+            "filename": f"edited_{request.pdf_name}"
         }
 
     except Exception as e:
