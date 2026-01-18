@@ -3,27 +3,18 @@ import os
 class FontManager:
     def __init__(self, fonts_dir=None):
         if fonts_dir is None:
-            # Anchor to the absolute path of the python-backend/fonts folder
-            # This prevents injection fails when running server from root or other dirs
             base_dir = os.path.dirname(os.path.abspath(__file__))
             fonts_dir = os.path.join(base_dir, "fonts")
         self.fonts_dir = fonts_dir
-        self.font_cache = {} # (family, weight) -> path
 
     def get_font_path(self, family_keyword, is_bold=False, is_italic=False):
         """
-        Finds the best matching .ttf path from our assets.
+        The standardized Font Resolver.
+        Expects fonts to be in 'Folder/Folder-Weight.ttf' format.
         """
         family_keyword = (family_keyword or "").lower()
         
-        # 1. Determine target weight string
-        if is_bold and is_italic: weight = "BoldItalic"
-        elif is_bold: weight = "Bold"
-        elif is_italic: weight = "Italic"
-        else: weight = "Regular"
-
-        # 2. Map PDF keywords to our specific folder names
-        # Order matters! Specific matches first.
+        # 1. Map keywords to our 13 Elite Folder names
         family_map = {
             "roboto mono": "Roboto_Mono",
             "jetbrains mono": "JetBrains_Mono",
@@ -41,62 +32,93 @@ class FontManager:
             "merriweather": "Merriweather",
             "oswald": "Oswald",
             "ubuntu": "Ubuntu",
-            "arial": "Inter",
-            "helvetica": "Inter",
-            "calibri": "Inter",
-            "verdana": "Inter",
-            "tahoma": "Inter",
+            "cm": "Source_Serif_4", 
+            "serif": "Source_Serif_4",
+            "sans": "Inter",
             "mono": "Roboto_Mono",
-            "courier": "Roboto_Mono",
-            "times": "Source_Serif_4",
-            "roman": "Source_Serif_4",
-            "georgia": "Source_Serif_4",
-            "palatino": "Source_Serif_4",
-            "minion": "Source_Serif_4",
-            "baskerville": "Source_Serif_4",
-            "cambria": "Source_Serif_4",
-            "garamond": "Source_Serif_4",
-            "libertine": "Source_Serif_4",
-            "cm": "Source_Serif_4", # LaTeX
-            "sfrm": "Source_Serif_4",
-            "nimbus": "Source_Serif_4",
+            "symbol": "zapf",
+            "fontawesome": "zapf"
         }
 
-        target_family = None
-        # Use an ordered check (we expect the dict to maintain order in Python 3.7+)
+        target_folder = "Inter" 
         for key, folder in family_map.items():
             if key in family_keyword:
-                target_family = folder
+                target_folder = folder
                 break
+
+        # 2. Determine Weight Spectrum (Fidelity Fix)
+        # OPTICAL CALIBRATION: PDF engines render TTF files 'heavier' than browsers.
+        # We now perform a systematic down-shift for all 'Bold-Class' weights.
+        requested_weight = "Regular"
+        optical_twin = None # The lighter version to try first
         
-        # Fallback based on serif/sans if no direct name match
-        if not target_family:
-            if any(k in family_keyword for k in ["cm", "sfrm", "serif", "roman", "times", "nimbus"]):
-                target_family = "Source_Serif_4" # Best match for LaTeX Look
-            elif "mono" in family_keyword or "courier" in family_keyword or "fira" in family_keyword:
-                target_family = "Roboto_Mono"
-            else:
-                target_family = "Inter"
-
-        print(f"[FontManager] Mapping '{family_keyword}' (Bold={is_bold}) -> {target_family}")
-
-        # 3. Construct the filename we created in optimization
-        font_filename = f"{target_family}-{weight}.ttf"
-        font_path = os.path.join(self.fonts_dir, target_family, font_filename)
-
-        # Check if BoldItalic exists, fallback to Bold or Regular if not
-        if not os.path.exists(font_path):
-            if is_bold and is_italic:
-                # Try Bold or Italic individually
-                font_path = os.path.join(self.fonts_dir, target_family, f"{target_family}-Bold.ttf")
-                if not os.path.exists(font_path):
-                    font_path = os.path.join(self.fonts_dir, target_family, f"{target_family}-Regular.ttf")
-            elif is_bold or is_italic:
-                font_path = os.path.join(self.fonts_dir, target_family, f"{target_family}-Regular.ttf")
-
-        if os.path.exists(font_path):
-            return font_path, f"{target_family}-{weight}"
+        # Mapping for Optical Down-Shifting
+        is_truly_bold = is_bold or any(x in family_keyword for x in ["bold", "700"])
         
+        # SKEPTICISM LAYER: If it's an Italic, don't trust the 'Bold' flag 
+        # unless 'bold' is actually in the font name keyword.
+        if is_italic and is_bold and "bold" not in family_keyword:
+            is_truly_bold = False
+
+        if any(x in family_keyword for x in ["black", "heavy", "900"]):
+            requested_weight = "Black"
+            optical_twin = "ExtraBold"
+        elif any(x in family_keyword for x in ["extrabold", "800"]):
+            requested_weight = "ExtraBold"
+            optical_twin = "Bold"
+        elif is_truly_bold:
+            requested_weight = "Bold"
+            optical_twin = "SemiBold"
+        elif any(x in family_keyword for x in ["semibold", "demi", "600"]):
+            requested_weight = "SemiBold"
+            optical_twin = "Medium"
+        elif any(x in family_keyword for x in ["medium", "500"]):
+            requested_weight = "Medium"
+            # Medium is the last 'Bold-Class', it falls back to Regular if too thick
+            optical_twin = "Regular"
+        elif any(x in family_keyword for x in ["extralight", "100", "200"]):
+            requested_weight = "ExtraLight"
+        elif any(x in family_keyword for x in ["light", "thin", "300"]):
+            requested_weight = "Light"
+
+        # 3. Handle Italics
+        style_suffix = "Italic" if is_italic else ""
+        def get_full_style(w):
+            if w == "Regular" and is_italic: return "Italic"
+            return f"{w}{style_suffix}"
+
+        # 4. Construct Path & Fallback Chain (Prioritizing Optical Twin)
+        attempts = []
+        if optical_twin:
+            attempts.append(f"{target_folder}-{get_full_style(optical_twin)}.ttf")
+            attempts.append(f"{target_folder.replace('_', '')}-{get_full_style(optical_twin)}.ttf")
+        
+        # Then try the actual requested weight
+        attempts.append(f"{target_folder}-{get_full_style(requested_weight)}.ttf")
+        attempts.append(f"{target_folder.replace('_', '')}-{get_full_style(requested_weight)}.ttf")
+        
+        # Generic fallbacks
+        attempts.append(f"{target_folder}-Bold{style_suffix}.ttf" if is_truly_bold else f"{target_folder}-Regular{style_suffix}.ttf")
+        # Ensure we fall back to an italic version if we started with one
+        if is_italic:
+            attempts.append(f"{target_folder}-Italic.ttf")
+        attempts.append(f"{target_folder}-Regular.ttf")
+
+        font_path = None
+        current_choice = None
+        for attempt in attempts:
+            candidate = os.path.join(self.fonts_dir, target_folder, attempt)
+            if os.path.exists(candidate):
+                font_path = candidate
+                current_choice = attempt
+                break
+
+        if font_path:
+            print(f"[FontManager] MAPPED: '{family_keyword}' -> {current_choice}")
+            return font_path, current_choice.replace(".ttf", "")
+        
+        main_attempt = f"{target_folder}-{get_full_style(requested_weight)}.ttf"
+        print(f"[FontManager] NO MATCH for '{family_keyword}' (tried: {main_attempt})")
         return None, None
 
 font_manager = FontManager()

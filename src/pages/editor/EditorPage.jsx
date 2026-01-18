@@ -45,6 +45,16 @@ const FONT_OPTIONS = [
     { label: 'Fira Code', value: 'Fira Code' }
 ];
 
+// TYPOGRAPHIC AUDITOR: Measures natural density of fonts to find the best match
+const measureLineDensity = (text, font, size, weight = 'normal') => {
+    if (!window.__canvas_auditor) {
+        window.__canvas_auditor = document.createElement('canvas').getContext('2d');
+    }
+    const ctx = window.__canvas_auditor;
+    ctx.font = `${weight} ${size}px "${font}"`;
+    return ctx.measureText(text || '').width;
+};
+
 export default function EditorPage() {
     const location = useLocation();
     const backend = location.state?.backend || 'java';
@@ -110,11 +120,30 @@ export default function EditorPage() {
     // NODE-BASED EDITING STATE: Persistent edits keyed by unique item ID
     const [nodeEdits, setNodeEdits] = useState({});
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'links'
-    const [zoom, setZoom] = useState(0.85); // Master zoom state
+    const [zoom, setZoom] = useState(0.9); // Master zoom state
     const [activeNodeId, setActiveNodeId] = useState(null); // Track currently focused node
     const [smartStyling, setSmartStyling] = useState(false); // Toggle for Per-Word Preservation
     const [originalPdfBase64] = useState(location.state?.originalPdfBase64 || null);
     const [pdfName] = useState(location.state?.pdfName || "document.pdf");
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // AUTO-SELECT FIRST NODE ON LOAD
+    // This ensures the sidebar is "active" immediately for a better first impression
+    React.useEffect(() => {
+        if (pages.length > 0 && isInitialLoad && !activeNodeId) {
+            const firstPage = pages[0];
+            const firstLine = (firstPage.blocks || [])[0]?.lines[0] ||
+                (firstPage.items || []).find(it => it.type === 'text');
+
+            if (firstLine) {
+                // Determine if it's a list or text to set the right tab
+                const isLink = firstLine.type === 'link' || !!firstLine.uri;
+                setActiveTab(isLink ? 'links' : 'text');
+                setActiveNodeId(firstLine.id);
+                setIsInitialLoad(false);
+            }
+        }
+    }, [pages, isInitialLoad, activeNodeId]);
 
     const handleDownload = async () => {
         // Gather all original lines across all pages with their indices

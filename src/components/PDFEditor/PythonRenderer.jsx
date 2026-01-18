@@ -430,8 +430,11 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
 
     const A4_WIDTH = 595.28;
     const A4_HEIGHT = 841.89;
-    const renderWidth = (page && page.width) || A4_WIDTH;
-    const renderHeight = (page && page.height) || A4_HEIGHT;
+    const PT_TO_PX = 1.333333;
+
+    // Hardened dimensions: Ensure fallback is also scaled to PX if page metadata is missing
+    const renderWidth = (page && page.width) ? page.width : A4_WIDTH * PT_TO_PX;
+    const renderHeight = (page && page.height) ? page.height : A4_HEIGHT * PT_TO_PX;
 
     return (
         <div className="webgl-single-page" style={{
@@ -626,7 +629,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             y={span.origin ? span.origin[1] : (span.y || item.y)}
                                             fontSize={Math.max(1, Math.abs(span.size))}
                                             fill={getSVGColor(span.color, color)}
-                                            fontWeight={span.is_bold ? (span.size > 18 ? '600' : '550') : '400'}
+                                            fontWeight={span.is_bold ? '700' : '400'}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
                                             fontFamily={span.font ? normalizeFont(span.font) : undefined}
                                             xmlSpace="preserve"
@@ -790,13 +793,20 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Trigger clicking on the invisible hitbox as if it were the text
-                console.log(`==================== CLICKED LINE ====================`);
-                console.log(`Line ID: ${line.id}`);
-                console.log(`Style Master:`, styleItem);
-                console.log(`Raw Color Array:`, JSON.stringify(styleItem.color));
-                console.log(`=======================================================`);
+                // --- FIDELITY PROOF ---
+                const textEl = e.currentTarget.querySelector('text');
+                if (textEl) {
+                    const targetWidth = line.width;
+                    const naturalWidth = textEl.getComputedTextLength();
+                    const stretchFactor = targetWidth / naturalWidth;
 
+                    console.log(`%c[FIDELITY MONITOR] Line ${line.id}`, 'color: #d9af27; font-weight: bold;');
+                    console.log(`- PDF Target Width: ${targetWidth.toFixed(2)}px`);
+                    console.log(`- Browser Natural Width: ${naturalWidth.toFixed(2)}px`);
+                    console.log(`- STRETCH FACTOR: ${stretchFactor.toFixed(3)}x ${stretchFactor > 1.05 ? '(Stretched)' : stretchFactor < 0.95 ? '(Squeezed)' : '(Optimal)'}`);
+                }
+
+                // Trigger clicking on the invisible hitbox as if it were the text
                 onDoubleClick(pageIndex, line.id, styleItem, e.currentTarget.getBoundingClientRect(), {
                     safetyStyle: {
                         size: styleItem.size || line.size,
@@ -825,12 +835,12 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 fontSize={Math.max(1, Math.abs(styleItem.size))}
                 fontFamily={normalizeFont(styleItem.font)}
                 fill={getSVGColor(styleItem.color, 'black')}
-                fontWeight={styleItem.is_bold ? (styleItem.size > 20 ? '700' : '600') : '400'}
+                fontWeight={styleItem.is_bold ? '700' : '400'}
                 fontStyle={styleItem.is_italic ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic"
                 xmlSpace="preserve"
-                textLength={!isModified ? line.width : undefined}
-                lengthAdjust={!isModified ? "spacingAndGlyphs" : undefined}
+                // textLength={!isModified ? line.width : undefined}
+                // lengthAdjust={!isModified ? "spacingAndGlyphs" : undefined}
                 style={{
                     userSelect: 'none',
                     pointerEvents: 'none',  // Pass clicks through to the <g> container
@@ -867,7 +877,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                     <tspan
                                         fontSize={safeBSize}
                                         fontFamily={/[\uf000-\uf999]/.test(markerPart) ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont)}
-                                        fontWeight={/[\uf000-\uf999]/.test(markerPart) ? '900' : ((block.style?.is_bold || sStyle.is_bold) ? 'bold' : 'normal')}
+                                        fontWeight={/[\uf000-\uf999]/.test(markerPart) ? '900' : ((block.style?.is_bold || sStyle.is_bold) ? '700' : '400')}
                                         fill={getSVGColor(safeColor, 'black')}
                                         fontStyle={(block.style?.is_italic || sStyle.is_italic) ? 'italic' : 'normal'}
                                         dy={-((safeSize - safeBSize) * 0.4) + "px"}
@@ -881,7 +891,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         fontSize={safeSize}
                                         fontFamily={normalizeFont(safeFont)}
                                         fill={getSVGColor(safeColor, 'black')}
-                                        fontWeight={sStyle.is_bold ? '600' : '400'}
+                                        fontWeight={sStyle.is_bold ? '700' : '400'}
                                         fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                         xmlSpace="preserve"
                                     >
@@ -899,7 +909,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 fontSize={safeSize}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont)}
                                 fill={getSVGColor(safeColor, 'black')}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? (safeSize > 18 ? '600' : '550') : '400')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? '700' : '400')}
                                 fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                 style={{
                                     // Removed native fontVariant to avoid double-processing
@@ -967,7 +977,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 y={baselineY}
                                 dy={verticalShift + "px"}
                                 fontSize={Math.max(1, Math.abs(customSize))}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? (span.size > 18 ? '600' : '550') : '400')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? '700' : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(span.font)}
                                 fill={getSVGColor(span.color, 'black')}
