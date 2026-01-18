@@ -33,8 +33,24 @@ class FontManager:
             "oswald": "Oswald",
             "ubuntu": "Ubuntu",
             "cm": "Source_Serif_4", 
+            "sfrm": "Source_Serif_4",
+            "times": "Source_Serif_4",
+            "roman": "Source_Serif_4",
+            "georgia": "Source_Serif_4",
+            "palatino": "Source_Serif_4",
+            "cambria": "Source_Serif_4",
+            "garamond": "Source_Serif_4",
+            "libertine": "Source_Serif_4",
+            "didot": "Source_Serif_4",
             "serif": "Source_Serif_4",
             "sans": "Inter",
+            "arial": "Inter",
+            "helvetica": "Inter",
+            "calibri": "Inter",
+            "verdana": "Inter",
+            "tahoma": "Inter",
+            "modern": "Inter",
+            "geometric": "Inter",
             "mono": "Roboto_Mono",
             "symbol": "zapf",
             "fontawesome": "zapf"
@@ -53,13 +69,18 @@ class FontManager:
         optical_twin = None # The lighter version to try first
         
         # Mapping for Optical Down-Shifting
-        is_truly_bold = is_bold or any(x in family_keyword for x in ["bold", "700"])
+        # Mapping for Optical Down-Shifting (PDF engines render ~15% thicker than browsers)
+        # Systematic Down-Shift Scale:
+        # Black -> Bold
+        # ExtraBold -> SemiBold
+        # Bold -> Medium
+        # SemiBold -> Regular
+        # Medium -> Regular
+        # Regular -> Light (Experimental for better matching)
         
-        # SKEPTICISM LAYER: If it's an Italic, don't trust the 'Bold' flag 
-        # unless 'bold' is actually in the font name keyword.
-        if is_italic and is_bold and "bold" not in family_keyword:
-            is_truly_bold = False
+        is_truly_bold = is_bold
 
+        optical_twin = None
         if any(x in family_keyword for x in ["black", "heavy", "900"]):
             requested_weight = "Black"
             optical_twin = "ExtraBold"
@@ -68,18 +89,23 @@ class FontManager:
             optical_twin = "Bold"
         elif is_truly_bold:
             requested_weight = "Bold"
-            optical_twin = "SemiBold"
+            # Calibration: Mapping 700 (Bold) to 600 (SemiBold) for PDF fidelity
+            optical_twin = "SemiBold" 
         elif any(x in family_keyword for x in ["semibold", "demi", "600"]):
             requested_weight = "SemiBold"
+            # Mapping 600 (SemiBold) to 500 (Medium)
             optical_twin = "Medium"
         elif any(x in family_keyword for x in ["medium", "500"]):
             requested_weight = "Medium"
-            # Medium is the last 'Bold-Class', it falls back to Regular if too thick
             optical_twin = "Regular"
-        elif any(x in family_keyword for x in ["extralight", "100", "200"]):
-            requested_weight = "ExtraLight"
-        elif any(x in family_keyword for x in ["light", "thin", "300"]):
-            requested_weight = "Light"
+        else:
+            requested_weight = "Regular"
+            # FIDELITY FIX: For Classic/LaTeX fonts, Regular is too heavy.
+            # Shifting to Light for these specific patterns.
+            if any(x in family_keyword for x in ["cm", "sfrm", "roman", "times", "serif"]):
+                optical_twin = "Light"
+            else:
+                optical_twin = "Regular"
 
         # 3. Handle Italics
         style_suffix = "Italic" if is_italic else ""
@@ -89,19 +115,27 @@ class FontManager:
 
         # 4. Construct Path & Fallback Chain (Prioritizing Optical Twin)
         attempts = []
+        
+        # Priority 1: Lighter version (Optical Twin)
         if optical_twin:
             attempts.append(f"{target_folder}-{get_full_style(optical_twin)}.ttf")
             attempts.append(f"{target_folder.replace('_', '')}-{get_full_style(optical_twin)}.ttf")
         
-        # Then try the actual requested weight
+        # Priority 2: Actual requested weight
         attempts.append(f"{target_folder}-{get_full_style(requested_weight)}.ttf")
         attempts.append(f"{target_folder.replace('_', '')}-{get_full_style(requested_weight)}.ttf")
         
-        # Generic fallbacks
-        attempts.append(f"{target_folder}-Bold{style_suffix}.ttf" if is_truly_bold else f"{target_folder}-Regular{style_suffix}.ttf")
-        # Ensure we fall back to an italic version if we started with one
+        # Priority 3: Systematic Fallbacks
+        if is_truly_bold:
+            # If Bold/Medium twin failed, try SemiBold
+            attempts.append(f"{target_folder}-SemiBold{style_suffix}.ttf")
+            attempts.append(f"{target_folder}-Bold{style_suffix}.ttf")
+        
         if is_italic:
+            attempts.append(f"{target_folder}-RegularItalic.ttf")
             attempts.append(f"{target_folder}-Italic.ttf")
+            attempts.append(f"{target_folder}-LightItalic.ttf")
+        
         attempts.append(f"{target_folder}-Regular.ttf")
 
         font_path = None
@@ -114,11 +148,17 @@ class FontManager:
                 break
 
         if font_path:
-            print(f"[FontManager] MAPPED: '{family_keyword}' -> {current_choice}")
+            log_msg = f"[FontManager] MAPPED: '{family_keyword}' -> {current_choice} (is_bold={is_bold}, is_italic={is_italic})"
+            print(log_msg)
+            with open("font_mapping.log", "a") as f:
+                f.write(log_msg + "\n")
             return font_path, current_choice.replace(".ttf", "")
         
         main_attempt = f"{target_folder}-{get_full_style(requested_weight)}.ttf"
-        print(f"[FontManager] NO MATCH for '{family_keyword}' (tried: {main_attempt})")
+        err_msg = f"[FontManager] NO MATCH for '{family_keyword}' (tried: {main_attempt})"
+        print(err_msg)
+        with open("font_mapping.log", "a") as f:
+            f.write(err_msg + "\n")
         return None, None
 
 font_manager = FontManager()
