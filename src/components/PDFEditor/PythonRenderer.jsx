@@ -911,10 +911,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         // Calculate how well it fits (100% is perfect)
         const percent = (measuredWidth / targetWidth) * 100;
 
-        // Goal: If it's more than 100% (Overflow) or less than 95% (Significant Underflow), 
+        // Goal: If it's more than 100.5% (Overflow) or less than 99% (Underflow), 
         // we apply a fitting ratio to the font size to "snug" it into the bbox.
         let ratio = 1.0;
-        if (measuredWidth > targetWidth * 1.02 || measuredWidth < targetWidth * 0.95) {
+        if (measuredWidth > targetWidth * 1.005 || measuredWidth < targetWidth * 0.99) {
             ratio = targetWidth / measuredWidth;
         }
 

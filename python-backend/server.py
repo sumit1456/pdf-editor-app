@@ -498,16 +498,27 @@ async def save_pdf(request: SavePDFRequest):
                     
                     if font_path:
                         temp_font = fitz.Font(fontfile=font_path)
-                        s_size = (span.size or 10) / PT_TO_PX
-                        meas_text = s_text if span.font_variant != "small-caps" else s_text.upper()
-                        s_measured_width = temp_font.text_length(meas_text, fontsize=s_size)
+                        # CRITICAL: Measure with the Optical Height Factor included!
+                        # This ensures the width we calculate matches the final rendered width.
+                        meas_size = (span.size or 10) / PT_TO_PX * OPTICAL_HEIGHT_FACTOR
+                        
+                        if span.font_variant == "small-caps":
+                            s_measured_width = 0
+                            for char in s_text:
+                                is_lower = char.islower() and char.isalpha()
+                                c_size = meas_size * (0.75 if is_lower else 1.0)
+                                c_char = char.upper() if is_lower else char
+                                s_measured_width += temp_font.text_length(c_char, fontsize=c_size)
+                        else:
+                            s_measured_width = temp_font.text_length(s_text, fontsize=meas_size)
+                            
                         total_measured_width += s_measured_width
                         
                         processed_render_spans.append({
                             "text": s_text,
                             "font_path": font_path,
                             "font_key": font_key,
-                            "size": s_size,
+                            "size": (span.size or 10) / PT_TO_PX,
                             "variant": span.font_variant,
                             "color": span.color or [0, 0, 0]
                         })
@@ -521,10 +532,19 @@ async def save_pdf(request: SavePDFRequest):
                 is_short_line = total_measured_width < 100 or len(processed_render_spans) == 1 and len(processed_render_spans[0]["text"].split()) < 4
                 
                 if not target_mod and not is_short_line and total_measured_width > 0:
-                    # Tightened Thresholds: Capture almost all variation for a snug fit
+                    # Snug Fit: 99% - 100.5% Thresholds
                     if total_measured_width > target_width * 1.005 or total_measured_width < target_width * 0.99:
                         fitting_ratio = target_width / total_measured_width
                 
+                # BBOX EXPANSION (Edited Lines): Allow 4-char buffer before shrinking
+                if target_mod and total_measured_width > 0:
+                    avg_char_w = total_measured_width / len(" ".join([s["text"] for s in processed_render_spans]) or "1")
+                    allowable_w = target_width + (avg_char_w * 4)
+                    if total_measured_width > allowable_w:
+                        fitting_ratio = allowable_w / total_measured_width
+                    else:
+                        fitting_ratio = 1.0
+
                 safe_ratio = max(0.65, min(1.25, fitting_ratio))
                 
                 with open("backend_audit.log", "a", encoding="utf-8") as audit_log:
