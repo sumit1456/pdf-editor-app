@@ -182,6 +182,19 @@ export default function EditorPage() {
                     });
                 }
 
+                const getGoogleFontName = (fontName) => {
+                    const name = (fontName || '').toLowerCase();
+                    if (name.includes('inter')) return 'Inter';
+                    if (name.includes('roboto')) return 'Roboto';
+                    if (name.includes('open sans')) return 'Open Sans';
+                    if (name.includes('montserrat')) return 'Montserrat';
+                    if (name.includes('lora')) return 'Lora';
+                    if (name.includes('merriweather')) return 'Merriweather';
+                    if (name.includes('source serif')) return 'Source Serif 4';
+                    if (name.includes('cm') || name.includes('sfrm') || name.includes('times')) return 'Source Serif 4';
+                    return 'Inter'; // Default
+                };
+
                 return {
                     id: id,
                     pageIndex: original?.pageIndex ?? 0,
@@ -192,6 +205,7 @@ export default function EditorPage() {
                     style: {
                         ...edit.safetyStyle,
                         font: edit.safetyStyle?.font || original?.originalStyle?.font || original?.font || '',
+                        googleFont: getGoogleFontName(edit.safetyStyle?.font || original?.originalStyle?.font || original?.font || ''),
                         size: edit.safetyStyle?.size || original?.originalStyle?.size || original?.size || 10,
                         color: edit.safetyStyle?.color || original?.originalStyle?.color || original?.color || [0, 0, 0],
                         font_variant: edit.safetyStyle?.font_variant || original?.font_variant || 'normal'
@@ -285,6 +299,7 @@ export default function EditorPage() {
                     safetyStyle: extraData?.safetyStyle || {
                         size: item.size,
                         font: item.font,
+                        googleFont: item.google_font,
                         color: item.color,
                         is_bold: item.is_bold,
                         is_italic: item.is_italic,

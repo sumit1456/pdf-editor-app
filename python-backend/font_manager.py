@@ -7,14 +7,8 @@ class FontManager:
             fonts_dir = os.path.join(base_dir, "fonts")
         self.fonts_dir = fonts_dir
 
-    def get_font_path(self, family_keyword, is_bold=False, is_italic=False):
-        """
-        The standardized Font Resolver.
-        Expects fonts to be in 'Folder/Folder-Weight.ttf' format.
-        """
-        family_keyword = (family_keyword or "").lower()
-        
-        # 1. Map keywords to our 13 Elite Folder names
+    @staticmethod
+    def get_folder_name(family_keyword):
         family_map = {
             "roboto mono": "Roboto_Mono",
             "jetbrains mono": "JetBrains_Mono",
@@ -52,62 +46,101 @@ class FontManager:
             "modern": "Inter",
             "geometric": "Inter",
             "mono": "Roboto_Mono",
-            "symbol": "zapf",
-            "fontawesome": "zapf"
+            "symbol": "Inter",
+            "fontawesome": "Inter",
+            "brands": "Inter",
+            "cmsy": "Source_Serif_4",
+            "msbm": "Source_Serif_4"
         }
+        
+        family_keyword = (family_keyword or "").lower()
+        clean_name = family_keyword.replace("'", "").replace('"', '').strip()
 
-        target_folder = "Inter" 
+        # 1.1 Direct Folder Match
+        for folder in set(family_map.values()):
+            if clean_name.lower() == folder.lower().replace("_", " "):
+                return folder
+        
+        # 1.2 Keyword Heuristic
         for key, folder in family_map.items():
             if key in family_keyword:
-                target_folder = folder
-                break
-
-        # 2. Determine Weight Spectrum (Fidelity Fix)
-        # OPTICAL CALIBRATION: PDF engines render TTF files 'heavier' than browsers.
-        # We now perform a systematic down-shift for all 'Bold-Class' weights.
-        requested_weight = "Regular"
-        optical_twin = None # The lighter version to try first
+                return folder
         
-        # Mapping for Optical Down-Shifting
-        # Mapping for Optical Down-Shifting (PDF engines render ~15% thicker than browsers)
-        # Systematic Down-Shift Scale:
-        # Black -> Bold
-        # ExtraBold -> SemiBold
-        # Bold -> Medium
-        # SemiBold -> Regular
-        # Medium -> Regular
-        # Regular -> Light (Experimental for better matching)
-        
-        is_truly_bold = is_bold
+        return "Inter" # Default
 
-        optical_twin = None
-        if any(x in family_keyword for x in ["black", "heavy", "900"]):
-            requested_weight = "Black"
-            optical_twin = "ExtraBold"
-        elif any(x in family_keyword for x in ["extrabold", "800"]):
-            requested_weight = "ExtraBold"
-            optical_twin = "Bold"
-        elif is_truly_bold:
-            requested_weight = "Bold"
-            # Calibration: Mapping 700 (Bold) to 600 (SemiBold) for PDF fidelity
-            optical_twin = "SemiBold" 
-        elif any(x in family_keyword for x in ["semibold", "demi", "600"]):
-            requested_weight = "SemiBold"
-            # Mapping 600 (SemiBold) to 500 (Medium)
-            optical_twin = "Medium"
-        elif any(x in family_keyword for x in ["medium", "500"]):
-            requested_weight = "Medium"
-            optical_twin = "Regular"
-        else:
-            requested_weight = "Regular"
-            # FIDELITY FIX: For Classic/LaTeX fonts, Regular is too heavy.
-            # Shifting to Light for these specific patterns.
-            if any(x in family_keyword for x in ["cm", "sfrm", "roman", "times", "serif"]):
+    def get_font_path(self, family_keyword, is_bold=False, is_italic=False, original_context=None):
+        """
+        The standardized Font Resolver.
+        Expects fonts to be in 'Folder/Folder-Weight.ttf' format.
+        """
+        target_folder = self.get_folder_name(family_keyword)
+        
+        # USE ORIGINAL CONTEXT FOR SUBTYPE DETECTION (e.g. Small Caps)
+        # If original_context is provided, we check it for specific LaTeX markers
+        context = (original_context or family_keyword).lower()
+
+        # 2. Base Weight Detection
+        base_weight = "Regular"
+        if any(x in context for x in ["black", "heavy", "900"]):
+            base_weight = "Black"
+        elif any(x in context for x in ["extrabold", "800"]):
+            base_weight = "ExtraBold"
+        elif is_bold or any(x in context for x in ["bold", "700", "cmbx"]):
+            base_weight = "Bold"
+        elif any(x in context for x in ["semibold", "demi", "600"]):
+            base_weight = "SemiBold"
+        elif any(x in context for x in ["medium", "500"]):
+            base_weight = "Medium"
+        elif any(x in context for x in ["extralight", "200"]):
+            base_weight = "ExtraLight"
+        elif any(x in context for x in ["light", "300"]):
+            base_weight = "Light"
+
+        # 3. PRECISION OPTICAL CALIBRATION MATRIX
+        # PDF rendering is ~15-20% heavier than browser rendering. 
+        # We down-shift selectively to maintain visual parity.
+        optical_twin = base_weight 
+
+        if "Source_Serif_4" in target_folder:
+            # ACADEMIC SERIF CALIBRATION
+            SERIF_MAP = {
+                "Black": "Bold",         # 900 -> 700
+                "ExtraBold": "SemiBold",  # 800 -> 600
+                "Bold": "Medium",        # 700 -> 500 (CRISP HEADERS)
+                "SemiBold": "Regular",   # 600 -> 400
+                "Medium": "Regular",     # 500 -> 400
+                "Regular": "Regular",    # 400 -> 400 (NO GRAY TEXT)
+                "Light": "Light",        # 300 -> 300
+                "ExtraLight": "ExtraLight"
+            }
+            optical_twin = SERIF_MAP.get(base_weight, "Regular")
+            
+            # ELEGANT ITALIC RULE: Academic italics look better when slightly thinner.
+            if is_italic and base_weight == "Regular":
                 optical_twin = "Light"
-            else:
-                optical_twin = "Regular"
+            
+            # SMALL CAPS RULE: cmcsc (Small Caps) usually needs a Medium weight 
+            # to match the visual presence of surrounding Regular text.
+            if "cmcsc" in context:
+                optical_twin = "Medium"
 
-        # 3. Handle Italics
+        else:
+            # MODERN SANS CALIBRATION (Inter / Roboto)
+            SANS_MAP = {
+                "Black": "ExtraBold",
+                "ExtraBold": "Bold",
+                "Bold": "SemiBold",     # Inter Bold is too heavy in PDF
+                "SemiBold": "Medium",
+                "Medium": "Regular",
+                "Regular": "Regular",
+                "Light": "Light"
+            }
+            optical_twin = SANS_MAP.get(base_weight, "Regular")
+
+        requested_weight = base_weight # For fallback chain
+        is_truly_bold = is_bold or base_weight in ["Bold", "SemiBold", "ExtraBold", "Black"]
+
+        # 4. Handle Italics
         style_suffix = "Italic" if is_italic else ""
         def get_full_style(w):
             if w == "Regular" and is_italic: return "Italic"
@@ -149,14 +182,14 @@ class FontManager:
 
         if font_path:
             log_msg = f"[FontManager] MAPPED: '{family_keyword}' -> {current_choice} (is_bold={is_bold}, is_italic={is_italic})"
-            print(log_msg)
+            # print(log_msg)
             with open("font_mapping.log", "a") as f:
                 f.write(log_msg + "\n")
             return font_path, current_choice.replace(".ttf", "")
         
         main_attempt = f"{target_folder}-{get_full_style(requested_weight)}.ttf"
         err_msg = f"[FontManager] NO MATCH for '{family_keyword}' (tried: {main_attempt})"
-        print(err_msg)
+        # print(err_msg)
         with open("font_mapping.log", "a") as f:
             f.write(err_msg + "\n")
         return None, None

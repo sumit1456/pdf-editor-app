@@ -29,7 +29,27 @@ const getSVGColor = (c, fallback = 'black') => {
 
 // ==================== SHARED TYPOGRAPHIC ENGINE ====================
 
-const normalizeFont = (fontName) => {
+const normalizeFont = (fontName, googleFont) => {
+    // Priority 1: Backend-mapped Google Font (The "Source of Truth")
+    if (googleFont) {
+        const gf = googleFont.toLowerCase();
+        if (gf.includes('inter')) return "'Inter', sans-serif";
+        if (gf.includes('source serif')) return "'Source Serif 4', serif";
+        if (gf.includes('roboto')) return "'Roboto', sans-serif";
+        if (gf.includes('open sans')) return "'Open Sans', sans-serif";
+        if (gf.includes('montserrat')) return "'Montserrat', sans-serif";
+        if (gf.includes('lora')) return "'Lora', serif";
+        if (gf.includes('merriweather')) return "'Merriweather', serif";
+        if (gf.includes('libre baskerville')) return "'Libre Baskerville', serif";
+        if (gf.includes('playfair display')) return "'Playfair Display', serif";
+        if (gf.includes('oswald')) return "'Oswald', sans-serif";
+        if (gf.includes('roboto mono')) return "'Roboto Mono', monospace";
+        if (gf.includes('jetbrains mono')) return "'JetBrains Mono', monospace";
+        if (gf.includes('fira code')) return "'Fira Code', monospace";
+        if (gf.includes('poppins')) return "'Poppins', sans-serif";
+        if (gf.includes('crimson pro')) return "'Crimson Pro', serif";
+    }
+
     if (!fontName) return "'Source Serif 4', serif";
     const name = fontName.toLowerCase();
 
@@ -592,7 +612,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                         <text
                             transform={`translate(0, 0)`}
                             fontSize={Math.max(1, Math.abs(item.size))}
-                            fontFamily={normalizeFont(item.font)}
+                            fontFamily={normalizeFont(item.font, item.google_font)}
                             fontWeight={item.is_bold ? 'bold' : 'normal'}
                             fontStyle={item.is_italic ? 'italic' : 'normal'}
                             fill={color}
@@ -631,7 +651,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                             fill={getSVGColor(span.color, color)}
                                             fontWeight={span.is_bold ? '700' : '400'}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
-                                            fontFamily={span.font ? normalizeFont(span.font) : undefined}
+                                            fontFamily={span.font ? normalizeFont(span.font, span.google_font) : undefined}
                                             xmlSpace="preserve"
                                             style={{
                                                 fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal'
@@ -833,7 +853,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 x={initialStartX}
                 y={baselineY}
                 fontSize={Math.max(1, Math.abs(styleItem.size))}
-                fontFamily={normalizeFont(styleItem.font)}
+                fontFamily={normalizeFont(styleItem.font, styleItem.google_font)}
                 fill={getSVGColor(styleItem.color, 'black')}
                 fontWeight={styleItem.is_bold ? '700' : '400'}
                 fontStyle={styleItem.is_italic ? 'italic' : 'normal'}
@@ -889,7 +909,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         x={textAnchorX}
                                         y={baselineY}
                                         fontSize={safeSize}
-                                        fontFamily={normalizeFont(safeFont)}
+                                        fontFamily={normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
                                         fill={getSVGColor(safeColor, 'black')}
                                         fontWeight={sStyle.is_bold ? '700' : '400'}
                                         fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
@@ -907,7 +927,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 x={initialStartX}
                                 y={baselineY}
                                 fontSize={safeSize}
-                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont)}
+                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
                                 fill={getSVGColor(safeColor, 'black')}
                                 fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? '700' : '400')}
                                 fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
@@ -979,7 +999,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 fontSize={Math.max(1, Math.abs(customSize))}
                                 fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? '700' : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
-                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(span.font)}
+                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(span.font, span.google_font)}
                                 fill={getSVGColor(span.color, 'black')}
                                 style={{
                                     // Removed native fontVariant to avoid double-processing

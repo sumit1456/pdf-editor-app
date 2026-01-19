@@ -26,6 +26,7 @@ class TextSpan(BaseModel):
     is_bold: Optional[bool] = False
     is_italic: Optional[bool] = False
     font_variant: Optional[str] = "normal"
+    google_font: Optional[str] = None # Added for direct matching
 
 class Modification(BaseModel):
     id: str
@@ -38,6 +39,7 @@ class Modification(BaseModel):
     uri: Optional[str] = None
     spans: Optional[List[TextSpan]] = None
     items: Optional[List[dict]] = None
+    google_font: Optional[str] = None # Direct override from frontend
 
 class SavePDFRequest(BaseModel):
     pdf_name: str
@@ -104,26 +106,47 @@ def parse_color(color_in):
         r = (color_in >> 16) & 0xFF
         g = (color_in >> 8) & 0xFF
         b = color_in & 0xFF
-        return [r/255.0, g/255.0, b/255.0]
+        rv = [r/255.0, g/255.0, b/255.0]
+        # COLOR FIDELITY: Snap dark grays (often extraction artifacts) to True Black
+        # Inter/SourceSerif look 'Gray' if we use the raw 0.1-0.2 extracted values.
+        if all(c < 0.28 for c in rv):
+            return [0.0, 0.0, 0.0]
+        return rv
     
     # Drawings give tuple (0-1 floats)
     if isinstance(color_in, (list, tuple)):
-        return list(color_in)
+        rv = list(color_in)
+        if all(c < 0.28 for c in rv):
+             return [0.0, 0.0, 0.0]
+        return rv
         
     return [0.0, 0.0, 0.0]
 
 # SYMBOL FIDELITY: Map PDF symbols to high-fidelity Unicode equivalents
 SYMBOL_MAP = {
-    # Bullets
+    # Bullets & Markers
     "\u2022": "\u2022", "\u25cf": "\u2022", "\u25cb": "\u25e6",
     "\u25aa": "\u25aa", "\u2731": "*", "\u2217": "*",
     "\u00ef": "\u2022", "\u00a7": "\u2022", "\u0083": "\u2022",
-    # Icons (FontAwesome mapping to Standard Unicode)
-    "\uf0e0": "\u2709",   # Envelope
-    "\uf095": "\u260e",   # Phone
-    "\uf08c": "\uf08c",   # Keep LinkedIn
-    "\uf09b": "\uf09b",   # Keep GitHub
-    "\u2192": "\u2192",   # Right Arrow
+    "\u00d0": "\u2022", "\u00b7": "·", 
+    # FontAwesome 5 Fallbacks (PUA -> Standard High-Fidelity)
+    "\uf0e0": "\u2709\ufe0f",   # Envelope
+    "\uf095": "\u260e\ufe0f",   # Phone
+    "\uf08c": "[in]",           # LinkedIn Replacement (Safe Text)
+    "\uf0e1": "[in]",           # LinkedIn Alt
+    "\uf09b": "\u229a",         # Github (Octocat-like circle dot)
+    "\uf0ac": "\u1f310",        # Globe
+    "\uf121": "</>",            # Code
+    "\uf3b8": "\u270f\ufe0f",   # Edit
+    # Direct LaTeX Icon Anchors (Matches Frontend mapContentToIcons)
+    "\u0083": "\u260e\ufe0f",   # ƒ anchor maps to Phone
+    "\u00a7": "\u229a",         # § anchor maps to GitHub
+    "\u00ef": "[in]",           # ï anchor maps to LinkedIn
+    "\u00d0": "</>",            # Ð anchor maps to LeetCode
+    # Computer Modern Symbol (cmsy) fixes
+    "\u0000": "\u2022", 
+    "\u000c": "\u2022",
+    "\u2192": "\u2192",         # Right Arrow
 }
 
 @app.post("/pdf-extraction-config")
@@ -186,6 +209,9 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                                 bbox_px = [coord * PT_TO_PX for coord in span["bbox"]]
                                 origin_px = [coord * PT_TO_PX for coord in span["origin"]]
 
+                                from font_manager import font_manager
+                                g_font = font_manager.get_folder_name(span["font"])
+
                                 text_item = {
                                     "id": str(uuid.uuid4()),
                                     "line_id": line_id,
@@ -199,6 +225,7 @@ async def extract_pdf(file: UploadFile = File(...), backend: str = "python"):
                                     "height": bbox_px[3] - bbox_px[1],
                                     "size": size_px,
                                     "font": span["font"],
+                                    "google_font": g_font.replace("_", " "), # Human readable
                                     "font_variant": font_variant,
                                     "color": parse_color(span.get("color")),
                                     "is_bold": is_bold,
@@ -346,6 +373,18 @@ async def save_pdf(request: SavePDFRequest):
         doc = fitz.open(stream=pdf_data, filetype="pdf")
         PT_TO_PX = 1.333333
         from font_manager import font_manager
+        
+        # --- NEW: PRINT FRONTEND PAYLOAD ---
+        print("\n[FRONTEND PAYLOAD RECEIVED]")
+        # We print a truncated version of base64 but full modifications
+        payload_debug = request.dict()
+        payload_debug["pdf_base64"] = f"{request.pdf_base64[:50]}... (truncated)"
+        print(json.dumps(payload_debug, indent=2))
+        print("----------------------------\n")
+        
+        # Clear audit log at start of operation
+        with open("backend_audit.log", "w", encoding="utf-8") as f:
+            f.write(f"--- FONT HARMONIZATION AUDIT: {request.pdf_name} ---\n")
 
         # 2. Group modifications by page
         mods_by_page = {}
@@ -354,20 +393,24 @@ async def save_pdf(request: SavePDFRequest):
                 mods_by_page[mod.pageIndex] = []
             mods_by_page[mod.pageIndex].append(mod)
 
-        # 3. Process each modification SURGICALLY
-        for p_idx, mods in mods_by_page.items():
+        # 3. Process EVERY PAGE for Global Font Harmonization
+        for p_idx in range(len(doc)):
             page = doc[p_idx]
             text_dict = page.get_text("dict")
+            links = page.get_links()
+            mods = mods_by_page.get(p_idx, [])
             applied_mod_ids = set()
 
-            # A. First, try to match modifications to existing text lines in the PDF
+            # Pass 1: Redact all text lines and match to modifications
+            render_tasks = []
             for block in text_dict.get("blocks", []):
                 if block["type"] == 0: # Text
                     for line in block["lines"]:
-                        target_mod = None
-                        line_match = False
+                        # A. Mark for redaction
+                        page.add_redact_annot(line["bbox"], fill=(1,1,1))
                         
-                        # Use 1.5px tolerance for sniper-matching
+                        # B. Identify if this line is being modified
+                        target_mod = None
                         for s_orig in line["spans"]:
                             ox, oy = s_orig["origin"][0] * PT_TO_PX, s_orig["origin"][1] * PT_TO_PX
                             for m in mods:
@@ -375,60 +418,105 @@ async def save_pdf(request: SavePDFRequest):
                                     if abs(m.origin[0] - ox) < 1.5 and abs(m.origin[1] - oy) < 1.5:
                                         target_mod = m
                                         applied_mod_ids.add(m.id)
-                                        line_match = True
                                         break
-                            if line_match: break
+                            if target_mod: break
+                        
+                        render_tasks.append((line, target_mod))
+            
+            # Commit redactions to empty the page of old text
+            page.apply_redactions()
 
-                        if target_mod:
-                            # 1. Redact ONLY the line we are replacing
-                            page.add_redact_annot(line["bbox"], fill=(1,1,1))
-                            page.apply_redactions()
+            # Pass 2: Re-render with Google Fonts
+            for line, target_mod in render_tasks:
+                if target_mod:
+                    # Use edited data from frontend
+                    line_spans = target_mod.spans if (target_mod.spans and len(target_mod.spans) > 0) else [
+                        TextSpan(
+                            text=target_mod.text or "",
+                            font=target_mod.style.get("font"),
+                            size=target_mod.style.get("size"),
+                            color=target_mod.style.get("color"),
+                            is_bold=target_mod.style.get("is_bold"),
+                            is_italic=target_mod.style.get("is_italic"),
+                            font_variant=target_mod.style.get("font_variant", "normal")
+                        )
+                    ]
+                    curr_x, curr_y = [coord / PT_TO_PX for coord in target_mod.origin]
+                    uri = target_mod.uri
+                    link_bbox = fitz.Rect(target_mod.bbox) / PT_TO_PX
+                else:
+                    # Construct Google Font task from original content
+                    line_spans = []
+                    uri = None
+                    for s_orig in line["spans"]:
+                        # Associate link
+                        if not uri:
+                            centroid_x = (s_orig["bbox"][0] + s_orig["bbox"][2]) / 2
+                            centroid_y = (s_orig["bbox"][1] + s_orig["bbox"][3]) / 2
+                            for lnk in links:
+                                if "from" in lnk and "uri" in lnk:
+                                    r = lnk["from"]
+                                    if r.x0 <= centroid_x <= r.x1 and r.y0 <= centroid_y <= r.y1:
+                                        uri = lnk["uri"]
+                                        break
 
-                            # 2. Render the new text exactly where requested
-                            line_spans = target_mod.spans if (target_mod.spans and len(target_mod.spans) > 0) else [
-                                TextSpan(
-                                    text=target_mod.text or "",
-                                    font=target_mod.style.get("font"),
-                                    size=target_mod.style.get("size"),
-                                    color=target_mod.style.get("color"),
-                                    is_bold=target_mod.style.get("is_bold"),
-                                    is_italic=target_mod.style.get("is_italic"),
-                                    font_variant=target_mod.style.get("font_variant", "normal")
-                                )
-                            ]
-                            
-                            curr_x, curr_y = [coord / PT_TO_PX for coord in target_mod.origin]
-                            for span in line_spans:
-                                s_text = span.text
-                                s_font_in = (span.font or "inter").lower()
-                                s_is_bold = span.is_bold
-                                s_is_italic = span.is_italic
-                                s_variant = span.font_variant or "normal"
-                                s_size = (span.size or 10) / PT_TO_PX
-                                s_color = span.color or [0, 0, 0]
+                        f_name = s_orig["font"].lower()
+                        line_spans.append(TextSpan(
+                            text=s_orig["text"],
+                            font=s_orig["font"],
+                            google_font=font_manager.get_folder_name(s_orig["font"]).replace("_", " "),
+                            size=s_orig["size"] * PT_TO_PX, # Store as PX for rendering loop
+                            color=parse_color(s_orig.get("color")),
+                            is_bold=bool(s_orig["flags"] & 16),
+                            is_italic=bool(s_orig["flags"] & 2),
+                            font_variant="small-caps" if any(x in f_name for x in ["csc", "smallcaps", "caps"]) else "normal"
+                        ))
+                    curr_x, curr_y = line["spans"][0]["origin"]
+                    link_bbox = fitz.Rect(line["bbox"])
 
-                                for sym, rep in SYMBOL_MAP.items():
-                                    s_text = s_text.replace(sym, rep)
+                # SHARED RENDERING ENGINE
+                for span in line_spans:
+                    s_text = span.text
+                    s_font_in = (span.font or "inter").lower()
+                    s_is_bold = span.is_bold
+                    s_is_italic = span.is_italic
+                    s_variant = span.font_variant or "normal"
+                    s_size = (span.size or 10) / PT_TO_PX
+                    s_color = span.color or [0, 0, 0]
 
-                                font_path, font_key = font_manager.get_font_path(s_font_in, s_is_bold, s_is_italic)
-                                if font_path:
-                                    try:
-                                        internal_name = f"f-{font_key.lower()}"
-                                        temp_font = fitz.Font(fontfile=font_path)
-                                        if s_variant == "small-caps":
-                                            for char in s_text:
-                                                is_lower_alpha = char.islower() and char.isalpha()
-                                                c_size = s_size * (0.75 if is_lower_alpha else 1.0)
-                                                c_char = char.upper() if is_lower_alpha else char
-                                                page.insert_text((curr_x, curr_y), c_char, fontsize=c_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
-                                                curr_x += temp_font.text_length(c_char, fontsize=c_size)
-                                        else:
-                                            page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
-                                            curr_x += temp_font.text_length(s_text, fontsize=s_size)
-                                    except: pass
-                            
-                            if target_mod.uri:
-                                page.insert_link({"from": fitz.Rect(target_mod.bbox) / PT_TO_PX, "uri": target_mod.uri, "kind": fitz.LINK_URI})
+                    for sym, rep in SYMBOL_MAP.items():
+                        s_text = s_text.replace(sym, rep)
+
+                    # PRIORITIZE FRONTEND OVERRIDE
+                    frontend_google_font = getattr(span, 'google_font', None)
+                    if not frontend_google_font and target_mod:
+                        frontend_google_font = target_mod.style.get('googleFont')
+                    
+                    search_font = frontend_google_font if frontend_google_font else s_font_in
+                    font_path, font_key = font_manager.get_font_path(search_font, s_is_bold, s_is_italic, original_context=s_font_in)
+                    
+                    with open("backend_audit.log", "a", encoding="utf-8") as audit_log:
+                        source_label = "FRONTEND" if frontend_google_font else "MAPPED"
+                        audit_log.write(f"[INJECT] '{s_font_in[:20]}' ({source_label}={frontend_google_font}) -> Mapped: {font_key}\n")
+
+                    if font_path:
+                        try:
+                            internal_name = f"f-{font_key.lower()}"
+                            temp_font = fitz.Font(fontfile=font_path)
+                            if s_variant == "small-caps":
+                                for char in s_text:
+                                    is_lower_alpha = char.islower() and char.isalpha()
+                                    c_size = s_size * (0.75 if is_lower_alpha else 1.0)
+                                    c_char = char.upper() if is_lower_alpha else char
+                                    page.insert_text((curr_x, curr_y), c_char, fontsize=c_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
+                                    curr_x += temp_font.text_length(c_char, fontsize=c_size)
+                            else:
+                                page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
+                                curr_x += temp_font.text_length(s_text, fontsize=s_size)
+                        except: pass
+                
+                if uri:
+                    page.insert_link({"from": link_bbox, "uri": uri, "kind": fitz.LINK_URI})
 
             # B. Handle Remaining Mods (New text or vector drawings)
             for m in mods:

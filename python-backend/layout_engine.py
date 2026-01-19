@@ -189,11 +189,11 @@ def normalize_layout(items):
                     # LOGS: Cluster-Aware diagnostic
                     extracted_dist = round(raw_content_x - raw_x0, 3)
                     actual_dist = round(snapped_content_x - snapped_x, 3)
-                    print("==================================================")
-                    print(f"[CLUSTERED BULLET] Font: {cluster_key[1]} | Size: {group[0]['size']:.2f}")
-                    print(f"  Extracted Dist: {extracted_dist} | Actual Dist: {actual_dist}")
-                    print(f"  Snippet: {line_content[:20]}...")
-                    print("==================================================")
+                    # print("==================================================")
+                    # print(f"[CLUSTERED BULLET] Font: {cluster_key[1]} | Size: {group[0]['size']:.2f}")
+                    # print(f"  Extracted Dist: {extracted_dist} | Actual Dist: {actual_dist}")
+                    # print(f"  Snippet: {line_content[:20]}...")
+                    # print("==================================================")
 
                     for it in group[content_it_idx:]:
                         it["origin"][0] += content_shift
