@@ -503,6 +503,7 @@ async def save_pdf(request: SavePDFRequest):
                         try:
                             internal_name = f"f-{font_key.lower()}"
                             temp_font = fitz.Font(fontfile=font_path)
+                            
                             if s_variant == "small-caps":
                                 for char in s_text:
                                     is_lower_alpha = char.islower() and char.isalpha()
@@ -513,10 +514,15 @@ async def save_pdf(request: SavePDFRequest):
                             else:
                                 page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
                                 curr_x += temp_font.text_length(s_text, fontsize=s_size)
-                        except: pass
+                        except Exception as e:
+                            print(f"[BACKEND ERROR] Rendering span: {e}")
                 
                 if uri:
                     page.insert_link({"from": link_bbox, "uri": uri, "kind": fitz.LINK_URI})
+                
+                # --- DEBUG: Red Bottom Border in PDF ---
+                lx0, ly0, lx1, ly1 = line["bbox"]
+                page.draw_line(fitz.Point(lx0, ly1), fitz.Point(lx1, ly1), color=(1, 0, 0), width=0.5)
 
             # B. Handle Remaining Mods (New text or vector drawings)
             for m in mods:

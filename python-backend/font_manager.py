@@ -26,6 +26,10 @@ class FontManager:
             "merriweather": "Merriweather",
             "oswald": "Oswald",
             "ubuntu": "Ubuntu",
+            "pt serif": "PT_Serif",
+            "pt sans": "PT_Sans",
+            "orbitron": "Orbitron",
+            "dancing script": "Dancing_Script",
             "cm": "Source_Serif_4", 
             "sfrm": "Source_Serif_4",
             "times": "Source_Serif_4",
@@ -33,7 +37,7 @@ class FontManager:
             "georgia": "Source_Serif_4",
             "palatino": "Source_Serif_4",
             "cambria": "Source_Serif_4",
-            "garamond": "Source_Serif_4",
+            "garamond": "Crimson_Pro",
             "libertine": "Source_Serif_4",
             "didot": "Source_Serif_4",
             "serif": "Source_Serif_4",
@@ -44,11 +48,21 @@ class FontManager:
             "verdana": "Inter",
             "tahoma": "Inter",
             "modern": "Inter",
-            "geometric": "Inter",
+            "geometric": "Poppins",
             "mono": "Roboto_Mono",
+            "courier": "Roboto_Mono",
+            "console": "Roboto_Mono",
+            "terminal": "Roboto_Mono",
+            "fixed": "Roboto_Mono",
             "symbol": "Inter",
             "fontawesome": "Inter",
             "brands": "Inter",
+            "script": "Dancing_Script",
+            "cursive": "Dancing_Script",
+            "handwriting": "Dancing_Script",
+            "calligraphy": "Dancing_Script",
+            "techno": "Orbitron",
+            "futuristic": "Orbitron",
             "cmsy": "Source_Serif_4",
             "msbm": "Source_Serif_4"
         }
@@ -103,26 +117,37 @@ class FontManager:
 
         if "Source_Serif_4" in target_folder:
             # ACADEMIC SERIF CALIBRATION
-            SERIF_MAP = {
-                "Black": "Bold",         # 900 -> 700
-                "ExtraBold": "SemiBold",  # 800 -> 600
-                "Bold": "Medium",        # 700 -> 500 (CRISP HEADERS)
-                "SemiBold": "Regular",   # 600 -> 400
-                "Medium": "Regular",     # 500 -> 400
-                "Regular": "Regular",    # 400 -> 400 (NO GRAY TEXT)
-                "Light": "Light",        # 300 -> 300
-                "ExtraLight": "ExtraLight"
-            }
-            optical_twin = SERIF_MAP.get(base_weight, "Regular")
             
-            # ELEGANT ITALIC RULE: Academic italics look better when slightly thinner.
-            if is_italic and base_weight == "Regular":
-                optical_twin = "Light"
+            # --- SPECIAL VISUAL OVERRIDES FOR COMPUTER MODERN ---
+            if "cmbx" in context:
+                 # CMBX10 (Computer Modern Bold Extended) needs to be PHYSICALLY BOLD (700)
+                 # We override generic "down-shifting" logic here.
+                 base_weight = "Bold"
+                 optical_twin = "Bold" 
             
-            # SMALL CAPS RULE: cmcsc (Small Caps) usually needs a Medium weight 
-            # to match the visual presence of surrounding Regular text.
-            if "cmcsc" in context:
+            elif "cmcsc" in context:
+                # CMCSC10 (Small Caps) needs distinct visual weight. 
+                # Medium (500) is the closest visual proxy for small caps presence.
+                base_weight = "Medium"
                 optical_twin = "Medium"
+
+            else:
+                # STANDARD DOWN-SHIFTING FOR GENERIC FONTS (Prevents "muddy" pages)
+                SERIF_MAP = {
+                    "Black": "Black",
+                    "ExtraBold": "ExtraBold",
+                    "Bold": "Bold",          # Keep Bold (700)
+                    "SemiBold": "SemiBold",  # Keep SemiBold (600)
+                    "Medium": "Medium",
+                    "Regular": "Regular",
+                    "Light": "Light",
+                    "ExtraLight": "ExtraLight"
+                }
+                optical_twin = SERIF_MAP.get(base_weight, "Regular")
+                
+                # ELEGANT ITALIC RULE
+                if is_italic and base_weight == "Regular":
+                    optical_twin = "Light"
 
         else:
             # MODERN SANS CALIBRATION (Inter / Roboto)

@@ -48,6 +48,11 @@ const normalizeFont = (fontName, googleFont) => {
         if (gf.includes('fira code')) return "'Fira Code', monospace";
         if (gf.includes('poppins')) return "'Poppins', sans-serif";
         if (gf.includes('crimson pro')) return "'Crimson Pro', serif";
+        if (gf.includes('dancing script')) return "'Dancing Script', cursive";
+        if (gf.includes('orbitron')) return "'Orbitron', sans-serif";
+        if (gf.includes('pt serif')) return "'PT Serif', serif";
+        if (gf.includes('pt sans')) return "'PT Sans', sans-serif";
+        if (gf.includes('ubuntu')) return "'Ubuntu', sans-serif";
     }
 
     if (!fontName) return "'Source Serif 4', serif";
@@ -187,19 +192,22 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
         };
     }, []);
 
-    // 2. Resize Canvas (No Auto-Fit)
+    // 2. Resize Canvas (Dynamic Resolution)
     useEffect(() => {
         if (!engineRef.current || !page) return;
 
-        const renderWidth = (page && page.width) || 595.28;
-        const renderHeight = (page && page.height) || 841.89;
+        const baseWidth = (page && page.width) || 595.28;
+        const baseHeight = (page && page.height) || 841.89;
 
-        // Resize the renderer canvas to exact page dimensions
+        // Scale the physical canvas to match the zoom level for sharpness
+        const scaledWidth = baseWidth * scale;
+        const scaledHeight = baseHeight * scale;
+
         const engine = engineRef.current;
         if (engine.app && engine.app.renderer) {
-            engine.app.renderer.resize(renderWidth, renderHeight);
+            engine.app.renderer.resize(scaledWidth, scaledHeight);
         }
-    }, [page]);
+    }, [page, scale]);
 
     // 2. Render Single Active Page
     const renderActivePage = useCallback(async () => {
@@ -219,17 +227,10 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
         const worldContainer = engineRef.current.worldContainer;
         worldContainer.removeChildren(); // Clear previous page content
 
-        const A4_WIDTH = 595.28;
-        const A4_HEIGHT = 841.89;
-        const renderWidth = page.width || A4_WIDTH;
-        const renderHeight = page.height || A4_HEIGHT;
-
-        const scaledWidth = renderWidth * scale;
-
-        // Match Canvas size (which matches wrapper size)
+        // Apply Scale to the Content Container
+        worldContainer.scale.set(scale);
         worldContainer.x = 0;
         worldContainer.y = 0;
-        worldContainer.scale.set(1);
 
         // REMOVED Pixi Background/Shadow - Now handled by CSS
 
@@ -402,6 +403,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
     // --- 3. DYNAMIC FONT INJECTION ---
     const fontStyles = useMemo(() => {
         if (!fonts || fonts.length === 0) return '';
+        console.log('[DEBUG] Loaded Fonts:', fonts.map(f => f.name));
 
         return fonts.map(f => `
             @font-face {
@@ -410,6 +412,24 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
             }
         `).join('\n');
     }, [fonts]);
+
+    // GLOBAL FONT INJECTION (Required for Canvas Measurement)
+    useEffect(() => {
+        if (!fontStyles) return;
+        const styleId = `dynamic-fonts-${fontsKey || 'global'}`;
+        if (document.getElementById(styleId)) return;
+
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = fontStyles;
+        document.head.appendChild(style);
+        console.log(`[PythonRenderer] Injected global fonts for measurement: ${styleId}`);
+
+        return () => {
+            const el = document.getElementById(styleId);
+            if (el) document.head.removeChild(el);
+        };
+    }, [fontStyles, fontsKey]);
 
     // 3. Compute Merged Lines for Editing/SVG
     const textItems = useMemo(() => {
@@ -453,8 +473,12 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
     const PT_TO_PX = 1.333333;
 
     // Hardened dimensions: Ensure fallback is also scaled to PX if page metadata is missing
-    const renderWidth = (page && page.width) ? page.width : A4_WIDTH * PT_TO_PX;
-    const renderHeight = (page && page.height) ? page.height : A4_HEIGHT * PT_TO_PX;
+    const baseWidth = (page && page.width) ? page.width : A4_WIDTH * PT_TO_PX;
+    const baseHeight = (page && page.height) ? page.height : A4_HEIGHT * PT_TO_PX;
+
+    // SCALED DIMENSIONS (Physical Pixels)
+    const scaledStyleWidth = baseWidth * scale;
+    const scaledStyleHeight = baseHeight * scale;
 
     return (
         <div className="webgl-single-page" style={{
@@ -469,11 +493,12 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                 className="page-paper-wrapper"
                 style={{
                     position: 'relative',
-                    width: renderWidth + 'px',
-                    height: renderHeight + 'px',
+                    width: scaledStyleWidth + 'px',
+                    height: scaledStyleHeight + 'px',
                     backgroundColor: 'white',
                     boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-                    transform: `scale(${scale})`,
+                    // Removed CSS Transform Scale - We use physical resizing now
+                    transform: 'none',
                     transformOrigin: 'top center',
                     flexShrink: 0,
                     margin: '0 auto',
@@ -487,15 +512,15 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                     position: 'absolute',
                     top: 0,
                     left: 0,
-                    width: renderWidth + 'px',
-                    height: renderHeight + 'px',
+                    width: scaledStyleWidth + 'px',
+                    height: scaledStyleHeight + 'px',
                     pointerEvents: 'none',
                     zIndex: 1
                 }} />
 
                 {/* 2. SVG (Sharp Text) */}
                 <svg
-                    viewBox={`0 0 ${renderWidth} ${renderHeight}`}
+                    viewBox={`0 0 ${baseWidth} ${baseHeight}`}
                     textRendering="geometricPrecision"
                     shapeRendering="geometricPrecision"
                     style={{
@@ -509,6 +534,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                         overflow: 'visible'
                     }}
                 >
+
+
                     {page && page.blocks ? (
                         <BlockLayer
                             blocks={page.blocks}
@@ -525,6 +552,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
+                            fonts={fonts} // Pass loaded fonts for measurement
                             fontStyles={fontStyles}
                             onDoubleClick={onDoubleClick}
                         />
@@ -552,7 +580,25 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
 export default PythonRenderer;
 
 
-function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
+const MEASURE_CANVAS = document.createElement('canvas');
+const MEASURE_CTX = MEASURE_CANVAS.getContext('2d');
+
+function getRealFontString(fontName, googleFont, weight, size, style) {
+    let family = normalizeFont(fontName, googleFont);
+
+    // Resolve CSS Vars for Canvas Measurement
+    if (family.includes('var(--serif-latex)')) family = "'Source Serif 4', serif";
+    else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
+    else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
+    else if (family.includes('var(--serif-academic)')) family = "'Merriweather', serif";
+    else if (family.includes('var(--serif-high-contrast)')) family = "'Playfair Display', serif";
+    else if (family.includes('var(--sans-geometric)')) family = "'Poppins', sans-serif";
+    else if (family.includes('var(--sans-readable)')) family = "'Open Sans', sans-serif";
+
+    return `${style} ${weight} ${size}px ${family}`;
+}
+
+function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fonts, fontStyles, onDoubleClick }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {/* Inject dynamic fonts */}
@@ -577,6 +623,51 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                 const rectY = y0 - 3;
                 const rectH = y1 - y0;
                 const rectW = x1 - x0;
+
+                // --- WIDTH ADJUSTMENT LOGIC ---
+                // CALIBRATION: Apply a 0.96 optical height factor to match PDF character "tightness"
+                const OPTICAL_HEIGHT_FACTOR = 0.96;
+                let fittedFontSize = item.size * OPTICAL_HEIGHT_FACTOR;
+
+                const weight = (item.font_variant === 'small-caps' || (item.font || '').toLowerCase().includes('cmcsc'))
+                    ? '500' : (item.is_bold ? '700' : '400');
+                const style = item.is_italic ? 'italic' : 'normal';
+
+                // We use the original size for measurement base
+                // Match loaded font family name if possible
+                const matchingFont = fonts && fonts.find(f => {
+                    const norm = f.name.toLowerCase().replace(/[_-]/g, ' ');
+                    return norm.includes((item.font || '').toLowerCase()) ||
+                        (item.google_font && norm.includes(item.google_font.toLowerCase()));
+                });
+
+                let measureFamily = matchingFont ? `'${matchingFont.name}'` : normalizeFont(item.font, item.google_font);
+
+                // Fix CSS Var for Canvas fallback
+                if (measureFamily.includes('var(')) {
+                    measureFamily = getRealFontString(item.font, item.google_font, weight, item.size, style).split(' px ')[1] || 'serif';
+                }
+
+                // USE PIXEL UNITS: item.size is already scaled by PT_TO_PX (1.333) in backend
+                MEASURE_CTX.font = `${style} ${weight} ${item.size}px ${measureFamily}`;
+                const measuredWidth = MEASURE_CTX.measureText(content).width;
+                const availableWidth = item.width || (x1 - x0);
+
+                if (i < 5) { // Log first few items to debug
+                    console.log(`[DEBUG Item ${i}] Content: "${content.substring(0, 10)}..."`);
+                    console.log(`   Font for Measure: ${MEASURE_CTX.font}`);
+                    console.log(`   Measured: ${measuredWidth.toFixed(2)} vs Available: ${availableWidth.toFixed(2)}`);
+                }
+
+                // If visual text is significantly wider (>5% tolerance), scale down font size further
+                if (!isModified && measuredWidth > availableWidth * 1.05) {
+                    const ratio = availableWidth / measuredWidth;
+                    fittedFontSize = (item.size * ratio) * OPTICAL_HEIGHT_FACTOR;
+                    if (i < 5) console.log(`   -> ADJUSTING SIZE: ${item.size} -> ${fittedFontSize}`);
+                }
+
+                const isSpecialWeight = matchingFont && /bold|medium|semibold|black|heavy/i.test(matchingFont.name);
+                const renderWeight = isSpecialWeight ? 'normal' : (item.is_bold ? '700' : '400'); // REVERTED: Use standard Regular (400) weight
 
                 return (
                     <g key={item.id || i}>
@@ -608,17 +699,17 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                             }}
                         />
 
+
+
                         {/* 2. Visual Text (High-Fidelity Rendering) */}
                         <text
                             transform={`translate(0, 0)`}
-                            fontSize={Math.max(1, Math.abs(item.size))}
-                            fontFamily={normalizeFont(item.font, item.google_font)}
-                            fontWeight={item.is_bold ? 'bold' : 'normal'}
-                            fontStyle={item.is_italic ? 'italic' : 'normal'}
+                            fontSize={Math.max(1, Math.abs(fittedFontSize))}
+                            fontFamily={measureFamily.replace(/'/g, "")}
+                            fontWeight={renderWeight}
+                            fontStyle={style}
                             fill={color}
                             dominantBaseline="alphabetic"
-                            textLength={!isModified ? Math.max(0, item.width || (x1 - x0)) : undefined}
-                            lengthAdjust={!isModified ? "spacingAndGlyphs" : undefined}
                             style={{
                                 userSelect: 'none',
                                 pointerEvents: 'none',
@@ -628,28 +719,29 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                         >
                             {isModified ? (
                                 <tspan x={startX} y={baselineY}>
-                                    {renderVisualText(content, (item.font_variant === 'small-caps'), item.size)}
+                                    {renderVisualText(content, (item.font_variant === 'small-caps'), fittedFontSize)}
                                 </tspan>
                             ) : (
                                 (item.items || [item]).map((span, si) => {
-                                    // ABSOLUTE POSITIONING:
-                                    // Honor PDF coordinates absolutely by forcing X for every fragment
-                                    // unless they are exactly at the same position.
+                                    // ABSOLUTE POSITIONING
                                     const prevSpan = si > 0 ? item.items[si - 1] : null;
                                     const spanX = span.origin ? span.origin[0] : (span.x || item.x);
                                     const prevX1 = prevSpan ? (prevSpan.bbox ? prevSpan.bbox[2] : prevSpan.x + 10) : -1;
                                     const forceX = si === 0 || (Math.abs(spanX - prevX1) > 0.1);
 
                                     const spanIsSmallCaps = span.font_variant === 'small-caps' || (span.font || '').toLowerCase().includes('cmcsc');
+                                    // Cascade scale to spans? Assuming spans share the line's overflow ratio roughly.
+                                    // For perfect per-span scaling we'd need per-span measurement, but using line ratio is a good approximation.
+                                    const spanFittedSize = span.size * (fittedFontSize / item.size);
 
                                     return (
                                         <tspan
                                             key={si}
                                             x={forceX ? spanX : undefined}
                                             y={span.origin ? span.origin[1] : (span.y || item.y)}
-                                            fontSize={Math.max(1, Math.abs(span.size))}
+                                            fontSize={Math.max(1, Math.abs(spanFittedSize))}
                                             fill={getSVGColor(span.color, color)}
-                                            fontWeight={span.is_bold ? '700' : '400'}
+                                            fontWeight={spanIsSmallCaps ? '500' : (span.is_bold ? '700' : '400')}
                                             fontStyle={span.is_italic ? 'italic' : undefined}
                                             fontFamily={span.font ? normalizeFont(span.font, span.google_font) : undefined}
                                             xmlSpace="preserve"
@@ -799,11 +891,75 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             .replace(/\u00ef/g, '\uf08c') // ï -> LinkedIn
             .replace(/\u00d0/g, '\uf121'); // Ð -> Code / LeetCode
 
-        // TYPOGRAPHIC PREVIEW FIX:
-        // We let the browser's font-variant: small-caps handle the rendering.
-        // It naturally renders lowercase as small caps and uppercase as big caps.
         return mapped;
     };
+
+    // --- SMART CALIBRATION ENGINE ---
+    const OPTICAL_HEIGHT_FACTOR = 0.96;
+    const { calibratedFontSize, fittingRatio, measuredPercent } = useMemo(() => {
+        const textToMeasure = content || '';
+        const baseSize = Math.abs(styleItem.size || line.size || 10);
+        const weight = styleItem.is_bold ? '700' : '400';
+        const style = styleItem.is_italic ? 'italic' : 'normal';
+        let family = normalizeFont(styleItem.font, styleItem.google_font);
+
+        // Canvas measurement setup
+        MEASURE_CTX.font = `${style} ${weight} ${baseSize}px ${family}`;
+        const measuredWidth = MEASURE_CTX.measureText(textToMeasure).width;
+        const targetWidth = line.width || (line.x1 - line.x0) || 50;
+
+        // Calculate how well it fits (100% is perfect)
+        const percent = (measuredWidth / targetWidth) * 100;
+
+        // Goal: If it's more than 100% (Overflow) or less than 95% (Significant Underflow), 
+        // we apply a fitting ratio to the font size to "snug" it into the bbox.
+        let ratio = 1.0;
+        if (measuredWidth > targetWidth * 1.02 || measuredWidth < targetWidth * 0.95) {
+            ratio = targetWidth / measuredWidth;
+        }
+
+        // BBOX EXPANSION: If modified, we NEVER shrink below 1.0. 
+        // We let the text grow horizontally (increase bbox appearance).
+        if (isModified && ratio < 1.0) {
+            ratio = 1.0;
+        }
+
+        // Clip ratio to prevent extreme distortions (safety)
+        const safeRatio = Math.min(1.2, Math.max(0.7, ratio));
+
+        return {
+            calibratedFontSize: baseSize * OPTICAL_HEIGHT_FACTOR * safeRatio,
+            fittingRatio: safeRatio,
+            measuredPercent: percent
+        };
+    }, [line, content, styleItem, isModified]);
+
+    // --- LIST MARKER GUARD ---
+    const dynamicTextAnchorX = useMemo(() => {
+        if (!isListItem || !line.is_bullet_start || line.items.length < 1) return textAnchorX;
+        const bulletSpan = line.items[0];
+        const mapped = mapContentToIcons(bulletSpan.content, bulletSpan.font);
+
+        // Check if it's an icon
+        const isIcon = /[\uf000-\uf999]/.test(mapped);
+        const weight = isIcon ? '900' : (bulletSpan.is_bold ? '700' : '400');
+        const family = isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(bulletSpan.font);
+
+        MEASURE_CTX.font = `${weight} ${bulletSpan.size}px ${family}`;
+        const bulletWidth = MEASURE_CTX.measureText(mapped).width;
+        const bulletStartX = bulletSpan.origin ? bulletSpan.origin[0] : bulletSpan.bbox[0];
+
+        // Ensure at least 6px (standard PDF padding) plus some wiggle room for icons
+        const minGap = isIcon ? 8 : 4;
+        return Math.max(textAnchorX, bulletStartX + bulletWidth + minGap);
+    }, [line, isListItem, textAnchorX]);
+
+    // Debug logging for the user
+    useEffect(() => {
+        if (line.id.includes('-0')) { // Log once per block approx
+            console.log(`%c[CALIBRATION] Line: ${line.id.substring(0, 8)} | Match: ${measuredPercent.toFixed(1)}% | Adjustment: ${fittingRatio.toFixed(3)}x`, 'color: #00ff00');
+        }
+    }, [measuredPercent, fittingRatio, line.id]);
 
     return (
         <g
@@ -852,7 +1008,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             <text
                 x={initialStartX}
                 y={baselineY}
-                fontSize={Math.max(1, Math.abs(styleItem.size))}
+                fontSize={calibratedFontSize}
                 fontFamily={normalizeFont(styleItem.font, styleItem.google_font)}
                 fill={getSVGColor(styleItem.color, 'black')}
                 fontWeight={styleItem.is_bold ? '700' : '400'}
@@ -896,7 +1052,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 <tspan key="modified-marker" x={initialStartX} y={baselineY} style={{ fontVariant: activeSmallCaps ? 'small-caps' : 'normal' }}>
                                     <tspan
                                         fontSize={safeBSize}
-                                        fontFamily={/[\uf000-\uf999]/.test(markerPart) ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont)}
+                                        fontFamily={/[\uf000-\uf999]/.test(markerPart) ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(safeFont)}
                                         fontWeight={/[\uf000-\uf999]/.test(markerPart) ? '900' : ((block.style?.is_bold || sStyle.is_bold) ? '700' : '400')}
                                         fill={getSVGColor(safeColor, 'black')}
                                         fontStyle={(block.style?.is_italic || sStyle.is_italic) ? 'italic' : 'normal'}
@@ -906,16 +1062,16 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         {markerPart}
                                     </tspan>
                                     <tspan
-                                        x={textAnchorX}
+                                        x={dynamicTextAnchorX}
                                         y={baselineY}
-                                        fontSize={safeSize}
+                                        fontSize={safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio}
                                         fontFamily={normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
                                         fill={getSVGColor(safeColor, 'black')}
                                         fontWeight={sStyle.is_bold ? '700' : '400'}
                                         fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
                                         xmlSpace="preserve"
                                     >
-                                        {renderVisualText(restPart, activeSmallCaps, safeSize)}
+                                        {renderVisualText(restPart, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
                                     </tspan>
                                 </tspan>
                             );
@@ -926,8 +1082,8 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 key="modified-plain"
                                 x={initialStartX}
                                 y={baselineY}
-                                fontSize={safeSize}
-                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
+                                fontSize={safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio}
+                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
                                 fill={getSVGColor(safeColor, 'black')}
                                 fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? '700' : '400')}
                                 fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
@@ -936,7 +1092,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                     fontFeatureSettings: activeSmallCaps ? '"smcp"' : 'normal'
                                 }}
                             >
-                                {renderVisualText(mapped, activeSmallCaps, safeSize)}
+                                {renderVisualText(mapped, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
                             </tspan>
                         );
                     })()
@@ -967,7 +1123,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                             // Sync with backend SUB_BULLET_CHARS to prevent false positives (removed icons)
                             const BULLET_CHARS = ["•", "·", "*", "-", "∗", "»", "ΓÇó", "├»", "Γêù"];
                             if (BULLET_CHARS.includes(prevTxt) || prevTxt.length === 1 && prevTxt.charCodeAt(0) === 0x2217) {
-                                forceX = textAnchorX;
+                                forceX = dynamicTextAnchorX;
                             }
                         }
 
@@ -996,22 +1152,24 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 x={forceX}
                                 y={baselineY}
                                 dy={verticalShift + "px"}
-                                fontSize={Math.max(1, Math.abs(customSize))}
+                                fontSize={Math.max(1, Math.abs(customSize * OPTICAL_HEIGHT_FACTOR * fittingRatio))}
                                 fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? '700' : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
-                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 5 Free", sans-serif' : normalizeFont(span.font, span.google_font)}
+                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font)}
                                 fill={getSVGColor(span.color, 'black')}
                                 style={{
                                     // Removed native fontVariant to avoid double-processing
                                     fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal'
                                 }}
                             >
-                                {renderVisualText(mapped, isOriginalSmallCaps, customSize)}
+                                {renderVisualText(mapped, isOriginalSmallCaps, customSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
                             </tspan>
                         );
                     })
                 )}
             </text>
+
+
         </g>
     );
 }

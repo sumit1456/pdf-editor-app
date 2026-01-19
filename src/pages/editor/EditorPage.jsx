@@ -42,7 +42,14 @@ const FONT_OPTIONS = [
     { label: 'Oswald', value: 'Oswald' },
     { label: 'Roboto Mono', value: 'Roboto Mono' },
     { label: 'JetBrains', value: 'JetBrains Mono' },
-    { label: 'Fira Code', value: 'Fira Code' }
+    { label: 'Fira Code', value: 'Fira Code' },
+    { label: 'Crimson Pro (Book)', value: 'Crimson Pro' },
+    { label: 'Poppins (Geometric)', value: 'Poppins' },
+    { label: 'Ubuntu', value: 'Ubuntu' },
+    { label: 'Dancing Script', value: 'Dancing Script' },
+    { label: 'Orbitron (Techno)', value: 'Orbitron' },
+    { label: 'PT Serif', value: 'PT Serif' },
+    { label: 'PT Sans', value: 'PT Sans' }
 ];
 
 // TYPOGRAPHIC AUDITOR: Measures natural density of fonts to find the best match
