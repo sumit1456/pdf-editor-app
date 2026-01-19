@@ -192,12 +192,26 @@ export default function EditorPage() {
                 const getGoogleFontName = (fontName) => {
                     const name = (fontName || '').toLowerCase();
                     if (name.includes('inter')) return 'Inter';
+                    if (name.includes('roboto mono')) return 'Roboto Mono';
                     if (name.includes('roboto')) return 'Roboto';
                     if (name.includes('open sans')) return 'Open Sans';
                     if (name.includes('montserrat')) return 'Montserrat';
                     if (name.includes('lora')) return 'Lora';
                     if (name.includes('merriweather')) return 'Merriweather';
-                    if (name.includes('source serif')) return 'Source Serif 4';
+                    if (name.includes('libre baskerville')) return 'Libre Baskerville';
+                    if (name.includes('playfair display')) return 'Playfair Display';
+                    if (name.includes('oswald')) return 'Oswald';
+                    if (name.includes('jetbrains mono')) return 'JetBrains Mono';
+                    if (name.includes('fira code')) return 'Fira Code';
+                    if (name.includes('source serif') || name.includes('source_serif')) return 'Source Serif 4';
+                    if (name.includes('poppins')) return 'Poppins';
+                    if (name.includes('crimson pro')) return 'Crimson Pro';
+                    if (name.includes('dancing script')) return 'Dancing Script';
+                    if (name.includes('orbitron')) return 'Orbitron';
+                    if (name.includes('pt serif')) return 'PT Serif';
+                    if (name.includes('pt sans')) return 'PT Sans';
+                    if (name.includes('ubuntu')) return 'Ubuntu';
+
                     if (name.includes('cm') || name.includes('sfrm') || name.includes('times')) return 'Source Serif 4';
                     return 'Inter'; // Default
                 };
@@ -365,6 +379,12 @@ export default function EditorPage() {
             const current = prev[lineId] || {};
             const sStyle = { ...(current.safetyStyle || {}) };
             sStyle[field] = value;
+
+            // CRITICAL FIX: If we change the font name, we must also reset the googleFont
+            // mapping so the renderer prioritizes the user's manual selection.
+            if (field === 'font') {
+                sStyle.googleFont = value;
+            }
 
             return {
                 ...prev,
@@ -708,6 +728,13 @@ export default function EditorPage() {
                                         onFocus={() => setActiveNodeId(line.id)}
                                         onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
                                         placeholder="Enter text..."
+                                        style={{
+                                            fontFamily: sStyle.font ? `'${sStyle.font}', serif` : 'inherit',
+                                            fontWeight: sStyle.is_bold ? '700' : '400',
+                                            fontStyle: sStyle.is_italic ? 'italic' : 'normal',
+                                            fontSize: '1rem',
+                                            transition: 'all 0.2s'
+                                        }}
                                     />
 
                                     {activeTab === 'links' && (

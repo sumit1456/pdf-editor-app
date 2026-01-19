@@ -918,10 +918,18 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             ratio = targetWidth / measuredWidth;
         }
 
-        // BBOX EXPANSION: If modified, we NEVER shrink below 1.0. 
-        // We let the text grow horizontally (increase bbox appearance).
+        // BBOX EXPANSION: If modified, allow some growth before shrinking
         if (isModified && ratio < 1.0) {
-            ratio = 1.0;
+            const avgCharWidth = measuredWidth / (textToMeasure.length || 1);
+            const allowableWidth = targetWidth + (avgCharWidth * 4); // Allow 4-char buffer
+
+            if (measuredWidth > allowableWidth) {
+                // Too long! Start shrinking to fit within the 4-char buffer zone
+                ratio = allowableWidth / measuredWidth;
+            } else {
+                // Within buffer - keep original size (ratio 1.0)
+                ratio = 1.0;
+            }
         }
 
         // Clip ratio to prevent extreme distortions (safety)
@@ -1169,7 +1177,16 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 )}
             </text>
 
-
+            {/* DEBUG: Red Bottom Border for BBox Matching */}
+            <line
+                x1={line.x0}
+                y1={line.bbox ? line.bbox[3] : line.y}
+                x2={line.x1}
+                y2={line.bbox ? line.bbox[3] : line.y}
+                stroke="red"
+                strokeWidth="0.5"
+                opacity="0.8"
+            />
         </g>
     );
 }

@@ -518,11 +518,11 @@ async def save_pdf(request: SavePDFRequest):
                 
                 # TITLE GUARD: If it's a short line (likely a header like "Experience"), 
                 # we NEVER shrink it. We'd rather let it overflow than become tiny.
-                is_short_line = total_measured_width < 150 or len(processed_render_spans) == 1 and len(processed_render_spans[0]["text"].split()) < 4
+                is_short_line = total_measured_width < 100 or len(processed_render_spans) == 1 and len(processed_render_spans[0]["text"].split()) < 4
                 
                 if not target_mod and not is_short_line and total_measured_width > 0:
-                    # 100% parity goal: If total line width deviates, calculate global squeeze/stretch
-                    if total_measured_width > target_width * 1.01 or total_measured_width < target_width * 0.95:
+                    # Tightened Thresholds: Capture almost all variation for a snug fit
+                    if total_measured_width > target_width * 1.005 or total_measured_width < target_width * 0.99:
                         fitting_ratio = target_width / total_measured_width
                 
                 safe_ratio = max(0.65, min(1.25, fitting_ratio))
