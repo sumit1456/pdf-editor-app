@@ -134,11 +134,11 @@ class FontManager:
             else:
                 # STANDARD DOWN-SHIFTING FOR GENERIC FONTS (Prevents "muddy" pages)
                 SERIF_MAP = {
-                    "Black": "Black",
-                    "ExtraBold": "ExtraBold",
-                    "Bold": "Bold",          # Keep Bold (700)
-                    "SemiBold": "SemiBold",  # Keep SemiBold (600)
-                    "Medium": "Medium",
+                    "Black": "ExtraBold",
+                    "ExtraBold": "Bold",
+                    "Bold": "SemiBold",     # Source Serif Bold is too chunky
+                    "SemiBold": "Medium",
+                    "Medium": "Regular",
                     "Regular": "Regular",
                     "Light": "Light",
                     "ExtraLight": "ExtraLight"

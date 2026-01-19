@@ -474,20 +474,21 @@ async def save_pdf(request: SavePDFRequest):
                     curr_x, curr_y = line["spans"][0]["origin"]
                     link_bbox = fitz.Rect(line["bbox"])
 
-                # SHARED RENDERING ENGINE
+                # --- BACKEND SMART CALIBRATION ENGINE (PER-LINE) ---
+                OPTICAL_HEIGHT_FACTOR = 0.96
+                total_measured_width = 0
+                processed_render_spans = []
+
+                # Pass A: Pre-measure all spans using their actual fonts to get the total line width
                 for span in line_spans:
                     s_text = span.text
-                    s_font_in = (span.font or "inter").lower()
-                    s_is_bold = span.is_bold
-                    s_is_italic = span.is_italic
-                    s_variant = span.font_variant or "normal"
-                    s_size = (span.size or 10) / PT_TO_PX
-                    s_color = span.color or [0, 0, 0]
-
                     for sym, rep in SYMBOL_MAP.items():
                         s_text = s_text.replace(sym, rep)
-
-                    # PRIORITIZE FRONTEND OVERRIDE
+                    
+                    s_is_bold = span.is_bold
+                    s_is_italic = span.is_italic
+                    s_font_in = (span.font or "inter").lower()
+                    
                     frontend_google_font = getattr(span, 'google_font', None)
                     if not frontend_google_font and target_mod:
                         frontend_google_font = target_mod.style.get('googleFont')
@@ -495,27 +496,61 @@ async def save_pdf(request: SavePDFRequest):
                     search_font = frontend_google_font if frontend_google_font else s_font_in
                     font_path, font_key = font_manager.get_font_path(search_font, s_is_bold, s_is_italic, original_context=s_font_in)
                     
-                    with open("backend_audit.log", "a", encoding="utf-8") as audit_log:
-                        source_label = "FRONTEND" if frontend_google_font else "MAPPED"
-                        audit_log.write(f"[INJECT] '{s_font_in[:20]}' ({source_label}={frontend_google_font}) -> Mapped: {font_key}\n")
-
                     if font_path:
-                        try:
-                            internal_name = f"f-{font_key.lower()}"
-                            temp_font = fitz.Font(fontfile=font_path)
-                            
-                            if s_variant == "small-caps":
-                                for char in s_text:
-                                    is_lower_alpha = char.islower() and char.isalpha()
-                                    c_size = s_size * (0.75 if is_lower_alpha else 1.0)
-                                    c_char = char.upper() if is_lower_alpha else char
-                                    page.insert_text((curr_x, curr_y), c_char, fontsize=c_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
-                                    curr_x += temp_font.text_length(c_char, fontsize=c_size)
-                            else:
-                                page.insert_text((curr_x, curr_y), s_text, fontsize=s_size, color=tuple(s_color), fontfile=font_path, fontname=internal_name)
-                                curr_x += temp_font.text_length(s_text, fontsize=s_size)
-                        except Exception as e:
-                            print(f"[BACKEND ERROR] Rendering span: {e}")
+                        temp_font = fitz.Font(fontfile=font_path)
+                        s_size = (span.size or 10) / PT_TO_PX
+                        meas_text = s_text if span.font_variant != "small-caps" else s_text.upper()
+                        s_measured_width = temp_font.text_length(meas_text, fontsize=s_size)
+                        total_measured_width += s_measured_width
+                        
+                        processed_render_spans.append({
+                            "text": s_text,
+                            "font_path": font_path,
+                            "font_key": font_key,
+                            "size": s_size,
+                            "variant": span.font_variant,
+                            "color": span.color or [0, 0, 0]
+                        })
+
+                # Pass B: Calculate line-wide fitting ratio
+                target_width = (line["bbox"][2] - line["bbox"][0])
+                fitting_ratio = 1.0
+                
+                # TITLE GUARD: If it's a short line (likely a header like "Experience"), 
+                # we NEVER shrink it. We'd rather let it overflow than become tiny.
+                is_short_line = total_measured_width < 150 or len(processed_render_spans) == 1 and len(processed_render_spans[0]["text"].split()) < 4
+                
+                if not target_mod and not is_short_line and total_measured_width > 0:
+                    # 100% parity goal: If total line width deviates, calculate global squeeze/stretch
+                    if total_measured_width > target_width * 1.01 or total_measured_width < target_width * 0.95:
+                        fitting_ratio = target_width / total_measured_width
+                
+                safe_ratio = max(0.65, min(1.25, fitting_ratio))
+                
+                with open("backend_audit.log", "a", encoding="utf-8") as audit_log:
+                    mod_status = "EDITED" if target_mod else "ORIGINAL"
+                    guard_status = "TITLE_GUARD" if is_short_line else "CALIBRATED"
+                    match_pct = (total_measured_width / target_width * 100) if target_width > 0 else 0
+                    audit_log.write(f"[CALIBRATE] Line: {line['bbox'][0]:.1f},{line['bbox'][1]:.1f} | Status: {mod_status}({guard_status}) | Match: {match_pct:.1f}% | Ratio: {safe_ratio:.3f}\n")
+
+                # Pass C: Render calibrated spans
+                for r_span in processed_render_spans:
+                    try:
+                        calibrated_size = r_span["size"] * OPTICAL_HEIGHT_FACTOR * safe_ratio
+                        internal_name = f"f-{r_span['font_key'].lower()}"
+                        
+                        if r_span["variant"] == "small-caps":
+                            for char in r_span["text"]:
+                                is_lower_alpha = char.islower() and char.isalpha()
+                                c_size = calibrated_size * (0.75 if is_lower_alpha else 1.0)
+                                c_char = char.upper() if is_lower_alpha else char
+                                page.insert_text((curr_x, curr_y), c_char, fontsize=c_size, color=tuple(r_span["color"]), fontfile=r_span["font_path"], fontname=internal_name)
+                                curr_x += fitz.Font(fontfile=r_span["font_path"]).text_length(c_char, fontsize=c_size)
+                        else:
+                            page.insert_text((curr_x, curr_y), r_span["text"], fontsize=calibrated_size, color=tuple(r_span["color"]), fontfile=r_span["font_path"], fontname=internal_name)
+                            curr_x += fitz.Font(fontfile=r_span["font_path"]).text_length(r_span["text"], fontsize=calibrated_size)
+                    except Exception as e:
+                        print(f"[BACKEND ERROR] Rendering span: {e}")
                 
                 if uri:
                     page.insert_link({"from": link_bbox, "uri": uri, "kind": fitz.LINK_URI})
