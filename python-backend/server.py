@@ -13,6 +13,21 @@ import json
 import sys
 import contextlib
 
+# Define Font Paths
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FONT_AWESOME_BRANDS = os.path.join(BASE_DIR, "fonts", "fa-brands-400.ttf")
+FONT_AWESOME_SOLID = os.path.join(BASE_DIR, "fonts", "fa-solid-900.ttf")
+
+# Special Font Map for Icons
+SPECIAL_FONT_MAP = {
+    "\uf09b": "fa_brands", # Github
+    "\uf08c": "fa_brands", # LinkedIn
+    "\uf095": "fa_solid",  # Phone
+    "\uf0e0": "fa_solid",  # Envelope
+    "\uf121": "fa_solid",  # Code
+}
+
+
 from layout_engine import normalize_layout
 # from coordinate_diagnostic import run_comparison
 
@@ -126,9 +141,18 @@ def parse_color(color_in):
 SYMBOL_MAP = {
     # Bullets & Markers
     "\u2022": "\u2022", "\u25cf": "\u2022", "\u25cb": "\u25e6",
-    "\u25aa": "\u25aa", "\u2731": "*", "\u2217": "*",
+    "\u25aa": "\u25aa", 
+    "\u2731": "\u2022",     # Heavy Asterisk -> Bullet
+    "\u2217": "\u2022",     # Mathematical Asterisk -> Bullet
+    "\u22c6": "\u2022",     # Star -> Bullet
+    "*": "\u2022",          # Standard Asterisk -> Bullet
+    "\uf0a7": "\u2022",     # Wingdings bullet artifact
+    "\u25a0": "\u2022",     # Black Square -> Bullet
+    "\u25a1": "\u2022",     # White Square -> Bullet
+    "\u2713": "\u2022",     # Checkmark -> Bullet (User Request to normalize)
+    "\u2714": "\u2022",     # Heavy Checkmark -> Bullet
     "\u00ef": "\u2022", "\u00a7": "\u2022", "\u0083": "\u2022",
-    "\u00d0": "\u2022", "\u00b7": "·", 
+    "\u00d0": "\u2022", "\u00b7": "·",  
     # FontAwesome 5 Fallbacks (PUA -> Standard High-Fidelity)
     "\uf0e0": "\u2709\ufe0f",   # Envelope
     "\uf095": "\u260e\ufe0f",   # Phone
@@ -139,10 +163,10 @@ SYMBOL_MAP = {
     "\uf121": "</>",            # Code
     "\uf3b8": "\u270f\ufe0f",   # Edit
     # Direct LaTeX Icon Anchors (Matches Frontend mapContentToIcons)
-    "\u0083": "\u260e\ufe0f",   # ƒ anchor maps to Phone
-    "\u00a7": "\u229a",         # § anchor maps to GitHub
-    "\u00ef": "[in]",           # ï anchor maps to LinkedIn
-    "\u00d0": "</>",            # Ð anchor maps to LeetCode
+    "\u0083": "\uf095",         # ƒ anchor maps to Phone (FontAwesome Solid)
+    "\u00a7": "\uf09b",         # § anchor maps to Github (FontAwesome Brands)
+    "\u00ef": "\uf08c",         # ï anchor maps to LinkedIn (FontAwesome Brands)
+    "\u00d0": "\uf121",         # Ð anchor maps to LeetCode (FontAwesome Solid)
     # Computer Modern Symbol (cmsy) fixes
     "\u0000": "\u2022", 
     "\u000c": "\u2022",
@@ -570,17 +594,40 @@ async def save_pdf(request: SavePDFRequest):
                                 page.insert_text((curr_x, curr_y), c_char, fontsize=c_size, color=tuple(r_span["color"]), fontfile=r_span["font_path"], fontname=internal_name)
                                 curr_x += fitz.Font(fontfile=r_span["font_path"]).text_length(c_char, fontsize=c_size)
                         else:
-                            page.insert_text((curr_x, curr_y), r_span["text"], fontsize=calibrated_size, color=tuple(r_span["color"]), fontfile=r_span["font_path"], fontname=internal_name)
-                            curr_x += fitz.Font(fontfile=r_span["font_path"]).text_length(r_span["text"], fontsize=calibrated_size)
+                            # BULLET GUARD: If it is a bullet, ensure it isn't "pointy" (microscopic)
+                            # We force a minimum visual size for bullets (e.g. 12px visual)
+                            final_size = calibrated_size
+                            if r_span["text"] == "\u2022":
+                                final_size = max(calibrated_size, 10.0)
+                            
+
+                            # Font Switching Logic for Icons
+                            use_font = r_span["font_path"]
+                            use_name = internal_name
+                            
+                            font_key = SPECIAL_FONT_MAP.get(r_span["text"])
+                            if font_key == "fa_brands":
+                                use_font = FONT_AWESOME_BRANDS
+                                use_name = "fa_brands"
+                            elif font_key == "fa_solid":
+                                use_font = FONT_AWESOME_SOLID
+                                use_name = "fa_solid"
+
+                            page.insert_text((curr_x, curr_y), r_span["text"], fontsize=final_size, color=tuple(r_span["color"]), fontfile=use_font, fontname=use_name)
+                            curr_x += fitz.Font(fontfile=use_font).text_length(r_span["text"], fontsize=final_size)
+                            
+                            # Add manual spacing after a bullet point to prevent text collision
+                            if r_span["text"] == "\u2022":
+                                curr_x += 4.0 # 4px padding
+
                     except Exception as e:
                         print(f"[BACKEND ERROR] Rendering span: {e}")
                 
                 if uri:
                     page.insert_link({"from": link_bbox, "uri": uri, "kind": fitz.LINK_URI})
                 
-                # --- DEBUG: Red Bottom Border in PDF ---
-                lx0, ly0, lx1, ly1 = line["bbox"]
-                page.draw_line(fitz.Point(lx0, ly1), fitz.Point(lx1, ly1), color=(1, 0, 0), width=0.5)
+                # --- DEBUG: Red Bottom Border Removed ---
+
 
             # B. Handle Remaining Mods (New text or vector drawings)
             for m in mods:

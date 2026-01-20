@@ -879,12 +879,13 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         // LaTeX/Computer Modern Symbol replacements
         let mapped = text
             .replace(/\u2022/g, '•')  // Bullet
-            .replace(/\u2217/g, '∗')  // Asterisk bullet
-            .replace(/\u22c6/g, '⋆')  // Star bullet
+            .replace(/\u2217/g, '•')  // Asterisk bullet -> Bullet
+            .replace(/\u22c6/g, '•')  // Star bullet -> Bullet
+            .replace(/\*/g, '•')      // Standard Asterisk -> Bullet
             .replace(/\u2013/g, '–')  // En-dash
             .replace(/\u2014/g, '—'); // Em-dash
 
-        // FontAwesome Mapping (ONLY for high-unicode symbols, NOT standard ASCII)
+        // FontAwesome Mapping (Standardized to Unicode for PDF Consistency)
         mapped = mapped
             .replace(/\u0083/g, '\uf095') // ƒ -> Phone (PhoneAlt)
             .replace(/\u00a7/g, '\uf09b') // § -> Github
@@ -960,7 +961,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
     const renderVisualText = (txt, caps, size) => {
         if (!txt) return "";
         // LaTeX/Symbol bullet artifacts: mapping 'i' and 'G' to bullet points
-        if (txt.trim() === 'i' || txt.trim() === 'G') return "•";
+        if (txt.trim() === 'i' || txt.trim() === 'G' || txt.trim() === '*') return "•";
         if (caps) return txt.toUpperCase();
         return txt;
     };
