@@ -147,6 +147,8 @@ SYMBOL_MAP = {
     "\u0000": "\u2022", 
     "\u000c": "\u2022",
     "\u2192": "\u2192",         # Right Arrow
+    "i": "\u2022",              # LaTeX/Symbol bullet artifact
+    "G": "\u2022",              # LaTeX/Symbol bullet artifact
 }
 
 @app.post("/pdf-extraction-config")
@@ -482,8 +484,13 @@ async def save_pdf(request: SavePDFRequest):
                 # Pass A: Pre-measure all spans using their actual fonts to get the total line width
                 for span in line_spans:
                     s_text = span.text
+                    # CRITICAL: Handle the 'i' and 'G' bullets at the span level
+                    if s_text.strip() == "i" or s_text.strip() == "G":
+                        s_text = SYMBOL_MAP.get(s_text.strip(), s_text)
+                    
                     for sym, rep in SYMBOL_MAP.items():
-                        s_text = s_text.replace(sym, rep)
+                        if len(sym) > 1: # Only map long sequences or PUA here
+                            s_text = s_text.replace(sym, rep)
                     
                     s_is_bold = span.is_bold
                     s_is_italic = span.is_italic
@@ -536,14 +543,10 @@ async def save_pdf(request: SavePDFRequest):
                     if total_measured_width > target_width * 1.005 or total_measured_width < target_width * 0.99:
                         fitting_ratio = target_width / total_measured_width
                 
-                # BBOX EXPANSION (Edited Lines): Allow 4-char buffer before shrinking
-                if target_mod and total_measured_width > 0:
-                    avg_char_w = total_measured_width / len(" ".join([s["text"] for s in processed_render_spans]) or "1")
-                    allowable_w = target_width + (avg_char_w * 4)
-                    if total_measured_width > allowable_w:
-                        fitting_ratio = allowable_w / total_measured_width
-                    else:
-                        fitting_ratio = 1.0
+                # BBOX EXPANSION (Edited Lines): Honor Dynamic BBox strategy
+                # We prioritize the new width calculated by the frontend
+                if target_mod:
+                    fitting_ratio = 1.0 # Dynamic BBox means we don't shrink
 
                 safe_ratio = max(0.65, min(1.25, fitting_ratio))
                 

@@ -911,33 +911,13 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         // Calculate how well it fits (100% is perfect)
         const percent = (measuredWidth / targetWidth) * 100;
 
-        // Goal: If it's more than 100.5% (Overflow) or less than 99% (Underflow), 
-        // we apply a fitting ratio to the font size to "snug" it into the bbox.
-        let ratio = 1.0;
-        if (measuredWidth > targetWidth * 1.005 || measuredWidth < targetWidth * 0.99) {
-            ratio = targetWidth / measuredWidth;
-        }
-
-        // BBOX EXPANSION: If modified, allow some growth before shrinking
-        if (isModified && ratio < 1.0) {
-            const avgCharWidth = measuredWidth / (textToMeasure.length || 1);
-            const allowableWidth = targetWidth + (avgCharWidth * 4); // Allow 4-char buffer
-
-            if (measuredWidth > allowableWidth) {
-                // Too long! Start shrinking to fit within the 4-char buffer zone
-                ratio = allowableWidth / measuredWidth;
-            } else {
-                // Within buffer - keep original size (ratio 1.0)
-                ratio = 1.0;
-            }
-        }
-
-        // Clip ratio to prevent extreme distortions (safety)
-        const safeRatio = Math.min(1.2, Math.max(0.7, ratio));
+        // Goal: Dynamic BBox mode - always use 1.0 ratio.
+        // The width expansion happens in EditorPage.
+        const ratio = 1.0;
 
         return {
-            calibratedFontSize: baseSize * OPTICAL_HEIGHT_FACTOR * safeRatio,
-            fittingRatio: safeRatio,
+            calibratedFontSize: baseSize * OPTICAL_HEIGHT_FACTOR * ratio,
+            fittingRatio: ratio,
             measuredPercent: percent
         };
     }, [line, content, styleItem, isModified]);
@@ -968,6 +948,22 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
             console.log(`%c[CALIBRATION] Line: ${line.id.substring(0, 8)} | Match: ${measuredPercent.toFixed(1)}% | Adjustment: ${fittingRatio.toFixed(3)}x`, 'color: #00ff00');
         }
     }, [measuredPercent, fittingRatio, line.id]);
+
+    // DYNAMIC BBOX: Use expanded bbox if present in nodeEdits
+    const displayBBox = edit.bbox || line.bbox || [line.x0, line.y0, line.x1, line.y1];
+    const rectX = displayBBox[0];
+    const rectY = displayBBox[1];
+    const rectW = displayBBox[2] - displayBBox[0];
+    const rectH = displayBBox[3] - displayBBox[1];
+
+    // Helper to render text with icon/bullet awareness
+    const renderVisualText = (txt, caps, size) => {
+        if (!txt) return "";
+        // LaTeX/Symbol bullet artifacts: mapping 'i' and 'G' to bullet points
+        if (txt.trim() === 'i' || txt.trim() === 'G') return "•";
+        if (caps) return txt.toUpperCase();
+        return txt;
+    };
 
     return (
         <g
@@ -1006,10 +1002,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         >
             {/* INVISIBLE HITBOX: Covers the entire line area and some padding */}
             <rect
-                x={line.x0 - 5}
-                y={line.y - (line.height || line.size || 10) - 4}
-                width={Math.max(50, (line.x1 - line.x0) + 10)}
-                height={(line.height || line.size || 12) + 8}
+                x={rectX - 5}
+                y={rectY - 4}
+                width={Math.max(50, rectW + 10)}
+                height={rectH + 8}
                 fill="transparent"
                 pointerEvents="all"
             />
@@ -1085,22 +1081,39 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                             );
                         }
 
+                        const words = mapped.split(/(\s+)/); // Keep spaces
+                        const wordStyles = edit.wordStyles || {};
+                        const baseStyle = edit.safetyStyle || styleItem;
+                        let wordCounter = 0;
+
                         return (
-                            <tspan
-                                key="modified-plain"
-                                x={initialStartX}
-                                y={baselineY}
-                                fontSize={safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio}
-                                fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
-                                fill={getSVGColor(safeColor, 'black')}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (sStyle.is_bold ? '700' : '400')}
-                                fontStyle={sStyle.is_italic ? 'italic' : 'normal'}
-                                style={{
-                                    // Removed native fontVariant to avoid double-processing
-                                    fontFeatureSettings: activeSmallCaps ? '"smcp"' : 'normal'
-                                }}
-                            >
-                                {renderVisualText(mapped, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
+                            <tspan key="modified-plain" x={initialStartX} y={baselineY}>
+                                {words.map((chunk, widx) => {
+                                    const isSpace = /^\s+$/.test(chunk);
+                                    const wStyle = (!isSpace && wordStyles[wordCounter]) ? wordStyles[wordCounter] : {};
+                                    if (!isSpace) wordCounter++;
+
+                                    const wSize = wStyle.size || baseStyle.size || safeSize;
+                                    const wColor = wStyle.color || baseStyle.color || safeColor;
+                                    const wBold = wStyle.is_bold !== undefined ? wStyle.is_bold : (baseStyle.is_bold || sStyle.is_bold);
+                                    const wItalic = wStyle.is_italic !== undefined ? wStyle.is_italic : (baseStyle.is_italic || sStyle.is_italic);
+
+                                    return (
+                                        <tspan
+                                            key={widx}
+                                            fontSize={wSize * OPTICAL_HEIGHT_FACTOR * fittingRatio}
+                                            fontFamily={/[\uf000-\uf999]/.test(chunk) ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(safeFont, sStyle.googleFont || styleItem.google_font)}
+                                            fill={getSVGColor(wColor, 'black')}
+                                            fontWeight={/[\uf000-\uf999]/.test(chunk) ? '900' : (wBold ? '700' : '400')}
+                                            fontStyle={wItalic ? 'italic' : 'normal'}
+                                            style={{
+                                                fontFeatureSettings: activeSmallCaps ? '"smcp"' : 'normal'
+                                            }}
+                                        >
+                                            {renderVisualText(chunk, activeSmallCaps, wSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
+                                        </tspan>
+                                    );
+                                })}
                             </tspan>
                         );
                     })()
@@ -1179,10 +1192,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
 
             {/* DEBUG: Red Bottom Border for BBox Matching */}
             <line
-                x1={line.x0}
-                y1={line.bbox ? line.bbox[3] : line.y}
-                x2={line.x1}
-                y2={line.bbox ? line.bbox[3] : line.y}
+                x1={displayBBox[0]}
+                y1={displayBBox[3]}
+                x2={displayBBox[2]}
+                y2={displayBBox[3]}
                 stroke="red"
                 strokeWidth="0.5"
                 opacity="0.8"
