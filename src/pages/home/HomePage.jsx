@@ -6,7 +6,8 @@ import { uploadPdfToBackend } from "../../services/PdfBackendService";
 export default function HomePage() {
   const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
-  const [backend, setBackend] = React.useState('python'); // 'python' or 'java'
+  /* const [backend, setBackend] = React.useState('python'); // 'python' or 'java' */
+  const backend = 'python';
 
   const handleUploadClick = () => {
     fileInputRef.current.click();
@@ -65,17 +66,7 @@ export default function HomePage() {
             Harness the power of WebGL and high-fidelity extraction.
           </p>
 
-          <div className="backend-toggle-container">
-            <span className={`toggle-label ${backend === 'python' ? 'active' : ''}`} onClick={() => setBackend('python')}>
-              Python <small>Native</small>
-            </span>
-            <span className={`toggle-label ${backend === 'java' ? 'active' : ''}`} onClick={() => setBackend('java')}>
-              Java <small>Legacy</small>
-            </span>
-            <div className={`toggle-switch-multi ${backend}`}>
-              <div className="switch-handle"></div>
-            </div>
-          </div>
+          {/* Backend Toggle Removed - Committing to Python */}
         </header>
 
         <section className="action-area">

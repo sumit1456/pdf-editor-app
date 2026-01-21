@@ -214,6 +214,10 @@ export default function EditorPage() {
                 const isLink = firstLine.type === 'link' || !!firstLine.uri;
                 setActiveTab(isLink ? 'links' : 'text');
                 setActiveNodeId(firstLine.id);
+                // Auto-select first word as requested
+                if (firstLine.content && firstLine.content.trim().length > 0) {
+                    setSelectedWordIndices([0]);
+                }
                 setIsInitialLoad(false);
             }
         }
@@ -892,6 +896,7 @@ export default function EditorPage() {
                                 page={activePageData}
                                 pageIndex={activePageIndex}
                                 fontsKey={fontsKey}
+                                nodeEdits={nodeEdits}
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}
                                 scale={zoom}
@@ -905,7 +910,6 @@ export default function EditorPage() {
             <div className="navigator-sidebar">
                 <div className="navigator-section top">
                     <div className="navigator-header">
-                        <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0' }}>Pages Preview</h3>
                         <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0' }}>Pages Preview</h3>
                     </div>
                     <div className="navigator-grid">
@@ -954,16 +958,6 @@ export default function EditorPage() {
                                                 );
                                             }
                                         }}
-                                        style={{
-                                            padding: '5px 10px',
-                                            background: selectedWordIndices.includes(idx) ? '#4a9eff' : 'rgba(255,255,255,0.05)',
-                                            color: '#fff',
-                                            borderRadius: '6px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.75rem',
-                                            border: '1px solid rgba(255,255,255,0.1)',
-                                            transition: 'all 0.2s'
-                                        }}
                                     >
                                         {word}
                                     </div>
@@ -971,46 +965,39 @@ export default function EditorPage() {
                             </div>
 
                             {selectedWordIndices.length > 0 && (
-                                <div className="quick-actions" style={{ marginTop: '20px', padding: '15px', background: 'rgba(74, 158, 255, 0.05)', borderRadius: '12px', border: '1px solid rgba(74, 158, 255, 0.2)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: '#4a9eff', fontWeight: '600' }}>
+                                <div className="quick-actions-panel">
+                                    <div className="quick-actions-header">
+                                        <div className="selection-count">
                                             Editing {selectedWordIndices.length} {selectedWordIndices.length === 1 ? 'Word' : 'Words'}
                                         </div>
-                                        <button className="mini-toggle" onClick={() => setSelectedWordIndices([])} style={{ background: 'transparent', color: '#666', border: 'none', cursor: 'pointer', padding: '2px' }}>Close</button>
+                                        <button className="close-actions" onClick={() => setSelectedWordIndices([])}>Close</button>
                                     </div>
 
                                     {/* Size Controls */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                                        <span style={{ fontSize: '0.7rem', color: '#888', minWidth: '40px' }}>Size</span>
-                                        <div className="size-control" style={{ border: '1px solid rgba(255,255,255,0.1)', flex: 1 }}>
+                                    <div className="action-row">
+                                        <span className="action-label">Size</span>
+                                        <div className="size-control">
                                             <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) - 1, selectedWordIndices)}>−</button>
-                                            <span style={{ fontSize: '0.8rem', color: '#fff' }}>{Math.round(getActiveNodeStyle()?.size || 10)}</span>
+                                            <span className="size-label">{Math.round(getActiveNodeStyle()?.size || 10)}</span>
                                             <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) + 1, selectedWordIndices)}>+</button>
                                         </div>
                                     </div>
 
                                     {/* Color Picker */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-                                        <span style={{ fontSize: '0.7rem', color: '#888', minWidth: '40px' }}>Color</span>
+                                    <div className="action-row">
+                                        <span className="action-label">Color</span>
                                         <input
                                             type="color"
+                                            className="action-color-picker"
                                             value={rgbToHex(getActiveNodeStyle()?.color || [0, 0, 0])}
                                             onChange={(e) => handleStyleUpdate(activeNodeId, 'color', hexToRgb(e.target.value), selectedWordIndices)}
-                                            style={{
-                                                flex: 1,
-                                                height: '24px',
-                                                background: 'transparent',
-                                                border: '1px solid rgba(255,255,255,0.1)',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer'
-                                            }}
                                         />
                                     </div>
 
                                     {/* Font Style Toggles */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <span style={{ fontSize: '0.7rem', color: '#888', minWidth: '40px' }}>Style</span>
-                                        <div className="style-toggles" style={{ flex: 1, justifyContent: 'flex-start' }}>
+                                    <div className="action-row">
+                                        <span className="action-label">Style</span>
+                                        <div className="style-toggles">
                                             <button
                                                 className={`toggle-btn ${getActiveNodeStyle()?.is_bold ? 'active' : ''}`}
                                                 onClick={() => handleStyleUpdate(activeNodeId, 'is_bold', !getActiveNodeStyle()?.is_bold, selectedWordIndices)}

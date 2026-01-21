@@ -1,14 +1,15 @@
 :root {
   /* Core Black & White Palette - Editorial with Gradient */
-  --studio-black: #000000;
-  --studio-charcoal: #0f0f0f;
-  --studio-dark: #1a1a1a;
-  --studio-mid: #2a2a2a;
-  --studio-gray: #666666;
-  --studio-light-gray: #8a8a8a;
-  --studio-silver: #a0a0a0;
-  --studio-bright: #c0c0c0;
-  --studio-white: #ffffff;
+  /* Core Dark Silver Palette - Darkened 30% */
+  --studio-black: #0a0a0a;
+  --studio-charcoal: #111113;
+  --studio-dark: #151515;
+  --studio-mid: #1c1c1f;
+  --studio-gray: #4f4f56;
+  --studio-light-gray: #71717a;
+  --studio-silver: #a1a1aa;
+  --studio-bright: #d4d4d8;
+  --studio-white: #e4e4e7;
 
   /* Gold Accent */
   --studio-gold: #d4af37;
@@ -39,20 +40,19 @@
 .home-container {
   width: 100%;
   height: 100%;
-  background: linear-gradient(110deg,
-      #000000 0%,
-      #020202 30%,
-      #040404 60%,
-      #060606 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  background: linear-gradient(135deg,
+      #0a0a0a 0%,
+      #111113 50%,
+      #0a0a0a 100%);
+  display: block;
+  /* Use block for natural scrolling */
+  padding: 0 2rem;
+  /* 80px Top padding for NavBar */
   position: relative;
-  overflow-y: scroll;
-  position: relative;
-
+  overflow-y: auto;
 }
+
+
 
 /* Cinematic Background with Light Source from Right - STATIC */
 .bg-decoration {
@@ -100,11 +100,15 @@
 .main-landing {
   max-width: 1200px;
   width: 100%;
+  margin: 0 auto;
+  /* Center horizontally */
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 5rem;
-  padding-top: 300px;
+  gap: 3rem;
+  padding-top: 20px;
+  /* Guaranteed clearance for 80px NavBar */
+  padding-bottom: 100px;
   position: relative;
 }
 
@@ -114,23 +118,25 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 1.5rem;
-  padding-top: 2%;
+  gap: 1rem;
+  padding-top: 0;
 }
 
 .hero-badge {
-  padding: 0.65rem 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.75rem 1.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 100px;
-  color: var(--studio-silver);
-  font-size: 0.75rem;
-  font-weight: 700;
+  color: #fff;
+  /* Brighter for better visibility */
+  font-size: 0.8rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
   backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  margin-bottom: 0.5rem;
 }
 
 .hero-badge:hover {
@@ -187,84 +193,7 @@
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-/* Backend Toggle Styles */
-.backend-toggle-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 2.5rem;
-  margin-top: 2rem;
-  padding: 0.8rem 2.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 100px;
-  backdrop-filter: blur(30px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  position: relative;
-}
-
-.toggle-label {
-  font-size: 0.8rem;
-  color: var(--studio-silver);
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-  font-weight: 500;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 2;
-  min-width: 60px;
-}
-
-.toggle-label small {
-  font-size: 0.65rem;
-  opacity: 0.5;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.toggle-label.active {
-  color: var(--studio-white);
-  font-weight: 800;
-  text-shadow: 0 0 15px rgba(255, 255, 255, 0.4);
-}
-
-.toggle-switch-multi {
-  position: absolute;
-  top: 50%;
-  left: 2.5rem;
-  right: 2.5rem;
-  height: 34px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 100px;
-  transform: translateY(-50%);
-  z-index: 1;
-  pointer-events: none;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.toggle-switch-multi .switch-handle {
-  position: absolute;
-  height: 28px;
-  width: 31%;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 100px;
-  top: 2px;
-  transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-.toggle-switch-multi.python .switch-handle {
-  left: 3px;
-}
-
-.toggle-switch-multi.adobe .switch-handle {
-  left: 34.5%;
-}
-
-.toggle-switch-multi.java .switch-handle {
-  left: 67.5%;
-}
+/* Backend Toggle Styles Removed */
 
 /* Action Area */
 .action-area {
@@ -272,7 +201,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
 /* Premium Upload Zone */
@@ -375,7 +304,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  margin-top: 2rem;
+  margin-top: 1rem;
 }
 
 .feature-card {

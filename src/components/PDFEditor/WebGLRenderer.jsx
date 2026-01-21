@@ -4,7 +4,7 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
-const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, onUpdate, onSelect, scale }) => {
+const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, nodeEdits = {}, onUpdate, onSelect, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 3000 });
@@ -323,6 +323,7 @@ const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, onUpdate, onSelec
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
+                            nodeEdits={nodeEdits}
                             onDoubleClick={handleDoubleClick}
                         />
                     )}
@@ -342,13 +343,46 @@ const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, onUpdate, onSelec
     return prev.page === next.page &&
         prev.pageIndex === next.pageIndex &&
         prev.scale === next.scale &&
-        prev.fontsKey === next.fontsKey;
+        prev.fontsKey === next.fontsKey &&
+        prev.nodeEdits === next.nodeEdits;
 });
 
 export default WebGLRenderer;
 
 
-function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }) {
+function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDoubleClick }) {
+    const renderWordStyledText = (text, wordStyles, safetyStyle, baseSize) => {
+        if (!text) return text;
+        const parts = text.split(/(\s+)/);
+        let wordCounter = 0;
+        return parts.map((part, i) => {
+            const isSpace = /^\s+$/.test(part);
+            const style = (!isSpace && wordStyles?.[wordCounter]) ? wordStyles[wordCounter] : {};
+            if (!isSpace) wordCounter++;
+            const spanStyle = { ...safetyStyle, ...style };
+            const spanSize = Math.abs(spanStyle.size || baseSize);
+            const spanWeight = spanStyle.is_bold ? 'bold' : 'normal';
+            const spanItalic = spanStyle.is_italic ? 'italic' : 'normal';
+            const spanFamily = spanStyle.font ? `"${spanStyle.font}", serif` : 'serif';
+            const spanColor = Array.isArray(spanStyle.color)
+                ? `rgb(${spanStyle.color[0] * 255}, ${spanStyle.color[1] * 255}, ${spanStyle.color[2] * 255})`
+                : 'black';
+
+            return (
+                <tspan
+                    key={i}
+                    fontSize={spanSize}
+                    fill={spanColor}
+                    fontWeight={spanWeight}
+                    fontStyle={spanItalic}
+                    fontFamily={spanFamily}
+                >
+                    {part}
+                </tspan>
+            );
+        });
+    };
+
     return (
         <g className="text-layer" key={fontsKey}>
             {items.map((item, i) => {
@@ -400,25 +434,44 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, onDoubleClick }
                                 transform={`translate(${startX}, ${baselineY}) matrix(${a},${b},${c},${d},0,0)`}
                                 dominantBaseline="alphabetic"
                             >
-                                <tspan
-                                    fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
-                                    fontSize={Math.abs(item.size)}
-                                    fontFamily={`"${item.font}", serif`}
-                                    fontWeight={item.is_bold ? 'bold' : 'normal'}
-                                    fontStyle={item.is_italic ? 'italic' : 'normal'}
-                                >
-                                    {item.bullet || ''}
-                                </tspan>
-                                <tspan
-                                    fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
-                                    fontSize={Math.abs(item.size)}
-                                    fontFamily={`"${item.font}", serif`}
-                                    fontWeight={item.is_bold ? 'bold' : 'normal'}
-                                    fontStyle={item.is_italic ? 'italic' : 'normal'}
-                                    xmlSpace="preserve"
-                                >
-                                    {item.content}
-                                </tspan>
+                                {(() => {
+                                    const edit = nodeEdits?.[item.id || i];
+                                    if (edit) {
+                                        const wordStyles = edit.wordStyles || {};
+                                        const safetyStyle = edit.safetyStyle || {
+                                            size: Math.abs(item.size),
+                                            font: item.font,
+                                            is_bold: item.is_bold,
+                                            is_italic: item.is_italic,
+                                            color: item.color
+                                        };
+                                        return renderWordStyledText(item.content, wordStyles, safetyStyle, Math.abs(item.size));
+                                    }
+
+                                    return (
+                                        <>
+                                            <tspan
+                                                fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                                fontSize={Math.abs(item.size)}
+                                                fontFamily={`"${item.font}", serif`}
+                                                fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                                fontStyle={item.is_italic ? 'italic' : 'normal'}
+                                            >
+                                                {item.bullet || ''}
+                                            </tspan>
+                                            <tspan
+                                                fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                                fontSize={Math.abs(item.size)}
+                                                fontFamily={`"${item.font}", serif`}
+                                                fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                                fontStyle={item.is_italic ? 'italic' : 'normal'}
+                                                xmlSpace="preserve"
+                                            >
+                                                {item.content}
+                                            </tspan>
+                                        </>
+                                    );
+                                })()}
                             </text>
                         </g>
                     </g>
