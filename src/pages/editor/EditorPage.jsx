@@ -9,6 +9,29 @@ import { savePdfToBackend } from '../../services/PdfBackendService';
 import './EditorPage.css';
 
 // Helper to decouple bullets from content (Global for use in initializers)
+const mapSpansToWordStyles = (items) => {
+    const wordStyles = {};
+    let wordIdx = 0;
+    (items || []).forEach(item => {
+        const content = item.content || '';
+        if (!content.trim()) return;
+        const words = content.trim().split(/\s+/);
+        words.forEach(() => {
+            wordStyles[wordIdx] = {
+                font: item.font,
+                size: item.size,
+                color: item.color,
+                is_bold: item.is_bold,
+                is_italic: item.is_italic,
+                googleFont: item.google_font,
+                font_variant: item.font_variant || 'normal'
+            };
+            wordIdx++;
+        });
+    });
+    return wordStyles;
+};
+
 const splitBullet = (content) => {
     if (!content) return { bullet: '', text: '' };
 
@@ -58,13 +81,35 @@ const FONT_OPTIONS = [
 ];
 
 // TYPOGRAPHIC AUDITOR: Measures natural density of fonts to find the best match
-const measureLineDensity = (text, font, size, weight = 'normal') => {
+const getWeightFromFont = (font, isBold) => {
+    if (isBold) return '700';
+    if (!font) return '400';
+    const name = font.toLowerCase().replace(/[_-]/g, "");
+    if (name.includes('black') || name.includes('heavy')) return '900';
+    if (name.includes('extrabold') || name.includes('ultrabold')) return '800';
+    if (name.includes('bold')) return '700';
+    if (name.includes('semibold') || name.includes('demibold') || name.includes('demi')) return '600';
+    if (name.includes('medium')) return '500';
+    if (name.includes('regular') || name.includes('book')) return '400';
+    if (name.includes('light')) return '300';
+    if (name.includes('extralight') || name.includes('thin')) return '200';
+    return '400';
+};
+
+const measureLineDensity = (text, font, size, weight = 'normal', isBold = false) => {
     if (typeof window === 'undefined') return 0;
     if (!window.__canvas_auditor) {
         window.__canvas_auditor = document.createElement('canvas').getContext('2d');
     }
     const ctx = window.__canvas_auditor;
-    ctx.font = `${weight} ${size}px "${font}", sans-serif`;
+
+    // Resolve CSS Vars for Sidebar Consistency
+    let family = font || 'Source Serif 4';
+    if (family.includes('var(--serif-latex)')) family = "'Source Serif 4', serif";
+    else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
+    else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
+
+    ctx.font = `${weight} ${size}px ${family}, sans-serif`;
     return ctx.measureText(text).width;
 };
 
@@ -88,6 +133,7 @@ const hexToRgb = (hex) => {
 export default function EditorPage() {
     const location = useLocation();
     const backend = location.state?.backend || 'java';
+
 
     // MASTER STATE: All pages and the current active index
     // We merge fragments into lines ONCE at the start to create a persistent "Node Tree"
@@ -159,32 +205,70 @@ export default function EditorPage() {
     const [isMultiSelect, setIsMultiSelect] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+    // --- MASTER HUD: Log Node Tree on change ---
+    React.useEffect(() => {
+        if (!activeNodeId) return;
+        const edit = nodeEdits[activeNodeId];
+        if (!edit) return;
+
+        const content = edit.content || "";
+        const wordStyles = edit.wordStyles || {};
+        const sStyle = edit.safetyStyle || {};
+        const finalWordsList = content.split(/\s+/).filter(Boolean);
+
+        if (finalWordsList.length > 0) {
+            console.group(`[CURRENT NODE TREE] Node: ${activeNodeId}`);
+            console.log(`Text: "${content}"`);
+            console.table(finalWordsList.map((word, idx) => {
+                const wStyle = wordStyles[idx];
+                const resolved = { ...sStyle, ...wStyle };
+                return {
+                    index: idx,
+                    word: word,
+                    status: wStyle ? 'EXPLICIT (Override)' : 'INHERITED (Baseline)',
+                    font: resolved.font || 'Default',
+                    size: resolved.size,
+                    bold: resolved.is_bold ? 'Yes' : 'No'
+                };
+            }));
+            console.groupEnd();
+        }
+    }, [activeNodeId, nodeEdits]);
+
     const getActiveNodeStyle = () => {
         if (!activeNodeId) return null;
         const edit = nodeEdits[activeNodeId];
 
-        // If specific words are selected, prioritize their style shown in toolbar
+        // TARGETING FIX: Always target the LAST word by default for the toolbar status
+        const content = edit?.content || "";
+        const words = content.split(/\s+/).filter(Boolean);
+        const lastWordIdx = words.length > 0 ? words.length - 1 : 0;
+
         if (selectedWordIndices.length > 0) {
-            const firstIdx = selectedWordIndices[0];
-            if (edit?.wordStyles?.[firstIdx]) {
-                return { ...(edit.safetyStyle || {}), ...edit.wordStyles[firstIdx] };
+            const lastIdx = selectedWordIndices[selectedWordIndices.length - 1];
+            if (edit?.wordStyles?.[lastIdx]) {
+                return { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastIdx] };
             }
+        } else if (edit?.wordStyles?.[lastWordIdx]) {
+            // If no selection, show the status of the last word in the line
+            return { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastWordIdx] };
         }
 
         if (edit?.safetyStyle) return edit.safetyStyle;
 
-        // Deep search in pages if not in edits
+        // TARGETING FIX: When searching for "Active Style" in original data
         for (const page of pages) {
             const found = (page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || [])).find(l => l.id === activeNodeId);
             if (found) {
-                const base = (found.items?.[0] || found);
+                // Return style of the LAST item (span) as per user targeting preference
+                const base = (found.items && found.items.length > 0) ? found.items[found.items.length - 1] : found;
                 return {
                     size: base.size,
                     font: base.font,
                     color: base.color,
                     is_bold: base.is_bold,
                     is_italic: base.is_italic,
-                    font_variant: found.font_variant || 'normal'
+                    font_variant: base.font_variant || 'normal'
                 };
             }
         }
@@ -391,10 +475,14 @@ export default function EditorPage() {
             // If already modified, we don't want to revert the user's manual style choices
             if (currentEdit.isModified) return prev;
 
+            const line = (activePageData.blocks ? activePageData.blocks.flatMap(b => b.lines) : (activePageData.items || [])).find(l => l.id === lineId);
+            const initialWordStyles = mapSpansToWordStyles(line?.items);
+
             return {
                 ...prev,
                 [lineId]: {
                     ...currentEdit,
+                    wordStyles: initialWordStyles,
                     safetyStyle: extraData?.safetyStyle || {
                         size: item.size,
                         font: item.font,
@@ -416,8 +504,33 @@ export default function EditorPage() {
     const scrollToNode = (idOrIndex) => {
         if (idOrIndex !== activeNodeId) setSelectedWordIndices([]);
         setActiveNodeId(idOrIndex);
-        const element = document.getElementById(`input-card-${idOrIndex}`);
 
+        // Ensure wordStyles are initialized on navigation
+        if (!nodeEdits[idOrIndex]?.wordStyles) {
+            const line = textLines.find(l => l.id === idOrIndex);
+            // Search in fragments too if line mapping is missing items
+            let items = line?.items;
+            if (!items) {
+                const p = pages[activePageIndex];
+                const rawLine = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === idOrIndex);
+                items = rawLine?.items;
+            }
+
+            if (items) {
+                const initialWordStyles = mapSpansToWordStyles(items);
+                setNodeEdits(prev => ({
+                    ...prev,
+                    [idOrIndex]: {
+                        ...(prev[idOrIndex] || {}),
+                        wordStyles: initialWordStyles,
+                        isModified: false
+                    }
+                }));
+            }
+        }
+
+
+        const element = document.getElementById(`input-card-${idOrIndex}`);
         if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             element.classList.add('highlight-flash');
@@ -427,28 +540,70 @@ export default function EditorPage() {
         }
     };
 
-    const handleSidebarEdit = (lineId, newText, originalStyle) => {
+    const handleSidebarEdit = (lineId, newText, originalStyle, cursorIndex = null) => {
         if (!lineId) {
             console.warn('[EditorPage] Cannot edit node without stable ID');
             return;
         }
 
-        // --- DYNAMIC BBOX CALCULATION ---
-        const sStyle = nodeEdits[lineId]?.safetyStyle || originalStyle || {};
-        const measuredWidth = measureLineDensity(
-            newText,
-            sStyle.font || 'Source Serif 4',
-            sStyle.size || 10,
-            sStyle.is_bold ? 'bold' : 'normal'
-        );
-
-        // Update visual edit state for the SPECIFIC line
         setNodeEdits(prev => {
             const current = prev[lineId] || {};
-            // If we have an existing bbox, we update its right-edge (x1)
+            const oldText = current.content || "";
+            const oldWords = oldText.split(/(\s+)/);
+            const newWords = newText.split(/(\s+)/);
+            const wordStyles = { ...(current.wordStyles || {}) };
+
+            // --- SMART STYLE INHERITANCE (Node Tree Logic) ---
+            if (cursorIndex !== null && oldText !== newText) {
+                const oldWordCount = oldText.trim().split(/\s+/).length || 0;
+                const newWordCount = newText.trim().split(/\s+/).length || 0;
+                const diff = newWordCount - oldWordCount;
+
+                if (diff !== 0) {
+                    const textBeforeCursor = newText.substring(0, cursorIndex);
+                    const currentWordIdx = Math.max(0, textBeforeCursor.trim().split(/\s+/).length - 1);
+
+                    const newWordStylesMap = {};
+                    if (diff > 0) {
+                        // ADDITION: Shift subsequent words forward
+                        const styleSource = wordStyles[currentWordIdx - 1] || wordStyles[currentWordIdx];
+                        Object.entries(wordStyles).forEach(([idx, sty]) => {
+                            const i = parseInt(idx);
+                            if (i >= currentWordIdx) newWordStylesMap[i + diff] = sty;
+                            else newWordStylesMap[i] = sty;
+                        });
+                        // Inherit style for the new words
+                        for (let k = 0; k < diff; k++) {
+                            if (styleSource) newWordStylesMap[currentWordIdx + k] = { ...styleSource };
+                        }
+                    } else {
+                        // DELETION: Shift subsequent words backward
+                        Object.entries(wordStyles).forEach(([idx, sty]) => {
+                            const i = parseInt(idx);
+                            if (i < currentWordIdx) {
+                                newWordStylesMap[i] = sty;
+                            } else if (i >= currentWordIdx + Math.abs(diff)) {
+                                newWordStylesMap[i + diff] = sty;
+                            }
+                        });
+                    }
+                    // Atomic update of wordStyles
+                    Object.keys(wordStyles).forEach(k => delete wordStyles[k]);
+                    Object.assign(wordStyles, newWordStylesMap);
+                }
+            }
+
+            const sStyle = current.safetyStyle || originalStyle || {};
+            const measuredWidth = measureLineDensity(
+                newText,
+                sStyle.font || 'Source Serif 4',
+                sStyle.size || 10,
+                sStyle.is_bold ? 'bold' : 'normal',
+                sStyle.is_bold
+            );
+
             let newBBox = current.bbox || null;
             if (!newBBox) {
-                // Find original bbox in pages
                 for (const p of pages) {
                     const found = (p.blocks ? p.blocks.flatMap(b => b.lines) : p.items || []).find(l => l.id === lineId);
                     if (found && found.bbox) {
@@ -459,10 +614,9 @@ export default function EditorPage() {
             }
 
             if (newBBox) {
-                // x1 = x0 + width
                 newBBox[2] = newBBox[0] + measuredWidth;
-                // Also update the logical width
             }
+
 
             return {
                 ...prev,
@@ -471,7 +625,8 @@ export default function EditorPage() {
                     content: newText,
                     width: measuredWidth,
                     bbox: newBBox,
-                    safetyStyle: current.safetyStyle || originalStyle,
+                    wordStyles: wordStyles,
+                    safetyStyle: sStyle,
                     isModified: true
                 }
             };
@@ -485,14 +640,24 @@ export default function EditorPage() {
             const wordStyles = { ...(current.wordStyles || {}) };
 
             if (wordIndices !== null) {
+                // If wordIndices is provided, target only those indices
                 const indices = Array.isArray(wordIndices) ? wordIndices : [wordIndices];
-
                 indices.forEach(idx => {
                     if (idx === null || idx === undefined) return;
                     if (!wordStyles[idx]) wordStyles[idx] = {};
                     wordStyles[idx] = { ...wordStyles[idx], [field]: value };
                 });
             } else {
+                // If NO wordIndices provided (Global Toolbar), 
+                // target the LAST WORD uniquely as per user requirement.
+                const content = current.content || "";
+                const wordsCount = content.split(/\s+/).filter(Boolean).length;
+                const lastIdx = wordsCount > 0 ? wordsCount - 1 : 0;
+
+                if (!wordStyles[lastIdx]) wordStyles[lastIdx] = {};
+                wordStyles[lastIdx] = { ...wordStyles[lastIdx], [field]: value };
+
+                // Still update sStyle as a safety baseline for the line
                 sStyle[field] = value;
                 if (field === 'font') sStyle.googleFont = value;
             }
@@ -608,8 +773,8 @@ export default function EditorPage() {
                             size: contentItem.size || line.size,
                             font: contentItem.font,
                             color: contentItem.color,
-                            is_bold: line.items?.some(it => it.is_bold) || contentItem.is_bold,
-                            is_italic: line.items?.some(it => it.is_italic) || contentItem.is_italic
+                            is_bold: contentItem.is_bold, // No longer line scanning
+                            is_italic: contentItem.is_italic
                         }
                     });
                 });
@@ -827,7 +992,7 @@ export default function EditorPage() {
                                     <textarea
                                         value={displayContent}
                                         onFocus={() => setActiveNodeId(line.id)}
-                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle)}
+                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle, e.target.selectionStart)}
                                         placeholder="Enter text..."
                                         style={{
                                             fontFamily: sStyle.font ? `'${sStyle.font}', serif` : 'inherit',

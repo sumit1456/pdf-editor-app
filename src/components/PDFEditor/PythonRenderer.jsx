@@ -27,6 +27,21 @@ const getSVGColor = (c, fallback = 'black') => {
     return `rgb(${r}, ${g}, ${b})`;
 };
 
+const getWeightFromFont = (font, isBold) => {
+    if (isBold) return '700';
+    if (!font) return '400';
+    const name = font.toLowerCase().replace(/[_-]/g, "");
+    if (name.includes('black') || name.includes('heavy')) return '900';
+    if (name.includes('extrabold') || name.includes('ultrabold')) return '800';
+    if (name.includes('bold')) return '700';
+    if (name.includes('semibold') || name.includes('demibold') || name.includes('demi')) return '600';
+    if (name.includes('medium')) return '500';
+    if (name.includes('regular') || name.includes('book')) return '400';
+    if (name.includes('light')) return '300';
+    if (name.includes('extralight') || name.includes('thin')) return '200';
+    return '400';
+};
+
 // ==================== SHARED TYPOGRAPHIC ENGINE ====================
 
 const normalizeFont = (fontName, googleFont) => {
@@ -154,7 +169,7 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
         const spanIsSmallCaps = spanStyle.font_variant === 'small-caps' || isSmallCaps;
         const spanSize = Math.abs(spanStyle.size || baseSize);
         const spanColor = getSVGColor(spanStyle.color, 'inherit');
-        const spanWeight = spanStyle.is_bold ? '700' : '400';
+        const spanWeight = getWeightFromFont(spanStyle.font, spanStyle.is_bold);
         const spanItalic = spanStyle.is_italic ? 'italic' : 'normal';
         const spanFamily = normalizeFont(spanStyle.font, spanStyle.googleFont);
 
@@ -166,7 +181,10 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
                 fontWeight={spanWeight}
                 fontStyle={spanItalic}
                 fontFamily={spanFamily.replace(/'/g, "")}
-                style={{ fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal' }}
+                style={{
+                    fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal',
+                    letterSpacing: 'normal'
+                }}
             >
                 {renderVisualText(part, spanIsSmallCaps, spanSize)}
             </tspan>
@@ -179,6 +197,81 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
+    const [metricRatio, setMetricRatio] = useState(1.0);
+
+    // --- METRIC CALIBRATION BRIDGE ---
+    useEffect(() => {
+        if (!page || !fontsKey) return;
+
+        const calibrate = async () => {
+            // Sample some text items for calibration
+            const allItems = page.items || [];
+            const textItems = allItems.filter(it => it.type === 'text' && it.content && it.content.length > 10).slice(0, 5);
+
+            if (textItems.length === 0) {
+                setMetricRatio(1.0);
+                return;
+            }
+
+            try {
+                const ratios = await Promise.all(textItems.map(async (item) => {
+                    const font = normalizeFont(item.font, item.google_font).replace(/'/g, "");
+                    const weight = getWeightFromFont(item.font, item.is_bold);
+                    const fontStyle = item.is_italic ? 'italic' : 'normal';
+                    const fontStr = `${fontStyle} ${weight} ${item.size}px "${font}", sans-serif`;
+
+                    let resultW = 0;
+                    try {
+                        // Attempt web worker measurement
+                        if (workerRef.current) {
+                            // Helper to promisify postMessage
+                            const measure = () => new Promise((resolve) => {
+                                const handler = (e) => {
+                                    if (e.data.type === 'measureResult') {
+                                        workerRef.current.removeEventListener('message', handler);
+                                        resolve(e.data.width);
+                                    }
+                                };
+                                workerRef.current.addEventListener('message', handler);
+                                workerRef.current.postMessage({ type: 'measure', font: fontStr, text: item.content });
+                                // Timeout fallback
+                                setTimeout(() => resolve(0), 1000);
+                            });
+                            resultW = await measure();
+                        }
+                    } catch (e) {
+                        resultW = 0;
+                    }
+
+                    // Synchronous fallback if worker fails or times out
+                    if (resultW === 0) {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        ctx.font = fontStr;
+                        resultW = ctx.measureText(item.content).width;
+                    }
+
+                    if (resultW > 0) {
+                        const pdfWidth = item.width || (item.bbox[2] - item.bbox[0]);
+                        return resultW / pdfWidth;
+                    }
+                    return null;
+                }));
+
+                const validRatios = ratios.filter(r => r !== null);
+                if (validRatios.length > 0) {
+                    const avgRatio = validRatios.reduce((a, b) => a + b, 0) / validRatios.length;
+                    setMetricRatio(avgRatio);
+                }
+            } catch (err) {
+                console.warn("[Metric Bridge] Calibration failed, using 1.0", err);
+                setMetricRatio(1.0);
+            }
+        };
+
+        const timer = setTimeout(calibrate, 500);
+        return () => clearTimeout(timer);
+    }, [page, fontsKey]);
 
     // --- MEASUREMENT WEB WORKER SETUP ---
     const workerRef = useRef(null);
@@ -594,6 +687,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
                             fontStyles={fontStyles}
+                            metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
                         />
                     ) : page && (
@@ -605,6 +699,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                             fontsKey={fontsKey}
                             fonts={fonts} // Pass loaded fonts for measurement
                             fontStyles={fontStyles}
+                            metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
                         />
                     )}
@@ -649,7 +744,7 @@ function getRealFontString(fontName, googleFont, weight, size, style) {
     return `${style} ${weight} ${size}px ${family}`;
 }
 
-function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fonts, fontStyles, onDoubleClick }) {
+function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fonts, fontStyles, metricRatio, onDoubleClick }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {/* Inject dynamic fonts */}
@@ -709,23 +804,45 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                     console.log(`   Measured: ${measuredWidth.toFixed(2)} vs Available: ${availableWidth.toFixed(2)}`);
                 }
 
-                // If visual text is significantly wider (>5% tolerance), scale down font size further
-                if (!isModified && measuredWidth > availableWidth * 1.05) {
-                    const ratio = availableWidth / measuredWidth;
-                    fittedFontSize = (item.size * ratio) * OPTICAL_HEIGHT_FACTOR;
-                    if (i < 5) console.log(`   -> ADJUSTING SIZE: ${item.size} -> ${fittedFontSize}`);
+                // --- HYBRID ENGINE: GROWTH + SCALING ---
+                // Calibrate browser measurement back to PDF points
+                const dynamicPdfWidth = isModified ? (measuredWidth / (metricRatio || 1.0)) : (item.width || rectW);
+                const finalRectWidth = Math.max(rectW, dynamicPdfWidth);
+
+                // Scale to growing box
+                const safetyCushion = 0.5;
+                const effectiveDynamicTarget = Math.max(1, finalRectWidth - safetyCushion);
+
+                let ratio = 1.0;
+                if (measuredWidth > 0 && measuredWidth > (effectiveDynamicTarget * (metricRatio || 1.0))) {
+                    ratio = (effectiveDynamicTarget * (metricRatio || 1.0)) / measuredWidth;
                 }
+                const safeRatio = Math.min(1.25, Math.max(0.65, ratio));
+                fittedFontSize = item.size * OPTICAL_HEIGHT_FACTOR * safeRatio;
 
                 const isSpecialWeight = matchingFont && /bold|medium|semibold|black|heavy/i.test(matchingFont.name);
-                const renderWeight = isSpecialWeight ? 'normal' : (item.is_bold ? '700' : '400'); // REVERTED: Use standard Regular (400) weight
+                const renderWeight = isSpecialWeight ? 'normal' : (item.is_bold ? '700' : '400');
 
                 return (
                     <g key={item.id || i}>
-                        {/* 1. Hit Test Rect */}
+                        {/* 1. Visible Debug BBox (Red Line) - Growth Aware */}
+                        <rect
+                            x={x0}
+                            y={y0}
+                            width={finalRectWidth}
+                            height={y1 - y0}
+                            fill="none"
+                            stroke="red"
+                            strokeWidth="0.5"
+                            opacity="0.3"
+                            pointerEvents="none"
+                        />
+
+                        {/* 2. Hit Test Rect - Expanded for growth */}
                         <rect
                             x={x0}
                             y={rectY}
-                            width={rectW}
+                            width={finalRectWidth}
                             height={rectH}
                             fill="transparent"
                             cursor="text"
@@ -748,8 +865,6 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                 });
                             }}
                         />
-
-
 
                         {/* 2. Visual Text (High-Fidelity Rendering) */}
                         <text
@@ -780,8 +895,6 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                     const forceX = si === 0 || (Math.abs(spanX - prevX1) > 0.1);
 
                                     const spanIsSmallCaps = span.font_variant === 'small-caps' || (span.font || '').toLowerCase().includes('cmcsc');
-                                    // Cascade scale to spans? Assuming spans share the line's overflow ratio roughly.
-                                    // For perfect per-span scaling we'd need per-span measurement, but using line ratio is a good approximation.
                                     const spanFittedSize = span.size * (fittedFontSize / item.size);
 
                                     return (
@@ -799,7 +912,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
                                                 fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal'
                                             }}
                                         >
-                                            {renderVisualText(span.content, spanIsSmallCaps)}
+                                            {renderVisualText(span.content, spanIsSmallCaps, spanFittedSize)}
                                         </tspan>
                                     );
                                 })
@@ -826,7 +939,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
         </g>
     );
 }
-function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, onDoubleClick }) {
+function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, metricRatio, onDoubleClick }) {
     return (
         <g className="block-layer" key={fontsKey}>
             <style dangerouslySetInnerHTML={{
@@ -839,6 +952,7 @@ function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, onDoub
                     block={block}
                     nodeEdits={nodeEdits}
                     pageIndex={pageIndex}
+                    metricRatio={metricRatio}
                     onDoubleClick={onDoubleClick}
                 />
             ))}
@@ -846,7 +960,7 @@ function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, onDoub
     );
 }
 
-function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
+function SemanticBlock({ block, nodeEdits, pageIndex, metricRatio, onDoubleClick }) {
     const edit = nodeEdits[block.id] || {};
     const isModified = !!edit.isModified;
 
@@ -869,6 +983,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
                             block={block}
                             nodeEdits={nodeEdits}
                             pageIndex={pageIndex}
+                            metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
                         />
                     )}
@@ -878,7 +993,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, onDoubleClick }) {
     );
 }
 
-function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
+function LineRenderer({ line, block, nodeEdits, pageIndex, metricRatio, onDoubleClick }) {
     // ROBUST STYLE CAPTURE: Look for the first span that actually contains content/color
     const styleItem = useMemo(() => {
         if (!line.items || line.items.length === 0) return line.items[0] || {};
@@ -948,21 +1063,9 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
     // --- SMART CALIBRATION ENGINE ---
     const OPTICAL_HEIGHT_FACTOR = 1.0;
 
-    const { calibratedFontSize, fittingRatio, measuredPercent, rawMeasuredWidth, finalComputedWidth, finalTargetWidth, measureFont, renderFont } = useMemo(() => {
+    const { calibratedFontSize, fittingRatio, dynamicPdfWidth, targetBrowserWidth } = useMemo(() => {
         const baseSize = Math.abs(styleItem.size || line.size || 10);
 
-        if (isModified) {
-            return {
-                calibratedFontSize: baseSize * OPTICAL_HEIGHT_FACTOR * 1.0,
-                fittingRatio: 1.0,
-                measuredPercent: 100,
-                rawMeasuredWidth: 0,
-                finalComputedWidth: 0,
-                finalTargetWidth: line.width || 0,
-                measureFont: 'Mixed Style (Modified)',
-                renderFont: 'Mixed Style (Modified)'
-            };
-        }
 
         // --- MULTI-SPAN MEASUREMENT ENGINE ---
         let totalWidth = 0;
@@ -1001,21 +1104,39 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         const measuredWidth = totalWidth;
         const targetWidth = line.width || (line.x1 - line.x0) || 50;
 
-        // ZERO OVERFLOW POLICY: Hard fit with 0.5px safety cushion
+        // --- HYBRID ENGINE: GROWTH + SCALING ---
+        let currentTextWidth = measuredWidth;
+
+        if (isModified) {
+            const mCtx = document.createElement('canvas').getContext('2d');
+            const fontStr = getRealFontString(
+                styleItem.font,
+                styleItem.google_font,
+                getWeightFromFont(styleItem.font, styleItem.is_bold),
+                styleItem.size,
+                styleItem.is_italic ? 'italic' : 'normal'
+            );
+            mCtx.font = fontStr;
+            currentTextWidth = mCtx.measureText(content || '').width;
+        }
+
+        //and text
+
+        const dynamicPdfW = currentTextWidth / (metricRatio || 1.0);
+        const finalPdfW = Math.max(targetWidth, dynamicPdfW);
+
+        // --- HYBRID SCALING (Relative to DYNAMIC BBOX) ---
+        // Zero Overflow Policy: Fit to the current dynamic box width
         const safetyCushion = 0.5;
-        const effectiveTargetWidth = Math.max(1, targetWidth - safetyCushion);
+        const effectiveDynamicTarget = Math.max(1, finalPdfW - safetyCushion);
 
         let ratio = 1.0;
-        const wordCount = (content || "").trim().split(/\s+/).length;
-        const isShortLine = measuredWidth < 80 || (measuredWidth < 150 && wordCount < 4);
-
-        if (measuredWidth > 0) {
-            if (measuredWidth > effectiveTargetWidth) {
-                ratio = effectiveTargetWidth / measuredWidth;
-            }
-            else if (!isModified && !isShortLine && measuredWidth < targetWidth * 0.99) {
-                ratio = effectiveTargetWidth / measuredWidth;
-            }
+        if (isModified) {
+            // For modified text, we prioritize natural flow (Ratio 1.0)
+            // and let the BBox grow dynamically.
+            ratio = 1.0;
+        } else if (currentTextWidth > 0 && currentTextWidth > (effectiveDynamicTarget * (metricRatio || 1.0))) {
+            ratio = (effectiveDynamicTarget * (metricRatio || 1.0)) / currentTextWidth;
         }
 
         const safeRatio = Math.min(1.25, Math.max(0.65, ratio));
@@ -1023,14 +1144,18 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
         return {
             calibratedFontSize: baseSize * OPTICAL_HEIGHT_FACTOR * safeRatio,
             fittingRatio: safeRatio,
-            measuredPercent: (measuredWidth / targetWidth) * 100,
-            rawMeasuredWidth: measuredWidth,
-            finalComputedWidth: measuredWidth * safeRatio,
-            finalTargetWidth: targetWidth,
-            measureFont: measureFontSummary || 'Unknown',
-            renderFont: `${safeRatio.toFixed(3)}x scaled summary`
+            dynamicPdfWidth: finalPdfW,
+            targetBrowserWidth: currentTextWidth
         };
-    }, [line, content, styleItem, isModified]);
+    }, [line, content, styleItem, isModified, metricRatio]);
+
+    const { fittingRatio: finalFittingRatio, calibratedFontSize: finalFontSize, dynamicPdfWidth: finalPdfWidth } = useMemo(() => {
+        return {
+            fittingRatio,
+            calibratedFontSize,
+            dynamicPdfWidth
+        };
+    }, [fittingRatio, calibratedFontSize, dynamicPdfWidth]);
 
 
     // --- LIST MARKER GUARD ---
@@ -1077,33 +1202,44 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                 });
             }}
         >
-            {/* INVISIBLE HITBOX: Covers the entire line area and some padding */}
+            {/* 1. VISIBLE DEBUG BBOX: Grows as you type */}
+            <rect
+                x={line.x0}
+                y={line.y - (line.height || line.size || 10)}
+                width={finalPdfWidth}
+                height={line.height || line.size || 12}
+                fill="none"
+                stroke="red"
+                strokeWidth="0.5"
+                opacity="0.3"
+                pointerEvents="none"
+            />
+
+            {/* 2. INVISIBLE HITBOX: Covers the entire line area and some padding */}
             <rect
                 x={line.x0 - 5}
                 y={line.y - (line.height || line.size || 10) - 4}
-                width={Math.max(50, (line.x1 - line.x0) + 10)}
+                width={Math.max(50, finalPdfWidth + 10)}
                 height={(line.height || line.size || 12) + 8}
                 fill="transparent"
                 pointerEvents="all"
             />
-            fill={getSVGColor(styleItem.color, 'black')}
 
             <text
                 x={initialStartX}
                 y={baselineY}
-                fontSize={calibratedFontSize}
+                fontSize={finalFontSize}
                 fontFamily={normalizeFont(styleItem.font, styleItem.google_font)}
                 fill={getSVGColor(styleItem.color, 'black')}
                 fontWeight={styleItem.is_bold ? '700' : '400'}
                 fontStyle={styleItem.is_italic ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic"
                 xmlSpace="preserve"
-                // textLength={!isModified ? line.width : undefined}
-                // lengthAdjust={!isModified ? "spacingAndGlyphs" : undefined}
                 style={{
                     userSelect: 'none',
                     pointerEvents: 'none',  // Pass clicks through to the <g> container
-                    whiteSpace: 'pre'
+                    whiteSpace: 'pre',
+                    letterSpacing: 'normal'
                 }}
             >
                 {isModified ? (
@@ -1151,7 +1287,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                         x={dynamicTextAnchorX}
                                         y={baselineY}
                                     >
-                                        {renderWordStyledText(restPart, wordStyles, safetyStyle, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
+                                        {renderWordStyledText(restPart, wordStyles, safetyStyle, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * finalFittingRatio)}
                                     </tspan>
                                 </tspan>
                             );
@@ -1163,7 +1299,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 x={initialStartX}
                                 y={baselineY}
                             >
-                                {renderWordStyledText(mapped, wordStyles, safetyStyle, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
+                                {renderWordStyledText(mapped, wordStyles, safetyStyle, activeSmallCaps, safeSize * OPTICAL_HEIGHT_FACTOR * finalFittingRatio)}
                             </tspan>
                         );
                     })()
@@ -1223,7 +1359,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                 x={forceX}
                                 y={baselineY}
                                 dy={verticalShift + "px"}
-                                fontSize={Math.max(1, Math.abs(customSize * OPTICAL_HEIGHT_FACTOR * fittingRatio))}
+                                fontSize={Math.max(1, Math.abs(customSize * OPTICAL_HEIGHT_FACTOR * finalFittingRatio))}
                                 fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? '700' : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font)}
@@ -1233,7 +1369,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, onDoubleClick }) {
                                     fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal'
                                 }}
                             >
-                                {renderVisualText(mapped, isOriginalSmallCaps, customSize * OPTICAL_HEIGHT_FACTOR * fittingRatio)}
+                                {renderVisualText(mapped, isOriginalSmallCaps, customSize * OPTICAL_HEIGHT_FACTOR * finalFittingRatio)}
                             </tspan>
                         );
                     })

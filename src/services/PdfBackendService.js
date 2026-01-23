@@ -4,7 +4,7 @@
  */
 export const uploadPdfToBackend = async (file, backend = 'python') => {
     const JAVA_API = "https://resumemaker-1.onrender.com";
-    const PYTHON_API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    const PYTHON_API = import.meta.env.VITE_API_URL || "https://my-images-python-backend.onrender.com";
 
     // Default to Python if not specified or for the new flow
     const apiBase = (backend === 'java' ? JAVA_API : PYTHON_API);
@@ -33,7 +33,7 @@ export const uploadPdfToBackend = async (file, backend = 'python') => {
 };
 
 export const savePdfToBackend = async (payload) => {
-    const PYTHON_API = import.meta.env.VITE_API_URL || "http://localhost:8000";
+    const PYTHON_API = import.meta.env.VITE_API_URL || "https://my-images-python-backend.onrender.com";
     const endpoint = '/save-pdf';
 
     try {
