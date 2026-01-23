@@ -191,7 +191,7 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
         );
     });
 };
-const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) => {
+const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
@@ -685,6 +685,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                             blocks={page.blocks}
                             nodeEdits={nodeEdits || {}}
                             pageIndex={pageIndex}
+                            activeNodeId={activeNodeId}
+                            selectedWordIndices={selectedWordIndices}
                             fontsKey={fontsKey}
                             fontStyles={fontStyles}
                             metricRatio={metricRatio}
@@ -694,6 +696,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
                         <EditableTextLayer
                             items={textItems}
                             nodeEdits={nodeEdits || {}}
+                            activeNodeId={activeNodeId}
                             height={page.height}
                             pageIndex={pageIndex}
                             fontsKey={fontsKey}
@@ -720,6 +723,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, fontsKey, fonts, nodeEdits
         prev.pageIndex === next.pageIndex &&
         prev.scale === next.scale &&
         prev.nodeEdits === next.nodeEdits &&
+        prev.activeNodeId === next.activeNodeId &&
+        prev.selectedWordIndices === next.selectedWordIndices &&
         prev.fontsKey === next.fontsKey;
 });
 
@@ -744,7 +749,7 @@ function getRealFontString(fontName, googleFont, weight, size, style) {
     return `${style} ${weight} ${size}px ${family}`;
 }
 
-function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, fonts, fontStyles, metricRatio, onDoubleClick }) {
+function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, fontsKey, fonts, fontStyles, metricRatio, onDoubleClick }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {/* Inject dynamic fonts */}
@@ -825,18 +830,21 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
 
                 return (
                     <g key={item.id || i}>
-                        {/* 1. Visible Debug BBox (Red Line) - Growth Aware */}
-                        <rect
-                            x={x0}
-                            y={y0}
-                            width={finalRectWidth}
-                            height={y1 - y0}
-                            fill="none"
-                            stroke="red"
-                            strokeWidth="0.5"
-                            opacity="0.3"
-                            pointerEvents="none"
-                        />
+                        {/* 1. Visible Debug BBox (Blue Line) - Growth Aware - Only for Active */}
+                        {activeNodeId === (item.id || i) && (
+                            <rect
+                                x={x0}
+                                y={y0}
+                                width={finalRectWidth}
+                                height={y1 - y0}
+                                fill="none"
+                                stroke="#3b82f6"
+                                strokeWidth="1.5"
+                                opacity="0.8"
+                                strokeDasharray="4 2"
+                                pointerEvents="none"
+                            />
+                        )}
 
                         {/* 2. Hit Test Rect - Expanded for growth */}
                         <rect
@@ -939,7 +947,7 @@ function EditableTextLayer({ items, nodeEdits, height, pageIndex, fontsKey, font
         </g>
     );
 }
-function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, metricRatio, onDoubleClick }) {
+function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick }) {
     return (
         <g className="block-layer" key={fontsKey}>
             <style dangerouslySetInnerHTML={{
@@ -952,6 +960,8 @@ function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, metric
                     block={block}
                     nodeEdits={nodeEdits}
                     pageIndex={pageIndex}
+                    activeNodeId={activeNodeId}
+                    selectedWordIndices={selectedWordIndices}
                     metricRatio={metricRatio}
                     onDoubleClick={onDoubleClick}
                 />
@@ -960,7 +970,7 @@ function BlockLayer({ blocks, nodeEdits, pageIndex, fontsKey, fontStyles, metric
     );
 }
 
-function SemanticBlock({ block, nodeEdits, pageIndex, metricRatio, onDoubleClick }) {
+function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick }) {
     const edit = nodeEdits[block.id] || {};
     const isModified = !!edit.isModified;
 
@@ -983,6 +993,8 @@ function SemanticBlock({ block, nodeEdits, pageIndex, metricRatio, onDoubleClick
                             block={block}
                             nodeEdits={nodeEdits}
                             pageIndex={pageIndex}
+                            activeNodeId={activeNodeId}
+                            selectedWordIndices={selectedWordIndices}
                             metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
                         />
@@ -993,7 +1005,8 @@ function SemanticBlock({ block, nodeEdits, pageIndex, metricRatio, onDoubleClick
     );
 }
 
-function LineRenderer({ line, block, nodeEdits, pageIndex, metricRatio, onDoubleClick }) {
+function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick }) {
+    const isActive = activeNodeId === line.id;
     // ROBUST STYLE CAPTURE: Look for the first span that actually contains content/color
     const styleItem = useMemo(() => {
         if (!line.items || line.items.length === 0) return line.items[0] || {};
@@ -1048,7 +1061,9 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, metricRatio, onDouble
             .replace(/\u2217/g, '*')  // Mathematical Asterisk -> Standard Asterisk
             .replace(/\u22c6/g, '*')  // Star bullet -> Standard Asterisk
             .replace(/\u2013/g, '–')  // En-dash
-            .replace(/\u2014/g, '—'); // Em-dash
+            .replace(/\u2014/g, '—')  // Em-dash
+            .replace(/^I$/g, '•')     // Artifact mapping: 'I' -> Bullet
+            .replace(/^G$/g, '•');    // Artifact mapping: 'G' -> Bullet
 
         // FontAwesome Mapping (Restored Original Mappings)
         mapped = mapped
@@ -1203,17 +1218,21 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, metricRatio, onDouble
             }}
         >
             {/* 1. VISIBLE DEBUG BBOX: Grows as you type */}
-            <rect
-                x={line.x0}
-                y={line.y - (line.height || line.size || 10)}
-                width={finalPdfWidth}
-                height={line.height || line.size || 12}
-                fill="none"
-                stroke="red"
-                strokeWidth="0.5"
-                opacity="0.3"
-                pointerEvents="none"
-            />
+            {isActive && (
+                <rect
+                    x={line.x0}
+                    y={line.y - (line.height || line.size || 10)}
+                    width={finalPdfWidth}
+                    height={line.height || line.size || 12}
+                    fill="none"
+                    stroke="#3b82f6" // Changed to premium blue
+                    strokeWidth="1.5"
+                    opacity="0.8"
+                    strokeDasharray="4 2" // Dashed border for active feel
+                    pointerEvents="none"
+                    style={{ animation: 'blink 2s infinite' }}
+                />
+            )}
 
             {/* 2. INVISIBLE HITBOX: Covers the entire line area and some padding */}
             <rect
@@ -1377,15 +1396,17 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, metricRatio, onDouble
             </text>
 
             {/* DEBUG: Red Bottom Border for BBox Matching (Restored) */}
-            <line
-                x1={line.x0}
-                y1={line.bbox ? line.bbox[3] : line.y}
-                x2={line.x1}
-                y2={line.bbox ? line.bbox[3] : line.y}
-                stroke="red"
-                strokeWidth="0.5"
-                opacity="0.8"
-            />
+            {isActive && (
+                <line
+                    x1={line.x0}
+                    y1={line.bbox ? line.bbox[3] : line.y}
+                    x2={line.x1}
+                    y2={line.bbox ? line.bbox[3] : line.y}
+                    stroke="#3b82f6"
+                    strokeWidth="1"
+                    opacity="0.8"
+                />
+            )}
         </g>
     );
 }

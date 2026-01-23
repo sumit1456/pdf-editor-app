@@ -28,6 +28,22 @@
     text-transform: uppercase;
 }
 
+.left img {
+    height: 70px;
+    width: auto;
+    object-fit: contain;
+    border-radius: 50%;
+    mix-blend-mode: difference;
+    /* Ensure it's white to match theme if it's a dark logo */
+    opacity: 1;
+    transition: opacity 0.3s ease;
+
+}
+
+.left img:hover {
+    opacity: 1;
+}
+
 .list {
     display: flex;
     gap: 1.5rem;
@@ -47,6 +63,13 @@
 .list p a:hover {
     color: #ffffff;
     background: rgba(255, 255, 255, 0.05);
+}
+
+.list p a.loading,
+.sidebar a.loading {
+    opacity: 0.6;
+    pointer-events: none;
+    cursor: wait;
 }
 
 .box-icons {

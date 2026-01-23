@@ -9,28 +9,28 @@ const MessageOverlay = ({
   const configs = {
     success: {
       icon: CheckCircle,
-      iconColor: '#22c55e',
-      bgColor: '#16a34a'
+      iconColor: '#10b981',
+      bgColor: '#064e3b'
     },
     error: {
-      icon: AlertTriangle,
-      iconColor: 'red',
-      bgColor: 'red'
+      icon: XCircle,
+      iconColor: '#ef4444',
+      bgColor: '#450a0a'
     },
     info: {
       icon: Info,
       iconColor: '#3b82f6',
-      bgColor: '#2563eb'
+      bgColor: '#172554'
     },
     warning: {
       icon: AlertTriangle,
       iconColor: '#f59e0b',
-      bgColor: '#d97706'
+      bgColor: '#451a03'
     },
     general: {
       icon: Info,
       iconColor: '#ffffff',
-      bgColor: '#e5e5e5'
+      bgColor: '#262626'
     }
   };
 
@@ -199,7 +199,7 @@ const MessageContainer = () => {
   const [currentMessage, setCurrentMessage] = useState(null);
 
   useEffect(() => {
-    const showMessage = (title, description = '', type = 'info', duration = 3000) => {
+    const showMessage = (title, description = '', type = 'info', duration = 1500) => {
       setCurrentMessage({ title, description, type });
 
       if (duration > 0) {

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
-const LoadingAnimation = ({ message = "Loading...", show = true }) => {
+const LoadingOverlay = ({ message = "Loading...", show = true }) => {
   if (!show) return null;
 
   return (
@@ -10,12 +10,12 @@ const LoadingAnimation = ({ message = "Loading...", show = true }) => {
       left: 0,
       right: 0,
       bottom: 0,
-      background: 'rgba(0, 0, 0, 0.1)',
+      background: 'rgba(0, 0, 0, 0.5)', // Slightly darker for better contrast than original 0.1
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex : 10000000,
-      backdropFilter: 'blur(4px)', 
+      zIndex: 10000000,
+      backdropFilter: 'blur(4px)',
     }}>
       <div style={{
         display: 'flex',
@@ -75,7 +75,7 @@ const LoadingAnimation = ({ message = "Loading...", show = true }) => {
               height: '10px',
               background: '#ffffff',
               borderRadius: '50%',
-              animation: `bounce 1.4s ease-in-out infinite`,
+              animation: `bounceOverlay 1.4s ease-in-out infinite`,
               animationDelay: `${delay}s`,
               boxShadow: '0 0 10px rgba(255, 255, 255, 0.5)',
             }}></span>
@@ -87,7 +87,7 @@ const LoadingAnimation = ({ message = "Loading...", show = true }) => {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        @keyframes bounce {
+        @keyframes bounceOverlay {
           0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
           40% { transform: scale(1); opacity: 1; }
         }
@@ -96,5 +96,22 @@ const LoadingAnimation = ({ message = "Loading...", show = true }) => {
   );
 };
 
+const LoadingContainer = () => {
+  const [loadingState, setLoadingState] = useState({ show: false, message: '' });
 
-export default LoadingAnimation;
+  useEffect(() => {
+    const showLoading = (show, message = "Processing...") => {
+      setLoadingState({ show, message });
+    };
+
+    window.showLoading = showLoading;
+
+    return () => {
+      delete window.showLoading;
+    };
+  }, []);
+
+  return <LoadingOverlay show={loadingState.show} message={loadingState.message} />;
+};
+
+export default LoadingContainer;

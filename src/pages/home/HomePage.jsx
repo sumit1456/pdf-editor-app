@@ -16,6 +16,7 @@ export default function HomePage() {
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (file && file.type === "application/pdf") {
+      window.showLoading(true, "Extracting Scene Graph...");
       try {
         console.log(`PDF Selected (${backend}):`, file.name);
 
@@ -29,6 +30,9 @@ export default function HomePage() {
         const jsonOutput = await uploadPdfToBackend(file, backend);
         console.log("Extracted Scene Graph JSON:", jsonOutput);
 
+        window.showLoading(false);
+        window.showMessage("Success", "Extraction complete. Document is ready.", "success");
+
         // Navigate to the editor with the data, backend type, and original file
         navigate('/editor', {
           state: {
@@ -40,7 +44,8 @@ export default function HomePage() {
         });
       } catch (error) {
         console.error("Error extracting PDF:", error);
-        alert(`Failed to extract PDF. Make sure the ${backend} backend is running.`);
+        window.showLoading(false);
+        window.showMessage("Error", `We encountered an issue while processing your document. Make sure the ${backend} backend is running.`, "error");
       }
     }
   };
@@ -62,8 +67,8 @@ export default function HomePage() {
           </h1>
 
           <p className="hero-subtitle">
-            Professional-grade PDF editing without the DOM.
-            Harness the power of WebGL and high-fidelity extraction.
+            Professional-grade PDF editing with precision-mapped layouts.
+            Harness the power of high-fidelity extraction and smart reflow.
           </p>
 
           {/* Backend Toggle Removed - Committing to Python */}
@@ -75,7 +80,7 @@ export default function HomePage() {
               <i className="fa-solid fa-cloud-arrow-up"></i>
             </div>
             <div className="upload-text">
-              <h3>Drop your resume here</h3>
+              <h3>Drop your PDF here</h3>
               <p>or click to browse your files</p>
             </div>
             <input
@@ -101,15 +106,15 @@ export default function HomePage() {
             <div className="feature-icon">
               <i className="fa-solid fa-bolt-lightning"></i>
             </div>
-            <h3>WebGL Rendering</h3>
-            <p>Lightning fast rendering using PixiJS for a smooth, high-fidelity experience.</p>
+            <h3>Smart Reflow Engine</h3>
+            <p>Automatically recalculates layout on-the-fly for a seamless editing experience.</p>
           </div>
           <div className="feature-card">
             <div className="feature-icon">
               <i className="fa-solid fa-layer-group"></i>
             </div>
-            <h3>DOM-less Architecture</h3>
-            <p>Pure mathematical layout engine for pixel-perfect results on any browser.</p>
+            <h3>High-Fidelity SVG Rendering</h3>
+            <p>Pure mathematical layout engine for pixel-perfect results using modern SVG technology.</p>
           </div>
         </section>
       </div>

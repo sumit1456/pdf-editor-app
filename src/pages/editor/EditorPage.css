@@ -959,6 +959,23 @@
     letter-spacing: normal;
 }
 
+@keyframes blink {
+    0% {
+        opacity: 0.8;
+        stroke-width: 1.5;
+    }
+
+    50% {
+        opacity: 0.4;
+        stroke-width: 1.0;
+    }
+
+    100% {
+        opacity: 0.8;
+        stroke-width: 1.5;
+    }
+}
+
 ::-webkit-scrollbar {
     width: 4px;
 }

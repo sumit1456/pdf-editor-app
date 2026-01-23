@@ -251,7 +251,9 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
             .replace(/\u2217/g, '∗')  // Asterisk bullet
             .replace(/\u22c6/g, '⋆')  // Star bullet
             .replace(/\u2013/g, '–')  // En-dash
-            .replace(/\u2014/g, '—'); // Em-dash
+            .replace(/\u2014/g, '—')  // Em-dash
+            .replace(/^I$/g, '•')     // Artifact mapping: 'I' -> Bullet
+            .replace(/^G$/g, '•');    // Artifact mapping: 'G' -> Bullet
 
         // FontAwesome Mapping (Based on nable_python.pdf findings)
         if (lowerFont.includes('fontawesome')) {

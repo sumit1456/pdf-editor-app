@@ -399,7 +399,7 @@ export default function EditorPage() {
             });
 
         if (modifiedNodes.length === 0) {
-            alert("No changes to export. Try editing some text first!");
+            window.showMessage("No changes", "There are no modifications to export. Try editing some text first!", "info");
             return;
         }
 
@@ -409,7 +409,7 @@ export default function EditorPage() {
             modifications: modifiedNodes
         };
 
-
+        window.showLoading(true, "Generating High-Fidelity PDF...");
         try {
             const result = await savePdfToBackend(payload);
             if (result.success && result.pdf_base64) {
@@ -426,11 +426,16 @@ export default function EditorPage() {
                 link.href = window.URL.createObjectURL(blob);
                 link.download = result.filename || "edited_document.pdf";
                 link.click();
+
+                window.showLoading(false);
+                window.showMessage("Success", "Your PDF has been successfully generated and downloaded.", "success");
             } else {
-                alert("Failed to generate PDF: " + (result.error || "Unknown error"));
+                window.showLoading(false);
+                window.showMessage("Export Failed", "Failed to generate PDF: " + (result.error || "Unknown error"), "error");
             }
         } catch (err) {
-            alert("Error during PDF export: " + err.message);
+            window.showLoading(false);
+            window.showMessage("Error", "Error during PDF export: " + err.message, "error");
         }
     };
 
@@ -1048,6 +1053,8 @@ export default function EditorPage() {
                             <PythonRenderer
                                 page={activePageData}
                                 pageIndex={activePageIndex}
+                                activeNodeId={activeNodeId}
+                                selectedWordIndices={selectedWordIndices}
                                 fontsKey={fontsKey}
                                 fonts={fonts}
                                 nodeEdits={nodeEdits}
@@ -1060,6 +1067,7 @@ export default function EditorPage() {
                             <WebGLRenderer
                                 page={activePageData}
                                 pageIndex={activePageIndex}
+                                activeNodeId={activeNodeId}
                                 fontsKey={fontsKey}
                                 nodeEdits={nodeEdits}
                                 onUpdate={handlePageUpdate}

@@ -4,7 +4,7 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
-const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, nodeEdits = {}, onUpdate, onSelect, scale }) => {
+const WebGLRenderer = React.memo(({ page, pageIndex, activeNodeId, fontsKey, nodeEdits = {}, onUpdate, onSelect, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 3000 });
@@ -322,6 +322,7 @@ const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, nodeEdits = {}, o
                             items={mergedLines}
                             height={page.height}
                             pageIndex={pageIndex}
+                            activeNodeId={activeNodeId}
                             fontsKey={fontsKey}
                             nodeEdits={nodeEdits}
                             onDoubleClick={handleDoubleClick}
@@ -344,13 +345,14 @@ const WebGLRenderer = React.memo(({ page, pageIndex, fontsKey, nodeEdits = {}, o
         prev.pageIndex === next.pageIndex &&
         prev.scale === next.scale &&
         prev.fontsKey === next.fontsKey &&
+        prev.activeNodeId === next.activeNodeId &&
         prev.nodeEdits === next.nodeEdits;
 });
 
 export default WebGLRenderer;
 
 
-function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDoubleClick }) {
+function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, nodeEdits, onDoubleClick }) {
     const renderWordStyledText = (text, wordStyles, safetyStyle, baseSize) => {
         if (!text) return text;
         const parts = text.split(/(\s+)/);
@@ -402,7 +404,23 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDo
 
                 return (
                     <g key={i}>
-                        {/* 1. Hit Test Rect (Invisible but clickable) */}
+                        {/* 1. Visible Debug BBox - Only for Active */}
+                        {activeNodeId === (item.id || i) && (
+                            <rect
+                                x={x0}
+                                y={rectY}
+                                width={rectW}
+                                height={rectH}
+                                fill="none"
+                                stroke="#3b82f6"
+                                strokeWidth="1.5"
+                                opacity="0.8"
+                                strokeDasharray="4 2"
+                                pointerEvents="none"
+                            />
+                        )}
+
+                        {/* 2. Hit Test Rect (Invisible but clickable) */}
                         <rect
                             x={x0}
                             y={rectY}
@@ -435,6 +453,18 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDo
                                 dominantBaseline="alphabetic"
                             >
                                 {(() => {
+                                    const mapContentToIcons = (text, fontName) => {
+                                        if (!text) return text;
+                                        return text
+                                            .replace(/\u2022/g, '•')  // Bullet
+                                            .replace(/\u2217/g, '*')  // Mathematical Asterisk -> Standard Asterisk
+                                            .replace(/\u22c6/g, '*')  // Star bullet -> Standard Asterisk
+                                            .replace(/\u2013/g, '–')  // En-dash
+                                            .replace(/\u2014/g, '—')  // Em-dash
+                                            .replace(/^I$/g, '•')     // Artifact mapping: 'I' -> Bullet
+                                            .replace(/^G$/g, '•');    // Artifact mapping: 'G' -> Bullet
+                                    };
+
                                     const edit = nodeEdits?.[item.id || i];
                                     if (edit) {
                                         const wordStyles = edit.wordStyles || {};
@@ -445,7 +475,7 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDo
                                             is_italic: item.is_italic,
                                             color: item.color
                                         };
-                                        return renderWordStyledText(item.content, wordStyles, safetyStyle, Math.abs(item.size));
+                                        return renderWordStyledText(mapContentToIcons(item.content, item.font), wordStyles, safetyStyle, Math.abs(item.size));
                                     }
 
                                     return (
@@ -457,7 +487,7 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDo
                                                 fontWeight={item.is_bold ? 'bold' : 'normal'}
                                                 fontStyle={item.is_italic ? 'italic' : 'normal'}
                                             >
-                                                {item.bullet || ''}
+                                                {mapContentToIcons(item.bullet || '', item.font)}
                                             </tspan>
                                             <tspan
                                                 fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
@@ -467,7 +497,7 @@ function EditableTextLayer({ items, height, pageIndex, fontsKey, nodeEdits, onDo
                                                 fontStyle={item.is_italic ? 'italic' : 'normal'}
                                                 xmlSpace="preserve"
                                             >
-                                                {item.content}
+                                                {mapContentToIcons(item.content, item.font)}
                                             </tspan>
                                         </>
                                     );

@@ -80,7 +80,7 @@
 }
 
 .info-card.warning {
-    border-color: rgba(212, 175, 55, 0.3);
+    border-color: rgba(255, 255, 255, 0.25);
 }
 
 .info-card h3 {
@@ -130,10 +130,10 @@
 .status-badge {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background: rgba(212, 175, 55, 0.1);
-    border: 1px solid var(--studio-gold-dim);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
-    color: var(--studio-gold);
+    color: var(--studio-white);
     font-weight: 700;
     font-size: 0.75rem;
     text-transform: uppercase;
