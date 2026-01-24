@@ -82,15 +82,16 @@ export default function NavBar() {
           </p>
         </div>
 
-        <div className="box-icons">
-          <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
-            <i className="fa-brands fa-linkedin-in"></i>
-          </a>
-          <a href="https://github.com/" target="_blank" rel="noreferrer" aria-label="GitHub">
-            <i className="fa-brands fa-github"></i>
-          </a>
-          <a href="mailto:someone@example.com" aria-label="Email">
-            <i className="fa-solid fa-envelope"></i>
+        <div className="right-actions">
+          <a
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=sumithatekar067@gmail.com&su=Feedback%20for%20THE%20PDF%20STUDIO"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="feedback-btn"
+            title="Send Feedback via Gmail"
+          >
+            <i className="fa-solid fa-paper-plane"></i>
+            <span>Feedback</span>
           </a>
         </div>
       </nav>

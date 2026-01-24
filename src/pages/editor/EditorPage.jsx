@@ -205,6 +205,8 @@ export default function EditorPage() {
     const [isMultiSelect, setIsMultiSelect] = useState(false);
     const [isFitMode, setIsFitMode] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [selectedNodeIds, setSelectedNodeIds] = useState([]);
+    const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
 
     // --- MASTER HUD: Log Node Tree on change ---
     React.useEffect(() => {
@@ -510,6 +512,8 @@ export default function EditorPage() {
     const scrollToNode = (idOrIndex) => {
         if (idOrIndex !== activeNodeId) setSelectedWordIndices([]);
         setActiveNodeId(idOrIndex);
+        if (!isLineMultiSelect) setSelectedNodeIds([idOrIndex]);
+        else if (!selectedNodeIds.includes(idOrIndex)) setSelectedNodeIds(prev => [...prev, idOrIndex]);
 
         // Ensure wordStyles are initialized on navigation
         if (!nodeEdits[idOrIndex]?.wordStyles) {
@@ -640,67 +644,75 @@ export default function EditorPage() {
     };
 
     const handleStyleUpdate = (lineId, field, value, wordIndices = null) => {
+        const targetIds = (isLineMultiSelect && selectedNodeIds.length > 0) ? selectedNodeIds : [lineId];
+
         setNodeEdits(prev => {
-            const current = prev[lineId] || {};
-            const sStyle = { ...(current.safetyStyle || {}) };
-            const wordStyles = { ...(current.wordStyles || {}) };
+            const next = { ...prev };
+            targetIds.forEach(id => {
+                const current = next[id] || {};
+                const sStyle = { ...(current.safetyStyle || {}) };
+                const wordStyles = { ...(current.wordStyles || {}) };
 
-            if (wordIndices !== null) {
-                // If wordIndices is provided, target only those indices
-                const indices = Array.isArray(wordIndices) ? wordIndices : [wordIndices];
-                indices.forEach(idx => {
-                    if (idx === null || idx === undefined) return;
-                    if (!wordStyles[idx]) wordStyles[idx] = {};
-                    wordStyles[idx] = { ...wordStyles[idx], [field]: value };
-                });
-            } else {
-                // If NO wordIndices provided (Global Toolbar), 
-                // target the LAST WORD uniquely as per user requirement.
-                const content = current.content || "";
-                const wordsCount = content.split(/\s+/).filter(Boolean).length;
-                const lastIdx = wordsCount > 0 ? wordsCount - 1 : 0;
+                if (wordIndices !== null) {
+                    const indices = Array.isArray(wordIndices) ? wordIndices : [wordIndices];
+                    indices.forEach(idx => {
+                        if (idx === null || idx === undefined) return;
+                        if (!wordStyles[idx]) wordStyles[idx] = {};
+                        wordStyles[idx] = { ...wordStyles[idx], [field]: value };
+                    });
+                } else if (isLineMultiSelect) {
+                    // TARGET ALL WORDS in Multi-Line batch mode
+                    const contentStr = current.content || "";
+                    const wordsList = contentStr.split(/\s+/).filter(Boolean);
+                    wordsList.forEach((_, k) => {
+                        if (!wordStyles[k]) wordStyles[k] = {};
+                        wordStyles[k] = { ...wordStyles[k], [field]: value };
+                    });
+                    sStyle[field] = value;
+                    if (field === 'font') sStyle.googleFont = value;
+                } else {
+                    const content = current.content || "";
+                    const wordsCount = content.split(/\s+/).filter(Boolean).length;
+                    const lastIdx = wordsCount > 0 ? wordsCount - 1 : 0;
 
-                if (!wordStyles[lastIdx]) wordStyles[lastIdx] = {};
-                wordStyles[lastIdx] = { ...wordStyles[lastIdx], [field]: value };
+                    if (!wordStyles[lastIdx]) wordStyles[lastIdx] = {};
+                    wordStyles[lastIdx] = { ...wordStyles[lastIdx], [field]: value };
 
-                // Still update sStyle as a safety baseline for the line
-                sStyle[field] = value;
-                if (field === 'font') sStyle.googleFont = value;
-            }
+                    sStyle[field] = value;
+                    if (field === 'font') sStyle.googleFont = value;
+                }
 
-            // --- RECALCULATE DYNAMIC WIDTH ---
-            const content = current.content !== undefined ? current.content : (
-                pages[activePageIndex].items?.find(it => it.id === lineId)?.content ||
-                pages[activePageIndex].blocks?.flatMap(b => b.lines).find(l => l.id === lineId)?.content || ""
-            );
+                const content = current.content !== undefined ? current.content : (
+                    pages[activePageIndex].items?.find(it => it.id === id)?.content ||
+                    pages[activePageIndex].blocks?.flatMap(b => b.lines).find(l => l.id === id)?.content || ""
+                );
 
-            const measuredWidth = measureLineDensity(
-                content,
-                sStyle.font || 'Source Serif 4',
-                sStyle.size || 10,
-                sStyle.is_bold ? 'bold' : 'normal'
-            );
+                const measuredWidth = measureLineDensity(
+                    content,
+                    sStyle.font || 'Source Serif 4',
+                    sStyle.size || 10,
+                    sStyle.is_bold ? 'bold' : 'normal'
+                );
 
-            let newBBox = current.bbox || null;
-            if (!newBBox) {
-                const found = (pages[activePageIndex].blocks ? pages[activePageIndex].blocks.flatMap(b => b.lines) : (pages[activePageIndex].items || [])).find(l => l.id === lineId);
-                if (found && found.bbox) newBBox = [...found.bbox];
-            }
-            if (newBBox) {
-                newBBox[2] = newBBox[0] + measuredWidth;
-            }
+                let newBBox = current.bbox || null;
+                if (!newBBox) {
+                    const found = (pages[activePageIndex].blocks ? pages[activePageIndex].blocks.flatMap(b => b.lines) : (pages[activePageIndex].items || [])).find(l => l.id === id);
+                    if (found && found.bbox) newBBox = [...found.bbox];
+                }
+                if (newBBox) {
+                    newBBox[2] = newBBox[0] + measuredWidth;
+                }
 
-            return {
-                ...prev,
-                [lineId]: {
+                next[id] = {
                     ...current,
                     safetyStyle: sStyle,
                     wordStyles: wordStyles,
                     width: measuredWidth,
                     bbox: newBBox,
                     isModified: true
-                }
-            };
+                };
+            });
+            return next;
         });
     };
 
@@ -837,6 +849,7 @@ export default function EditorPage() {
                             <div className="toolbar-header">
                                 <div className="toolbar-label">Design Configuration</div>
                                 {!activeNodeId && <span className="toolbar-status">Selection Required</span>}
+                                {selectedNodeIds.length > 1 && <span className="toolbar-status highlight">Multiple Selected ({selectedNodeIds.length})</span>}
                             </div>
 
                             <div className="tools-group">
@@ -958,6 +971,52 @@ export default function EditorPage() {
                                     <span className="icon">🎯</span> Fit Mode
                                     {isFitMode && <span className="dev-tag">In Dev</span>}
                                 </button>
+
+                                <button
+                                    className={`caps-toggle-btn ${isLineMultiSelect ? 'active' : ''}`}
+                                    onClick={() => {
+                                        const nextState = !isLineMultiSelect;
+                                        setIsLineMultiSelect(nextState);
+                                        if (nextState) {
+                                            if (activeNodeId) {
+                                                setSelectedNodeIds([activeNodeId]);
+                                                // Sync word selection too
+                                                const line = textLines.find(l => l.id === activeNodeId);
+                                                const content = nodeEdits[activeNodeId]?.content || line?.content || "";
+                                                const words = content.split(/\s+/).filter(Boolean);
+                                                setSelectedWordIndices(words.map((_, i) => i));
+                                                setIsMultiSelect(true);
+                                            }
+                                        } else {
+                                            setSelectedNodeIds([]);
+                                        }
+                                    }}
+                                    title="Select multiple lines to style them all at once"
+                                >
+                                    <span className="icon">📋</span> Multi-Line
+                                </button>
+
+                                <button
+                                    className="caps-toggle-btn"
+                                    onClick={() => {
+                                        const ids = textLines.map(l => l.id);
+                                        setSelectedNodeIds(ids);
+                                        setIsLineMultiSelect(true);
+                                        if (ids.length > 0) {
+                                            const firstId = ids[0];
+                                            setActiveNodeId(firstId);
+                                            // Feature addition: Select all words in that first line too
+                                            const line = textLines.find(l => l.id === firstId);
+                                            const content = nodeEdits[firstId]?.content || line?.content || "";
+                                            const words = content.split(/\s+/).filter(Boolean);
+                                            setSelectedWordIndices(words.map((_, i) => i));
+                                            setIsMultiSelect(true);
+                                        }
+                                    }}
+                                    title="Select all lines on the current page"
+                                >
+                                    <span className="icon">📑</span> Select All
+                                </button>
                             </div>
                         </div>
                     );
@@ -991,7 +1050,20 @@ export default function EditorPage() {
                             <div
                                 key={line.id || i}
                                 id={`input-card-${line.id || line.dataIndex}`}
-                                className={`premium-input-card ${edit.isModified ? 'modified' : ''} ${activeNodeId === (line.id || line.dataIndex) ? 'active' : ''}`}
+                                className={`premium-input-card ${edit.isModified ? 'modified' : ''} ${selectedNodeIds.includes(line.id) || activeNodeId === (line.id || line.dataIndex) ? 'active' : ''}`}
+                                onClick={() => {
+                                    if (isLineMultiSelect) {
+                                        setSelectedNodeIds(prev => {
+                                            const isSelected = prev.includes(line.id);
+                                            const next = isSelected ? prev.filter(id => id !== line.id) : [...prev, line.id];
+                                            if (!isSelected) setActiveNodeId(line.id);
+                                            return next;
+                                        });
+                                    } else {
+                                        setActiveNodeId(line.id);
+                                        setSelectedNodeIds([line.id]);
+                                    }
+                                }}
                             >
                                 <div className="card-controls-row">
                                     <div className="style-tools">
@@ -1006,7 +1078,11 @@ export default function EditorPage() {
                                     <label className="field-label">{line.uri ? 'Hypertext' : 'Content'}</label>
                                     <textarea
                                         value={displayContent}
-                                        onFocus={() => setActiveNodeId(line.id)}
+                                        onFocus={() => {
+                                            setActiveNodeId(line.id);
+                                            if (!isLineMultiSelect) setSelectedNodeIds([line.id]);
+                                            else if (!selectedNodeIds.includes(line.id)) setSelectedNodeIds(prev => [...prev, line.id]);
+                                        }}
                                         onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle, e.target.selectionStart)}
                                         placeholder="Enter text..."
                                         style={{
