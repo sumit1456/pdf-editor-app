@@ -203,6 +203,7 @@ export default function EditorPage() {
     const [smartStyling, setSmartStyling] = useState(true);
     const [selectedWordIndices, setSelectedWordIndices] = useState([]);
     const [isMultiSelect, setIsMultiSelect] = useState(false);
+    const [isFitMode, setIsFitMode] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
 
     // --- MASTER HUD: Log Node Tree on change ---
@@ -948,6 +949,15 @@ export default function EditorPage() {
                                 >
                                     <span className="icon">🛡️</span> Preserve Styles
                                 </button>
+
+                                <button
+                                    className={`caps-toggle-btn ${isFitMode ? 'active' : ''}`}
+                                    onClick={() => setIsFitMode(!isFitMode)}
+                                    title="Aggressive auto-scaling: Shrinks font size if text overflows by 3-4 characters"
+                                >
+                                    <span className="icon">🎯</span> Fit Mode
+                                    {isFitMode && <span className="dev-tag">In Dev</span>}
+                                </button>
                             </div>
                         </div>
                     );
@@ -1062,6 +1072,7 @@ export default function EditorPage() {
                                 onSelect={scrollToNode}
                                 onDoubleClick={handleDoubleClick}
                                 scale={zoom}
+                                isFitMode={isFitMode}
                             />
                         ) : (
                             <WebGLRenderer
@@ -1073,6 +1084,7 @@ export default function EditorPage() {
                                 onUpdate={handlePageUpdate}
                                 onSelect={scrollToNode}
                                 scale={zoom}
+                                isFitMode={isFitMode}
                             />
                         )}
                     </div>
@@ -1103,16 +1115,29 @@ export default function EditorPage() {
                         <div className="word-level-panel">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                                 <strong style={{ fontSize: '0.9rem', color: '#fff' }}>Word Styling</strong>
-                                <button
-                                    className={`tab-pill ${isMultiSelect ? 'active' : ''}`}
-                                    onClick={() => {
-                                        setIsMultiSelect(!isMultiSelect);
-                                        if (isMultiSelect) setSelectedWordIndices([]);
-                                    }}
-                                    style={{ fontSize: '0.7rem' }}
-                                >
-                                    {isMultiSelect ? 'Multi: ON' : 'Multi-Select'}
-                                </button>
+                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                    <button
+                                        className="select-all-btn"
+                                        onClick={() => {
+                                            const content = nodeEdits[activeNodeId]?.content || activeNodeData.content || "";
+                                            const words = content.split(/\s+/).filter(Boolean);
+                                            setSelectedWordIndices(words.map((_, i) => i));
+                                            setIsMultiSelect(true);
+                                        }}
+                                    >
+                                        Select All
+                                    </button>
+                                    <button
+                                        className={`tab-pill ${isMultiSelect ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setIsMultiSelect(!isMultiSelect);
+                                            if (isMultiSelect) setSelectedWordIndices([]);
+                                        }}
+                                        style={{ fontSize: '0.7rem' }}
+                                    >
+                                        {isMultiSelect ? 'Multi: ON' : 'Multi-Select'}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="word-pill-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
@@ -1150,9 +1175,9 @@ export default function EditorPage() {
                                     <div className="action-row">
                                         <span className="action-label">Size</span>
                                         <div className="size-control">
-                                            <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) - 1, selectedWordIndices)}>−</button>
-                                            <span className="size-label">{Math.round(getActiveNodeStyle()?.size || 10)}</span>
-                                            <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) + 1, selectedWordIndices)}>+</button>
+                                            <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) - 0.1, selectedWordIndices)}>−</button>
+                                            <span className="size-label">{(getActiveNodeStyle()?.size || 10).toFixed(1)}</span>
+                                            <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) + 0.1, selectedWordIndices)}>+</button>
                                         </div>
                                     </div>
 

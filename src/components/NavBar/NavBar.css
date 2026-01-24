@@ -4,13 +4,14 @@
     align-items: center;
     justify-content: space-between;
     height: 80px;
-    background: rgba(18, 18, 18, 0.9);
+    background: transparent;
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid rgb(46, 46, 46);
     position: sticky;
     top: 0;
     z-index: 1000;
     padding: 0 2rem;
+
 }
 
 .left {
@@ -33,7 +34,6 @@
     width: auto;
     object-fit: contain;
     border-radius: 50%;
-    mix-blend-mode: difference;
     /* Ensure it's white to match theme if it's a dark logo */
     opacity: 1;
     transition: opacity 0.3s ease;

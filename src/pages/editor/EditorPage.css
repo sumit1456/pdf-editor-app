@@ -37,6 +37,37 @@
     --thumb-active: #ffffff;
 }
 
+.dev-tag {
+    font-size: 0.55rem;
+    background: #FFD700;
+    color: #000;
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-weight: 800;
+    margin-left: 4px;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.select-all-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--studio-border);
+    color: var(--studio-silver);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: 8px;
+}
+
+.select-all-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--studio-white);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
 .editor-page {
     display: flex;
     flex-direction: row;

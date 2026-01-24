@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef, useState, useCallback, useLayoutEffe
 import * as PIXI from 'pixi.js';
 import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
+import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 
 // Now purely a Single Page Renderer for Python Backend
 
@@ -191,9 +192,10 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
         );
     });
 };
-const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale }) => {
+const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, isFitMode }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
+    const reflowEngine = useMemo(() => new ReflowEngine(fonts || []), [fonts]);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const [canvasHeight, setCanvasHeight] = useState(1000);
     const [isReady, setIsReady] = useState(false);
@@ -691,6 +693,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                             fontStyles={fontStyles}
                             metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
+                            isFitMode={isFitMode}
+                            reflowEngine={reflowEngine}
                         />
                     ) : page && (
                         <EditableTextLayer
@@ -704,6 +708,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                             fontStyles={fontStyles}
                             metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
+                            isFitMode={isFitMode}
                         />
                     )}
                 </svg>
@@ -749,7 +754,7 @@ function getRealFontString(fontName, googleFont, weight, size, style) {
     return `${style} ${weight} ${size}px ${family}`;
 }
 
-function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, fontsKey, fonts, fontStyles, metricRatio, onDoubleClick }) {
+function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, fontsKey, fonts, fontStyles, metricRatio, onDoubleClick, isFitMode }) {
     return (
         <g className="text-layer" key={fontsKey}>
             {/* Inject dynamic fonts */}
@@ -819,8 +824,26 @@ function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, 
                 const effectiveDynamicTarget = Math.max(1, finalRectWidth - safetyCushion);
 
                 let ratio = 1.0;
-                if (measuredWidth > 0 && measuredWidth > (effectiveDynamicTarget * (metricRatio || 1.0))) {
-                    ratio = (effectiveDynamicTarget * (metricRatio || 1.0)) / measuredWidth;
+                if (isModified && !isFitMode) {
+                    // Standard: prioritize natural flow (Ratio 1.0)
+                    ratio = 1.0;
+                } else if (measuredWidth > 0) {
+                    const browserTarget = effectiveDynamicTarget * (metricRatio || 1.0);
+
+                    if (isFitMode && isModified) {
+                        // Aggressive: 3.5 chars overflow limit
+                        const avgCharW = measuredWidth / Math.max(1, (content || '').length);
+                        const limit = browserTarget + (avgCharW * 3.5);
+
+                        if (measuredWidth > limit) {
+                            ratio = browserTarget / measuredWidth;
+                        } else {
+                            ratio = 1.0;
+                        }
+                    } else if (measuredWidth > browserTarget) {
+                        // Zero Overflow Policy for original or slight overflow
+                        ratio = browserTarget / measuredWidth;
+                    }
                 }
                 const safeRatio = Math.min(1.25, Math.max(0.65, ratio));
                 fittedFontSize = item.size * OPTICAL_HEIGHT_FACTOR * safeRatio;
@@ -947,7 +970,7 @@ function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, 
         </g>
     );
 }
-function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick }) {
+function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, isFitMode, reflowEngine }) {
     return (
         <g className="block-layer" key={fontsKey}>
             <style dangerouslySetInnerHTML={{
@@ -964,18 +987,37 @@ function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIn
                     selectedWordIndices={selectedWordIndices}
                     metricRatio={metricRatio}
                     onDoubleClick={onDoubleClick}
+                    isFitMode={isFitMode}
+                    reflowEngine={reflowEngine}
                 />
             ))}
         </g>
     );
 }
 
-function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick }) {
+function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, reflowEngine }) {
     const edit = nodeEdits[block.id] || {};
     const isModified = !!edit.isModified;
 
     // Use lines from the block structure (which are now reflowed by EditorPage on edit)
-    const lines = block.lines || [];
+    const lines = useMemo(() => {
+        const rawLines = block.lines || [];
+        if (!isFitMode || !isModified) return rawLines;
+
+        // --- Fit Mode REFLOW ---
+        // Concatenate all text in the block and reflow it into original width
+        const fullText = rawLines.map(l => {
+            const edit = nodeEdits[l.id];
+            return edit?.content !== undefined ? edit.content : l.content;
+        }).join(' ');
+
+        try {
+            return reflowEngine.reflowBlock(block, fullText);
+        } catch (e) {
+            console.error('[SemanticBlock] Reflow failed:', e);
+            return rawLines;
+        }
+    }, [block, nodeEdits, isFitMode, isModified, reflowEngine]);
 
     return (
         <g className={`semantic-block ${block.type}`} id={`block-${block.id}`}>
@@ -997,6 +1039,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWord
                             selectedWordIndices={selectedWordIndices}
                             metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick}
+                            isFitMode={isFitMode}
                         />
                     )}
                 </g>
@@ -1005,7 +1048,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWord
     );
 }
 
-function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick }) {
+function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode }) {
     const isActive = activeNodeId === line.id;
     // ROBUST STYLE CAPTURE: Look for the first span that actually contains content/color
     const styleItem = useMemo(() => {
@@ -1051,7 +1094,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
         (firstItem.font || '').toLowerCase().includes('smallcaps') ||
         ((firstItem.font || '').toLowerCase().includes('cmr') && content === content.toUpperCase() && content.length > 2);
 
-    const mapContentToIcons = (text, fontName) => {
+    const mapContentToIcons = (text, fontName, isBulletContext = false) => {
         if (!text) return text;
         const lowerFont = (fontName || '').toLowerCase();
 
@@ -1062,8 +1105,8 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
             .replace(/\u22c6/g, '*')  // Star bullet -> Standard Asterisk
             .replace(/\u2013/g, '–')  // En-dash
             .replace(/\u2014/g, '—')  // Em-dash
-            .replace(/^I$/g, '•')     // Artifact mapping: 'I' -> Bullet
-            .replace(/^G$/g, '•');    // Artifact mapping: 'G' -> Bullet
+            .replace(/^I$/g, isBulletContext ? '•' : 'I')     // Artifact mapping: 'I' -> Bullet
+            .replace(/^G$/g, isBulletContext ? '•' : 'G');    // Artifact mapping: 'G' -> Bullet
 
         // FontAwesome Mapping (Restored Original Mappings)
         mapped = mapped
@@ -1078,7 +1121,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
     // --- SMART CALIBRATION ENGINE ---
     const OPTICAL_HEIGHT_FACTOR = 1.0;
 
-    const { calibratedFontSize, fittingRatio, dynamicPdfWidth, targetBrowserWidth } = useMemo(() => {
+    const { calibratedFontSize: finalFontSize, fittingRatio: finalFittingRatio, dynamicPdfWidth: finalPdfWidth, targetBrowserWidth, chosenWeight: finalWeight } = useMemo(() => {
         const baseSize = Math.abs(styleItem.size || line.size || 10);
 
 
@@ -1146,12 +1189,66 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
         const effectiveDynamicTarget = Math.max(1, finalPdfW - safetyCushion);
 
         let ratio = 1.0;
-        if (isModified) {
-            // For modified text, we prioritize natural flow (Ratio 1.0)
+        let chosenWeight = getWeightFromFont(styleItem.font, styleItem.is_bold);
+
+        if (isModified && !isFitMode) {
+            // Standard: prioritize natural flow (Ratio 1.0)
             // and let the BBox grow dynamically.
             ratio = 1.0;
-        } else if (currentTextWidth > 0 && currentTextWidth > (effectiveDynamicTarget * (metricRatio || 1.0))) {
-            ratio = (effectiveDynamicTarget * (metricRatio || 1.0)) / currentTextWidth;
+        } else if (currentTextWidth > 0) {
+            const browserTarget = effectiveDynamicTarget * (metricRatio || 1.0);
+
+            if (isFitMode && isModified) {
+                // --- AGGRESSIVE ITERATIVE SOLVER ---
+                const weights = ['400', '500', '600', '700']; // Regular, Medium, Semi-Bold, Bold
+                const baseWeight = getWeightFromFont(styleItem.font, styleItem.is_bold);
+
+                // 1. Try different weights at current size
+                let bestWeight = baseWeight;
+                let minOverflow = currentTextWidth - browserTarget;
+
+                console.group(`[FitMode Solver] Node: ${line.id}`);
+                console.log(`Target: ${browserTarget.toFixed(2)}px | Current: ${currentTextWidth.toFixed(2)}px`);
+
+                if (currentTextWidth > browserTarget) {
+                    for (const w of weights) {
+                        const testFont = getRealFontString(
+                            styleItem.font,
+                            styleItem.google_font,
+                            w,
+                            styleItem.size,
+                            styleItem.is_italic ? 'italic' : 'normal'
+                        );
+                        const testCtx = document.createElement('canvas').getContext('2d');
+                        testCtx.font = testFont;
+                        const testWidth = testCtx.measureText(content || '').width;
+                        const overflow = testWidth - browserTarget;
+
+                        console.log(`   Weight ${w}: ${testWidth.toFixed(2)}px (Overflow: ${overflow.toFixed(2)}px)`);
+
+                        if (overflow < minOverflow && overflow > -10) {
+                            minOverflow = overflow;
+                            bestWeight = w;
+                            currentTextWidth = testWidth;
+                        }
+                    }
+                }
+
+                chosenWeight = bestWeight;
+
+                // 2. Aggressive Scaling if still overflowing
+                if (currentTextWidth > browserTarget) {
+                    ratio = browserTarget / currentTextWidth;
+                    console.log(`   Final Scaling Ratio: ${ratio.toFixed(4)}`);
+                } else {
+                    ratio = 1.0;
+                    console.log(`   Fits with weight change!`);
+                }
+                console.groupEnd();
+            } else if (currentTextWidth > browserTarget) {
+                // Zero Overflow Policy for original or slight overflow
+                ratio = browserTarget / currentTextWidth;
+            }
         }
 
         const safeRatio = Math.min(1.25, Math.max(0.65, ratio));
@@ -1160,17 +1257,11 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
             calibratedFontSize: baseSize * OPTICAL_HEIGHT_FACTOR * safeRatio,
             fittingRatio: safeRatio,
             dynamicPdfWidth: finalPdfW,
-            targetBrowserWidth: currentTextWidth
+            targetBrowserWidth: currentTextWidth,
+            chosenWeight: chosenWeight
         };
-    }, [line, content, styleItem, isModified, metricRatio]);
+    }, [line, content, styleItem, isModified, metricRatio, isFitMode]);
 
-    const { fittingRatio: finalFittingRatio, calibratedFontSize: finalFontSize, dynamicPdfWidth: finalPdfWidth } = useMemo(() => {
-        return {
-            fittingRatio,
-            calibratedFontSize,
-            dynamicPdfWidth
-        };
-    }, [fittingRatio, calibratedFontSize, dynamicPdfWidth]);
 
 
     // --- LIST MARKER GUARD ---
@@ -1269,9 +1360,9 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                         const safeColor = sStyle.color || styleItem.color;
                         const safeVariant = sStyle.font_variant || styleItem.font_variant || 'normal';
 
-                        const mapped = mapContentToIcons(content, safeFont, safeVariant);
-                        const isMappedIcon = mapped !== content;
                         const isMarkerLine = isListItem && line.is_bullet_start;
+                        const mapped = mapContentToIcons(content, safeFont, safeVariant, isMarkerLine);
+                        const isMappedIcon = mapped !== content;
                         const bMetrics = block.bullet_metrics || {};
 
                         // Dynamic isSmallCaps based on active font + variant
@@ -1353,10 +1444,10 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                             }
                         }
 
-                        const mapped = mapContentToIcons(span.content, span.font, spanVariant);
+                        const isMarker = isListItem && line.is_bullet_start && si === 0;
+                        const mapped = mapContentToIcons(span.content, span.font, spanVariant, isMarker);
                         const isMappedIcon = mapped !== span.content;
 
-                        const isMarker = isListItem && line.is_bullet_start && si === 0;
                         const bMetrics = block.bullet_metrics || {};
                         let customSize = isMarker ? (bMetrics.size || span.size) : span.size;
 
@@ -1379,7 +1470,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                                 y={baselineY}
                                 dy={verticalShift + "px"}
                                 fontSize={Math.max(1, Math.abs(customSize * OPTICAL_HEIGHT_FACTOR * finalFittingRatio))}
-                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (span.is_bold ? '700' : '400')}
+                                fontWeight={/[\uf000-\uf999]/.test(mapped) ? '900' : (isFitMode ? finalWeight : (span.is_bold ? '700' : '400'))}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={/[\uf000-\uf999]/.test(mapped) || isMappedIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font)}
                                 fill={getSVGColor(span.color, 'black')}

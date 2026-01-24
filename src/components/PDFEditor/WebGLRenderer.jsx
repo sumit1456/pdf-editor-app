@@ -455,14 +455,16 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
                                 {(() => {
                                     const mapContentToIcons = (text, fontName) => {
                                         if (!text) return text;
+                                        const isSymbolic = fontName && (fontName.includes('Symbol') || fontName.includes('Dingbats') || fontName.includes('Wingdings'));
+
                                         return text
                                             .replace(/\u2022/g, '•')  // Bullet
                                             .replace(/\u2217/g, '*')  // Mathematical Asterisk -> Standard Asterisk
                                             .replace(/\u22c6/g, '*')  // Star bullet -> Standard Asterisk
                                             .replace(/\u2013/g, '–')  // En-dash
                                             .replace(/\u2014/g, '—')  // Em-dash
-                                            .replace(/^I$/g, '•')     // Artifact mapping: 'I' -> Bullet
-                                            .replace(/^G$/g, '•');    // Artifact mapping: 'G' -> Bullet
+                                            .replace(/^I$/g, isSymbolic ? '•' : 'I')     // Artifact mapping: 'I' -> Bullet
+                                            .replace(/^G$/g, isSymbolic ? '•' : 'G');    // Artifact mapping: 'G' -> Bullet
                                     };
 
                                     const edit = nodeEdits?.[item.id || i];

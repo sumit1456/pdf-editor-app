@@ -64,7 +64,7 @@ export default function NavBar() {
     <>
       <nav className="nav-bar">
         <div className="left">
-          <img src="./images/logo.png" alt="error" />
+          <img src="./images/logo2.png" alt="error" />
           <h1>THE PDF StudIO</h1>
         </div>
 
