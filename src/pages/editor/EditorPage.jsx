@@ -198,7 +198,7 @@ export default function EditorPage() {
     // NODE-BASED EDITING STATE: Persistent edits keyed by unique item ID
     const [nodeEdits, setNodeEdits] = useState({});
     const [activeTab, setActiveTab] = useState('text'); // 'text' or 'links'
-    const [zoom, setZoom] = useState(0.9); // Master zoom state
+    const [zoom, setZoom] = useState(window.innerWidth < 768 ? 0.45 : 0.9); // Master zoom state
     const [activeNodeId, setActiveNodeId] = useState(null); // Track currently focused node
     const [smartStyling, setSmartStyling] = useState(true);
     const [selectedWordIndices, setSelectedWordIndices] = useState([]);
@@ -207,6 +207,14 @@ export default function EditorPage() {
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [selectedNodeIds, setSelectedNodeIds] = useState([]);
     const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
+    const [mobileActivePanel, setMobileActivePanel] = useState(null); // 'edit', 'pages', 'words' or null
+
+    // Auto-open tools panel on mobile when a node is selected
+    React.useEffect(() => {
+        if (activeNodeId && window.innerWidth < 1024 && !mobileActivePanel) {
+            setMobileActivePanel('edit');
+        }
+    }, [activeNodeId]);
 
     // --- MASTER HUD: Log Node Tree on change ---
     React.useEffect(() => {
@@ -837,7 +845,8 @@ export default function EditorPage() {
             </div>
 
             {/* 1. EDITING PANEL - Left */}
-            <div className="editing-panel">
+            <div className={`editing-panel ${mobileActivePanel === 'edit' ? 'mobile-open' : ''}`}>
+                <div className="drawer-handle" onClick={() => setMobileActivePanel(null)}></div>
                 {/* 1.1 DESIGN CONFIG TOOLBAR (Global control for active node) */}
                 {(() => {
                     const activeStyle = getActiveNodeStyle();
@@ -1168,8 +1177,9 @@ export default function EditorPage() {
             </div>
 
             {/* 3. NAVIGATOR - Right */}
-            <div className="navigator-sidebar">
-                <div className="navigator-section top">
+            <div className={`navigator-sidebar ${(mobileActivePanel === 'pages' || mobileActivePanel === 'words') ? 'mobile-open' : ''}`}>
+                <div className="drawer-handle" onClick={() => setMobileActivePanel(null)}></div>
+                <div className="navigator-section top" style={{ display: (window.innerWidth < 1024 && mobileActivePanel === 'words') ? 'none' : 'block' }}>
                     <div className="navigator-header">
                         <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0' }}>Pages Preview</h3>
                     </div>
@@ -1186,7 +1196,13 @@ export default function EditorPage() {
                     </div>
                 </div>
 
-                <div className="navigator-section bottom" style={{ flex: 1, borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '20px', marginTop: '10px' }}>
+                <div className="navigator-section bottom" style={{
+                    flex: 1,
+                    borderTop: '1px solid rgba(255,255,255,0.05)',
+                    paddingTop: '20px',
+                    marginTop: '10px',
+                    display: (window.innerWidth < 1024 && mobileActivePanel === 'pages') ? 'none' : 'block'
+                }}>
                     {activeNodeData ? (
                         <div className="word-level-panel">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
@@ -1292,6 +1308,25 @@ export default function EditorPage() {
                     )}
                 </div>
             </div>
-        </div >
+
+            {/* Mobile Action Dock */}
+            <div className="mobile-action-dock">
+                <div className={`dock-item ${mobileActivePanel === 'pages' ? 'active' : ''}`} onClick={() => setMobileActivePanel('pages')}>
+                    <i className="fa-solid fa-layer-group"></i>
+                    <span>Pages</span>
+                </div>
+                <div className={`dock-item ${mobileActivePanel === 'words' ? 'active' : ''}`} onClick={() => setMobileActivePanel('words')}>
+                    <i className="fa-solid fa-font"></i>
+                    <span>Words</span>
+                </div>
+                <div className={`dock-item active primary`} onClick={() => handleDownload()}>
+                    <i className="fa-solid fa-cloud-arrow-down"></i>
+                </div>
+                <div className={`dock-item ${mobileActivePanel === 'edit' ? 'active' : ''}`} onClick={() => setMobileActivePanel('edit')}>
+                    <i className="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Studio</span>
+                </div>
+            </div>
+        </div>
     );
 }

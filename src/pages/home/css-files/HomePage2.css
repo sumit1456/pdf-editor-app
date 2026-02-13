@@ -400,7 +400,8 @@ Broadway .feature-card:hover {
   }
 
   .upload-zone {
-    width: 500px;
+    width: 100%;
+    max-width: 500px;
     height: 300px;
   }
 
@@ -411,20 +412,34 @@ Broadway .feature-card:hover {
 
 @media (max-width: 768px) {
   .hero-title {
-    font-size: 3rem;
+    font-size: 2.2rem;
+    line-height: 1.1;
   }
 
   .hero-subtitle {
-    font-size: 1.1rem;
+    font-size: 1rem;
+    padding: 0 1rem;
   }
 
   .upload-zone {
     width: 100%;
-    height: 280px;
+    height: 240px;
+    border-radius: 20px;
+  }
+
+  .upload-icon {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
   }
 
   .features-section {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .feature-card {
+    padding: 1.5rem;
   }
 }
 

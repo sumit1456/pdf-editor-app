@@ -4,6 +4,40 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 
 // Now purely a Single Page Renderer
+const normalizeFont = (fontName, googleFont) => {
+    if (googleFont) {
+        const gf = googleFont.toLowerCase();
+        if (gf.includes('inter')) return "'Inter', sans-serif";
+        if (gf.includes('source serif')) return "'Source Serif 4', serif";
+        if (gf.includes('roboto')) return "'Roboto', sans-serif";
+        if (gf.includes('open sans')) return "'Open Sans', sans-serif";
+        if (gf.includes('montserrat')) return "'Montserrat', sans-serif";
+        if (gf.includes('lora')) return "'Lora', serif";
+        if (gf.includes('merriweather')) return "'Merriweather', serif";
+        if (gf.includes('libre baskerville')) return "'Libre Baskerville', serif";
+        if (gf.includes('playfair display')) return "'Playfair Display', serif";
+        if (gf.includes('oswald')) return "'Oswald', sans-serif";
+        if (gf.includes('roboto mono')) return "'Roboto Mono', monospace";
+        if (gf.includes('jetbrains mono')) return "'JetBrains Mono', monospace";
+        if (gf.includes('fira code')) return "'Fira Code', monospace";
+        if (gf.includes('poppins')) return "'Poppins', sans-serif";
+        if (gf.includes('crimson pro')) return "'Crimson Pro', serif";
+        if (gf.includes('dancing script')) return "'Dancing Script', cursive";
+        if (gf.includes('orbitron')) return "'Orbitron', sans-serif";
+        if (gf.includes('pt serif')) return "'PT Serif', serif";
+        if (gf.includes('pt sans')) return "'PT Sans', sans-serif";
+        if (gf.includes('ubuntu')) return "'Ubuntu', sans-serif";
+    }
+
+    if (!fontName) return "'Source Serif 4', serif";
+    const name = fontName.toLowerCase();
+    if (name === 'inter') return "'Inter', sans-serif";
+    if (name === 'roboto') return "'Roboto', sans-serif";
+    if (name === 'open sans') return "'Open Sans', sans-serif";
+    if (name.includes('source serif 4')) return "'Source Serif 4', serif";
+    return `"${fontName}", serif`;
+};
+
 const WebGLRenderer = React.memo(({ page, pageIndex, activeNodeId, fontsKey, nodeEdits = {}, onUpdate, onSelect, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
@@ -363,11 +397,11 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
             if (!isSpace) wordCounter++;
             const spanStyle = { ...safetyStyle, ...style };
             const spanSize = Math.abs(spanStyle.size || baseSize);
-            const spanWeight = spanStyle.is_bold ? 'bold' : 'normal';
+            const spanWeight = spanStyle.is_bold ? '700' : '400';
             const spanItalic = spanStyle.is_italic ? 'italic' : 'normal';
-            const spanFamily = spanStyle.font ? `"${spanStyle.font}", serif` : 'serif';
+            const spanFamily = normalizeFont(spanStyle.font, spanStyle.googleFont);
             const spanColor = Array.isArray(spanStyle.color)
-                ? `rgb(${spanStyle.color[0] * 255}, ${spanStyle.color[1] * 255}, ${spanStyle.color[2] * 255})`
+                ? `rgb(${Math.round(spanStyle.color[0] * 255)}, ${Math.round(spanStyle.color[1] * 255)}, ${Math.round(spanStyle.color[2] * 255)})`
                 : 'black';
 
             return (
@@ -470,32 +504,33 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
                                     const edit = nodeEdits?.[item.id || i];
                                     if (edit) {
                                         const wordStyles = edit.wordStyles || {};
-                                        const safetyStyle = edit.safetyStyle || {
+                                        const sStyle = edit.safetyStyle || {
                                             size: Math.abs(item.size),
                                             font: item.font,
+                                            googleFont: item.google_font,
                                             is_bold: item.is_bold,
                                             is_italic: item.is_italic,
                                             color: item.color
                                         };
-                                        return renderWordStyledText(mapContentToIcons(item.content, item.font), wordStyles, safetyStyle, Math.abs(item.size));
+                                        return renderWordStyledText(mapContentToIcons(item.content, item.font), wordStyles, sStyle, sStyle.size);
                                     }
 
                                     return (
                                         <>
                                             <tspan
-                                                fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                                fill={item.color ? `rgb(${Math.round(item.color[0] * 255)}, ${Math.round(item.color[1] * 255)}, ${Math.round(item.color[2] * 255)})` : 'black'}
                                                 fontSize={Math.abs(item.size)}
-                                                fontFamily={`"${item.font}", serif`}
-                                                fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                                fontFamily={normalizeFont(item.font, item.google_font)}
+                                                fontWeight={item.is_bold ? '700' : '400'}
                                                 fontStyle={item.is_italic ? 'italic' : 'normal'}
                                             >
                                                 {mapContentToIcons(item.bullet || '', item.font)}
                                             </tspan>
                                             <tspan
-                                                fill={item.color ? `rgb(${item.color[0] * 255}, ${item.color[1] * 255}, ${item.color[2] * 255})` : 'black'}
+                                                fill={item.color ? `rgb(${Math.round(item.color[0] * 255)}, ${Math.round(item.color[1] * 255)}, ${Math.round(item.color[2] * 255)})` : 'black'}
                                                 fontSize={Math.abs(item.size)}
-                                                fontFamily={`"${item.font}", serif`}
-                                                fontWeight={item.is_bold ? 'bold' : 'normal'}
+                                                fontFamily={normalizeFont(item.font, item.google_font)}
+                                                fontWeight={item.is_bold ? '700' : '400'}
                                                 fontStyle={item.is_italic ? 'italic' : 'normal'}
                                                 xmlSpace="preserve"
                                             >

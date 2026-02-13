@@ -98,14 +98,26 @@ export default function NavBar() {
 
       {/* Sidebar */}
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
-        <p><Link to="/" onClick={toggleSidebar}>Home</Link></p>
-        <p><Link to="/templates" onClick={toggleSidebar}>Templates</Link></p>
-        <p><Link to="/about" onClick={toggleSidebar}>About</Link></p>
-        <p>
-          <a href="#" onClick={loadDefaultPdf} className={isLoading ? 'loading' : ''} style={{ cursor: isLoading ? 'wait' : 'pointer' }}>
-            {isLoading ? 'Loading...' : 'PDF Editor ✨'}
+        <div className="sidebar-header">
+          <img src="./images/logo2.png" alt="logo" className="sidebar-logo" />
+          <div className="close-btn" onClick={toggleSidebar}><i className="fa-solid fa-xmark"></i></div>
+        </div>
+        <div className="sidebar-links">
+          <Link to="/" onClick={toggleSidebar}><i className="fa-solid fa-house"></i> Home</Link>
+          <Link to="/about" onClick={toggleSidebar}><i className="fa-solid fa-circle-info"></i> About</Link>
+          <a href="#" onClick={(e) => { toggleSidebar(); loadDefaultPdf(e); }} className={isLoading ? 'loading' : ''}>
+            <i className="fa-solid fa-file-pen"></i> PDF Editor ✨
           </a>
-        </p>
+          <a
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=sumithatekar067@gmail.com&su=Feedback%20for%20THE%20PDF%20STUDIO"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-feedback"
+            onClick={toggleSidebar}
+          >
+            <i className="fa-solid fa-paper-plane"></i> Send Feedback
+          </a>
+        </div>
       </div>
 
       {/* Overlay */}
