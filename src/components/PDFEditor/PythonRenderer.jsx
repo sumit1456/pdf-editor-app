@@ -659,28 +659,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         <div className="webgl-single-page" style={{ width: 'auto', height: 'auto', position: 'relative', background: 'transparent', padding: '0px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: scaledStyleWidth + 'px', margin: '0 auto 15px auto', padding: '0 10px' }}>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button 
-                        onClick={captureRender}
-                        style={{ 
-                            background: '#3b82f6', 
-                            color: 'white', 
-                            border: 'none', 
-                            padding: '6px 12px', 
-                            borderRadius: '8px', 
-                            fontSize: '0.75rem', 
-                            cursor: 'pointer',
-                            boxShadow: '0 2px 4px rgba(59, 130, 246, 0.2)',
-                            transition: 'all 0.2s',
-                            fontWeight: '600'
-                        }}
-                        onMouseOver={(e) => e.target.style.background = '#2563eb'}
-                        onMouseOut={(e) => e.target.style.background = '#3b82f6'}
-                    >
-                        Capture DOM
-                    </button>
-                    <span style={{ fontSize: '0.75rem', color: '#666', fontWeight: '500', alignSelf: 'center' }}>
-                        DEBUG: Render Verification Tool
-                    </span>
+                    {/* Capture DOM debug button removed */}
                 </div>
                 <div style={{ background: '#f8f9fa', padding: '4px 10px', borderRadius: '6px', color: '#666', fontSize: '0.75rem', border: '1px solid #dee2e6', fontWeight: '600' }}>
                     Page {pageIndex + 1}
@@ -805,28 +784,7 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
     let safeRatio = 1.0;
     fittedFontSize = (sStyle.size || item.size) * OPTICAL_HEIGHT_FACTOR * safeRatio;
 
-    if (activeNodeId === (item.id || index)) {
-        setTimeout(() => {
-            const el = document.getElementById(`item-debug-${item.id || index}`);
-            const textEl = el ? el.querySelector('text') : null;
-            const computed = textEl ? window.getComputedStyle(textEl) : null;
-            console.log(`
-=========================================
-[BBox Debug] Item: ${item.id || index}
------------------------------------------
-INTERNAL STATE:
-- Mode:        ${isFitMode ? 'FIT (Scaling)' : 'NORMAL (Fixed Font)'}
-- SafeRatio:   ${safeRatio.toFixed(6)}
-- StateSize:   ${fittedFontSize.toFixed(2)}px
-
-DOM TRUTH:
-- RenderSize:  ${computed ? computed.fontSize : 'N/A'}
-- RenderFont:  ${computed ? computed.fontFamily : 'N/A'}
-- RenderWeight: ${computed ? computed.fontWeight : 'N/A'}
-=========================================
-            `);
-        }, 50);
-    }
+    // BBox Debug console log removed
 
     const renderWeight = (matchingFont && /bold|medium|semibold|black|heavy/i.test(matchingFont.name)) ? 'normal' : (sStyle.is_bold ? '700' : '400');
 
@@ -952,29 +910,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
         };
     }, [line, styleItem, isModified, metricRatio, edit.safetyStyle]);
 
-    useEffect(() => {
-        if (isActive && itemRef.current) {
-            // Get Absolute Truth from the DOM
-            const textEl = itemRef.current.querySelector('text');
-            const computed = textEl ? window.getComputedStyle(textEl) : null;
-            
-            console.log(`
-=========================================
-[BBox Debug] ID: ${line.id}
------------------------------------------
-INTERNAL STATE:
-- Mode:        ${isFitMode ? 'FIT (Scaling)' : 'NORMAL (Fixed Font)'}
-- SafeRatio:   ${finalFittingRatio.toFixed(6)}
-- StateSize:   ${finalFontSize.toFixed(2)}px
-
-DOM TRUTH:
-- RenderSize:  ${computed ? computed.fontSize : 'N/A'}
-- RenderFont:  ${computed ? computed.fontFamily : 'N/A'}
-- RenderWeight: ${computed ? computed.fontWeight : 'N/A'}
-=========================================
-            `);
-        }
-    }, [isActive, finalFittingRatio, isFitMode, line.id, finalFontSize]);
+    // BBox Debug console log removed
 
     return (
         <g className="line-group" ref={itemRef} style={{ cursor: isDragEnabled ? 'move' : 'default' }}
@@ -987,9 +923,8 @@ DOM TRUTH:
                     safetyStyle: { size: styleItem.size || line.size, font: styleItem.font, color: styleItem.color, is_bold: styleItem.is_bold, is_italic: styleItem.is_italic, font_variant: styleItem.font_variant || 'normal', uri: line.uri }
                 });
             }}>
-            {/* DEBUG: Red Bounding Box for ALL text */}
-            <rect x={edit.bbox ? edit.bbox[0] : line.x0} y={edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill="rgba(255, 0, 0, 0.05)" stroke="red" strokeWidth="0.5" opacity="0.6" pointerEvents="none" />
-            <line x1={edit.bbox ? edit.bbox[0] : line.x0} y1={(edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))) + (line.height || line.size || 12)} x2={(edit.bbox ? edit.bbox[0] : line.x0) + finalPdfWidth} y2={(edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))) + (line.height || line.size || 12)} stroke="red" strokeWidth="1.5" pointerEvents="none" />
+            {/* DEBUG: Red Bounding Box for ALL text - REMOVED for production */}
+            
             
             {isActive && <rect x={edit.bbox ? edit.bbox[0] : line.x0} y={edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" strokeDasharray="4 2" pointerEvents="none" style={{ animation: 'blink 2s infinite' }} />}
             <rect x={(edit.bbox ? edit.bbox[0] : line.x0) - 5} y={(edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))) - 4} width={Math.max(50, finalPdfWidth + 10)} height={(line.height || line.size || 12) + 8} fill="transparent" pointerEvents="all" />
