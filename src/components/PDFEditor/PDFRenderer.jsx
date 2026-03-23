@@ -229,7 +229,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
     const isMarkerLine = isListItem && (line.is_bullet_start || startsWithBullet);
 
     if (isListItem) {
-        console.log(`[LineRenderer] List item check: content="${content.substring(0, 10)}...", isMarkerLine=${isMarkerLine}, blockType=${block.type}, bulletStart=${line.is_bullet_start}, startsWithBullet=${startsWithBullet}`);
+        // console.log(`[LineRenderer] List item check: content="${content.substring(0, 10)}...", isMarkerLine=${isMarkerLine}, blockType=${block.type}, bulletStart=${line.is_bullet_start}, startsWithBullet=${startsWithBullet}`);
     }
 
     // Position Pillars

@@ -2,9 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
-import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
+import PythonRenderer, { MEASURE_CTX, getRealFontString } from '../../components/PDFEditor/PythonRenderer';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
-import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { savePdfToBackend } from '../../services/PdfBackendService';
 import './EditorPage.css';
 
@@ -32,30 +31,7 @@ const mapSpansToWordStyles = (items) => {
     return wordStyles;
 };
 
-const splitBullet = (content) => {
-    if (!content) return { bullet: '', text: '' };
 
-    // Robust pattern for bullet markers:
-    // 1. Common symbols: • · * ∗ ⋆ – - »
-    // 2. Ordered markers: 1. 1) a. a)
-    // 3. Artifact mappings: i, G (mapping from LaTeX/Symbol fonts)
-    // Matches the marker and all trailing whitespace
-    const match = content.match(/^([•·*∗⋆–\-»iG]|[\da-zA-Z]+[.)])\s*/);
-
-    if (match) {
-        const bulletPart = match[0];
-        // If it's specifically 'i' or 'G' as a single starting character followed by space, 
-        // we treat it as a bullet artifact.
-        const isArtifact = (bulletPart.trim() === 'i' || bulletPart.trim() === 'G');
-
-        return {
-            bullet: isArtifact ? '• ' : bulletPart,
-            text: content.substring(bulletPart.length)
-        };
-    }
-
-    return { bullet: '', text: content };
-};
 
 const FONT_OPTIONS = [
     { label: 'Serif (Latex)', value: 'Source Serif 4' },
@@ -109,7 +85,10 @@ const measureLineDensity = (text, font, size, weight = 'normal', isBold = false)
     else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
     else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
 
-    ctx.font = `${weight} ${size}px ${family}, sans-serif`;
+    // PDF sizes are in points (pt). Canvas measureText uses CSS pixels.
+    // 1pt = 1.333px at 96dpi (96/72). Without this, font is ~33% oversized → bbox inflates.
+    const sizePx = size * (96 / 72);
+    ctx.font = `${weight} ${sizePx}px ${family}, sans-serif`;
     return ctx.measureText(text).width;
 };
 
@@ -132,7 +111,6 @@ const hexToRgb = (hex) => {
 
 export default function EditorPage() {
     const location = useLocation();
-    const backend = location.state?.backend || 'java';
 
 
     // MASTER STATE: All pages and the current active index
@@ -205,9 +183,13 @@ export default function EditorPage() {
     const [isMultiSelect, setIsMultiSelect] = useState(false);
     const [isFitMode, setIsFitMode] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
+    const [isCalibrated, setIsCalibrated] = useState(false); // Tracks if fonts are calibrated
     const [selectedNodeIds, setSelectedNodeIds] = useState([]);
     const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
     const [mobileActivePanel, setMobileActivePanel] = useState(null); // 'edit', 'pages', 'words' or null
+    const [isDragEnabled, setIsDragEnabled] = useState(false); // Default dragging OFF as requested
+    const [pageOffset, setPageOffset] = useState(0);
+    const VISIBLE_PAGE_COUNT = 3;
 
     // Auto-open tools panel on mobile when a node is selected
     React.useEffect(() => {
@@ -216,7 +198,9 @@ export default function EditorPage() {
         }
     }, [activeNodeId]);
 
-    // --- MASTER HUD: Log Node Tree on change ---
+
+
+    /* --- MASTER HUD: Log Node Tree on change ---
     React.useEffect(() => {
         if (!activeNodeId) return;
         const edit = nodeEdits[activeNodeId];
@@ -228,23 +212,23 @@ export default function EditorPage() {
         const finalWordsList = content.split(/\s+/).filter(Boolean);
 
         if (finalWordsList.length > 0) {
-            console.group(`[CURRENT NODE TREE] Node: ${activeNodeId}`);
-            console.log(`Text: "${content}"`);
-            console.table(finalWordsList.map((word, idx) => {
-                const wStyle = wordStyles[idx];
-                const resolved = { ...sStyle, ...wStyle };
-                return {
-                    index: idx,
-                    word: word,
-                    status: wStyle ? 'EXPLICIT (Override)' : 'INHERITED (Baseline)',
-                    font: resolved.font || 'Default',
-                    size: resolved.size,
-                    bold: resolved.is_bold ? 'Yes' : 'No'
-                };
-            }));
-            console.groupEnd();
+            // console.group(`[CURRENT NODE TREE] Node: ${activeNodeId}`);
+            // console.log(`Text: "${content}"`);
+            // console.table(finalWordsList.map((word, idx) => {
+            //     const wStyle = wordStyles[idx];
+            //     const resolved = { ...sStyle, ...wStyle };
+            //     return {
+            //         index: idx,
+            //         word: word,
+            //         status: wStyle ? 'EXPLICIT (Override)' : 'INHERITED (Baseline)',
+            //         font: resolved.font || 'Default',
+            //         size: resolved.size,
+            //         bold: resolved.is_bold ? 'Yes' : 'No'
+            //     };
+            // }));
+            // console.groupEnd();
         }
-    }, [activeNodeId, nodeEdits]);
+    }, [activeNodeId, nodeEdits]); */
 
     const getActiveNodeStyle = () => {
         if (!activeNodeId) return null;
@@ -256,16 +240,35 @@ export default function EditorPage() {
         const lastWordIdx = words.length > 0 ? words.length - 1 : 0;
 
         if (selectedWordIndices.length > 0) {
+            // Check if ALL words are selected
+            const contentStr = edit?.content || "";
+            const totalWords = contentStr.split(/\s+/).filter(Boolean).length;
+
+            // If more than 1 word or ALL words selected, prefer the line's safetyStyle (base style)
+            // This ensures common font size is shown when a line is selected
+            if (selectedWordIndices.length === totalWords && totalWords > 1) {
+                if (edit?.safetyStyle) return edit.safetyStyle;
+            }
+
             const lastIdx = selectedWordIndices[selectedWordIndices.length - 1];
             if (edit?.wordStyles?.[lastIdx]) {
-                return { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastIdx] };
+                const style = { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastIdx] };
+                // Ensure size is a number
+                if (style.size) style.size = parseFloat(style.size);
+                return style;
             }
         } else if (edit?.wordStyles?.[lastWordIdx]) {
             // If no selection, show the status of the last word in the line
-            return { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastWordIdx] };
+            const style = { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastWordIdx] };
+            if (style.size) style.size = parseFloat(style.size);
+            return style;
         }
 
-        if (edit?.safetyStyle) return edit.safetyStyle;
+        if (edit?.safetyStyle) {
+            const style = { ...edit.safetyStyle };
+            if (style.size) style.size = parseFloat(style.size);
+            return style;
+        }
 
         // TARGETING FIX: When searching for "Active Style" in original data
         for (const page of pages) {
@@ -274,7 +277,7 @@ export default function EditorPage() {
                 // Return style of the LAST item (span) as per user targeting preference
                 const base = (found.items && found.items.length > 0) ? found.items[found.items.length - 1] : found;
                 return {
-                    size: base.size,
+                    size: parseFloat(base.size),
                     font: base.font,
                     color: base.color,
                     is_bold: base.is_bold,
@@ -296,6 +299,49 @@ export default function EditorPage() {
             null;
     }, [pages, activePageIndex, activeNodeId]);
 
+    const activeNodeProps = React.useMemo(() => {
+        if (!activeNodeId || !activeNodeData) return null;
+
+        const edit = nodeEdits[activeNodeId] || {};
+        const isModified = !!edit.isModified;
+        const style = getActiveNodeStyle();
+        const content = edit.content !== undefined ? edit.content : activeNodeData.content;
+
+        // Calculate BBox
+        let bbox = edit.bbox || activeNodeData.bbox;
+        if (!bbox && activeNodeData.origin) {
+            const w = activeNodeData.width || 50;
+            const h = activeNodeData.height || style?.size || 10;
+            bbox = [activeNodeData.origin[0], activeNodeData.origin[1] - h, activeNodeData.origin[0] + w, activeNodeData.origin[1]];
+        }
+
+        // Pure font sizes - no scaling in HUD
+        let ratio = 1.0;
+
+        return {
+            font: style?.font || 'Default',
+            size: style?.size || activeNodeData.size || 0,
+            color: style?.color || activeNodeData.color || [0, 0, 0],
+            ratio: ratio,
+            x: bbox ? bbox[0] : (activeNodeData.origin ? activeNodeData.origin[0] : 0),
+            y: bbox ? bbox[1] : (activeNodeData.origin ? activeNodeData.origin[1] : 0)
+        };
+    }, [activeNodeId, activeNodeData, nodeEdits, isFitMode, selectedWordIndices]);
+
+
+    // Feature Request: Initially select all words when a line is selected
+    React.useEffect(() => {
+        if (activeNodeId && activeNodeData) {
+            const content = nodeEdits[activeNodeId]?.content || activeNodeData.content || "";
+            const words = content.split(/\s+/).filter(Boolean);
+            setSelectedWordIndices(words.map((_, i) => i));
+            setIsMultiSelect(words.length > 0);
+        } else if (!activeNodeId) {
+            setSelectedWordIndices([]);
+            setIsMultiSelect(false);
+        }
+    }, [activeNodeId, activeNodeData]); // Also depend on activeNodeData to ensure content is ready
+
     // AUTO-SELECT FIRST NODE ON LOAD
     // This ensures the sidebar is "active" immediately for a better first impression
     React.useEffect(() => {
@@ -311,7 +357,9 @@ export default function EditorPage() {
                 setActiveNodeId(firstLine.id);
                 // Auto-select first word as requested
                 if (firstLine.content && firstLine.content.trim().length > 0) {
-                    setSelectedWordIndices([0]);
+                    const words = firstLine.content.split(/\s+/).filter(Boolean);
+                    setSelectedWordIndices(words.map((_, i) => i));
+                    setIsMultiSelect(true);
                 }
                 setIsInitialLoad(false);
             }
@@ -342,7 +390,7 @@ export default function EditorPage() {
                     const baseStyle = edit.safetyStyle || original?.originalStyle || (original?.items?.[0] || {});
                     const wordStyles = edit.wordStyles || {};
 
-                    // Strategy: Map words to styles. 
+                    // Strategy: Map words to styles.
                     // Note: 'words' includes spaces. wordStyles indices typically refer to non-space words.
                     let wordCounter = 0;
                     processedSpans = words.map((chunk) => {
@@ -394,8 +442,9 @@ export default function EditorPage() {
                     pageIndex: original?.pageIndex ?? 0,
                     text: newText,
                     originalText: original?.content,
-                    bbox: original?.bbox,
-                    origin: original?.origin,
+                    bbox: edit.bbox || original?.bbox,
+                    origin: edit.origin || original?.origin,
+                    original_origin: original?.origin,
                     style: {
                         ...edit.safetyStyle,
                         font: edit.safetyStyle?.font || original?.originalStyle?.font || original?.font || '',
@@ -454,9 +503,6 @@ export default function EditorPage() {
         setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
     };
     const [measureCanvas] = useState(() => document.createElement('canvas'));
-
-    // Initialize Reflow Engine with font metrics
-    const reflowEngine = useMemo(() => new ReflowEngine(fonts), [fonts]);
 
     // Helper for measuring text width
     const getTextWidth = (text, font, size) => {
@@ -518,11 +564,15 @@ export default function EditorPage() {
     };
 
     const scrollToNode = (idOrIndex) => {
-        if (idOrIndex !== activeNodeId) setSelectedWordIndices([]);
         setActiveNodeId(idOrIndex);
         if (!isLineMultiSelect) setSelectedNodeIds([idOrIndex]);
         else if (!selectedNodeIds.includes(idOrIndex)) setSelectedNodeIds(prev => [...prev, idOrIndex]);
 
+        // LOGGING REFINEMENT: Compare controller size vs actual data size
+        const line = textLines.find(l => l.id === idOrIndex);
+        if (line) {
+            // Logic removed for brevity
+        }
         // Ensure wordStyles are initialized on navigation
         if (!nodeEdits[idOrIndex]?.wordStyles) {
             const line = textLines.find(l => l.id === idOrIndex);
@@ -560,7 +610,7 @@ export default function EditorPage() {
 
     const handleSidebarEdit = (lineId, newText, originalStyle, cursorIndex = null) => {
         if (!lineId) {
-            console.warn('[EditorPage] Cannot edit node without stable ID');
+            // console.warn('[EditorPage] Cannot edit node without stable ID');
             return;
         }
 
@@ -612,15 +662,9 @@ export default function EditorPage() {
             }
 
             const sStyle = current.safetyStyle || originalStyle || {};
-            const measuredWidth = measureLineDensity(
-                newText,
-                sStyle.font || 'Source Serif 4',
-                sStyle.size || 10,
-                sStyle.is_bold ? 'bold' : 'normal',
-                sStyle.is_bold
-            );
 
-            let newBBox = current.bbox || null;
+            // Resolve bbox from cached state or original node — NEVER mutate width/height
+            let newBBox = current.bbox ? [...current.bbox] : null;
             if (!newBBox) {
                 for (const p of pages) {
                     const found = (p.blocks ? p.blocks.flatMap(b => b.lines) : p.items || []).find(l => l.id === lineId);
@@ -630,18 +674,28 @@ export default function EditorPage() {
                     }
                 }
             }
+            // bbox[2] is NOT touched — width is frozen at its original value
 
-            if (newBBox) {
-                newBBox[2] = newBBox[0] + measuredWidth;
-            }
-
+            // Sync content to base pages state (no bbox change)
+            setPages(prevPages => {
+                const nextPages = [...prevPages];
+                const page = nextPages[activePageIndex];
+                if (page) {
+                    const block = page.blocks?.find(b => b.lines.some(l => l.id === lineId));
+                    const item = block ? block.lines.find(l => l.id === lineId) : (page.items || []).find(l => l.id === lineId);
+                    if (item) {
+                        item.content = newText;
+                        // bbox unchanged — only content is updated
+                    }
+                }
+                return nextPages;
+            });
 
             return {
                 ...prev,
                 [lineId]: {
                     ...current,
                     content: newText,
-                    width: measuredWidth,
                     bbox: newBBox,
                     wordStyles: wordStyles,
                     safetyStyle: sStyle,
@@ -690,32 +744,19 @@ export default function EditorPage() {
                     if (field === 'font') sStyle.googleFont = value;
                 }
 
-                const content = current.content !== undefined ? current.content : (
-                    pages[activePageIndex].items?.find(it => it.id === id)?.content ||
-                    pages[activePageIndex].blocks?.flatMap(b => b.lines).find(l => l.id === id)?.content || ""
-                );
 
-                const measuredWidth = measureLineDensity(
-                    content,
-                    sStyle.font || 'Source Serif 4',
-                    sStyle.size || 10,
-                    sStyle.is_bold ? 'bold' : 'normal'
-                );
-
+                // bbox is read-only — only resolve it for nodeEdits cache, never mutate width
                 let newBBox = current.bbox || null;
                 if (!newBBox) {
                     const found = (pages[activePageIndex].blocks ? pages[activePageIndex].blocks.flatMap(b => b.lines) : (pages[activePageIndex].items || [])).find(l => l.id === id);
                     if (found && found.bbox) newBBox = [...found.bbox];
                 }
-                if (newBBox) {
-                    newBBox[2] = newBBox[0] + measuredWidth;
-                }
+                // bbox[2] (width) is NOT touched — frozen at original value
 
                 next[id] = {
                     ...current,
                     safetyStyle: sStyle,
                     wordStyles: wordStyles,
-                    width: measuredWidth,
                     bbox: newBBox,
                     isModified: true
                 };
@@ -738,6 +779,71 @@ export default function EditorPage() {
         const g = parseInt(hex.slice(3, 5), 16) / 255;
         const b = parseInt(hex.slice(5, 7), 16) / 255;
         return [r, g, b];
+    };
+
+    const handleNodeMove = (id, newX, newY) => {
+        setNodeEdits(prev => {
+            const current = prev[id] || {};
+            let newBBox = current.bbox ? [...current.bbox] : null;
+            let newOrigin = current.origin ? [...current.origin] : null;
+            let safetyStyle = current.safetyStyle || null;
+            let wordStyles = current.wordStyles || null;
+
+            if (!newBBox || !newOrigin || !safetyStyle) {
+                // Find original node data to capture styles and initial coordinates
+                for (const p of pages) {
+                    const found = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === id);
+                    if (found) {
+                        if (!newBBox && found.bbox) newBBox = [...found.bbox];
+                        if (!newOrigin && found.origin) newOrigin = [...found.origin];
+                        if (!newOrigin && newBBox) newOrigin = [newBBox[0], newBBox[1]];
+
+                        // CAPTURE STYLES: This is the fix for losing styles on move
+                        if (!safetyStyle) {
+                            // Use the same logic as handleDoubleClick or sidePanel items
+                            const contentItem = (found.is_bullet_start && found.items?.length > 1) ? found.items[1] : (found.items?.[0] || found);
+                            safetyStyle = {
+                                size: contentItem.size || found.size || 10,
+                                font: contentItem.font || found.font,
+                                googleFont: found.google_font,
+                                color: contentItem.color || found.color,
+                                is_bold: contentItem.is_bold || false,
+                                is_italic: contentItem.is_italic || false,
+                                font_variant: contentItem.font_variant || 'normal'
+                            };
+                        }
+                        if (!wordStyles) {
+                            wordStyles = mapSpansToWordStyles(found.items);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (newBBox && newOrigin) {
+                const dx = newX - newOrigin[0];
+                const dy = newY - newOrigin[1];
+                // Lock original dimensions so repeated moves never drift
+                const originalWidth = newBBox[2] - newBBox[0];
+                const originalHeight = newBBox[3] - newBBox[1];
+                const newX0 = newBBox[0] + dx;
+                const newY0 = newBBox[1] + dy;
+                newBBox = [newX0, newY0, newX0 + originalWidth, newY0 + originalHeight];
+                newOrigin = [newX, newY];
+            }
+
+            return {
+                ...prev,
+                [id]: {
+                    ...current,
+                    bbox: newBBox,
+                    origin: newOrigin,
+                    safetyStyle: safetyStyle,
+                    wordStyles: wordStyles,
+                    isModified: true
+                }
+            };
+        });
     };
 
     const handleLinkEdit = (lineId, newUri, originalStyle) => {
@@ -775,23 +881,15 @@ export default function EditorPage() {
             // Flatten all lines from all blocks for granular editing
             activePageData.blocks.forEach(block => {
                 block.lines.forEach(line => {
-                    const isBullet = !!(line.bullet || line.is_bullet_start);
-                    // Safety: Even if initializer missed it, try splitting here for the sidebar projection
-                    const { bullet, text } = isBullet ?
-                        { bullet: line.bullet, text: line.content } :
-                        splitBullet(line.content);
-
-                    // Style Safety: Use the second item (actual text) for the content style if it's a bullet
-                    const contentItem = (isBullet && line.items.length > 1) ? line.items[1] : (line.items[0] || {});
+                    // Style Safety: Use the first item for the default text style
+                    const contentItem = line.items[0] || {};
 
                     flattenedLines.push({
                         id: line.id,
-                        content: text,
-                        bullet: bullet || line.bullet,
+                        content: line.content,
                         type: 'text',
                         dataIndex: line.id,
                         isBlock: false,
-                        marker: (line.is_bullet_start || bullet) ? (line.bullet_char || bullet?.trim() || block.marker) : null,
                         level: block.level || 0,
                         blockId: block.id,
                         uri: line.uri,
@@ -810,14 +908,9 @@ export default function EditorPage() {
             (activePageData.items || [])
                 .filter(it => it.type === 'text')
                 .forEach((item, index) => {
-                    const { bullet, text } = (item.bullet) ?
-                        { bullet: item.bullet, text: item.content } :
-                        splitBullet(item.content);
-
                     flattenedLines.push({
                         ...item,
-                        content: text,
-                        bullet: bullet || item.bullet,
+                        content: item.content,
                         dataIndex: index,
                         originalStyle: {
                             size: item.size,
@@ -844,19 +937,31 @@ export default function EditorPage() {
                 <div className="floating-shape shape-2"></div>
             </div>
 
-            {/* 1. EDITING PANEL - Left */}
-            <div className={`editing-panel ${mobileActivePanel === 'edit' ? 'mobile-open' : ''}`}>
+            {/* 1. NAVIGATOR - Left */}
+            <div className={`navigator-sidebar ${(mobileActivePanel === 'pages' || mobileActivePanel === 'words') ? 'mobile-open' : ''}`}>
                 <div className="drawer-handle" onClick={() => setMobileActivePanel(null)}></div>
-                {/* 1.1 DESIGN CONFIG TOOLBAR (Global control for active node) */}
+                
+                <div className="panel-header" style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
+                    <div className="section-badge" style={{ marginBottom: '8px' }}>Navigator</div>
+                    <h3 className="studio-header">
+                        Design <span>Configuration</span>
+                    </h3>
+                </div>
+
+                {/* Design Config Toolbar - Moved from right panel */}
                 {(() => {
                     const activeStyle = getActiveNodeStyle();
                     const isWordSelection = selectedWordIndices.length > 0;
-                    if (!activeStyle) return null;
+                    if (!activeStyle) return (
+                        <div style={{ color: 'var(--ink-4)', fontSize: '0.78rem', textAlign: 'center', padding: '20px 0' }}>
+                            Select a line on the page to start editing
+                        </div>
+                    );
 
                     return (
                         <div className={`design-config-toolbar ${!activeNodeId ? 'idle' : ''}`}>
                             <div className="toolbar-header">
-                                <div className="toolbar-label">Design Configuration</div>
+                                <div className="section-badge">Active Node</div>
                                 {!activeNodeId && <span className="toolbar-status">Selection Required</span>}
                                 {selectedNodeIds.length > 1 && <span className="toolbar-status highlight">Multiple Selected ({selectedNodeIds.length})</span>}
                             </div>
@@ -938,7 +1043,6 @@ export default function EditorPage() {
                                         const mode = e.target.value;
                                         if (!mode) return;
                                         const edit = nodeEdits[activeNodeId] || {};
-                                        // Find original if edit doesn't exist yet
                                         let rawContent = edit.content;
                                         if (rawContent === undefined) {
                                             for (const p of pages) {
@@ -946,14 +1050,12 @@ export default function EditorPage() {
                                                 if (found) { rawContent = found.content; break; }
                                             }
                                         }
-
                                         const content = rawContent || "";
                                         let transformed = content;
                                         if (mode === 'uppercase') transformed = content.toUpperCase();
                                         if (mode === 'lowercase') transformed = content.toLowerCase();
                                         if (mode === 'capitalize') transformed = content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
                                         if (mode === 'title') transformed = content.replace(/\b\w/g, l => l.toUpperCase());
-
                                         handleSidebarEdit(activeNodeId, transformed, activeStyle);
                                     }}
                                 >
@@ -989,7 +1091,6 @@ export default function EditorPage() {
                                         if (nextState) {
                                             if (activeNodeId) {
                                                 setSelectedNodeIds([activeNodeId]);
-                                                // Sync word selection too
                                                 const line = textLines.find(l => l.id === activeNodeId);
                                                 const content = nodeEdits[activeNodeId]?.content || line?.content || "";
                                                 const words = content.split(/\s+/).filter(Boolean);
@@ -1014,7 +1115,6 @@ export default function EditorPage() {
                                         if (ids.length > 0) {
                                             const firstId = ids[0];
                                             setActiveNodeId(firstId);
-                                            // Feature addition: Select all words in that first line too
                                             const line = textLines.find(l => l.id === firstId);
                                             const content = nodeEdits[firstId]?.content || line?.content || "";
                                             const words = content.split(/\s+/).filter(Boolean);
@@ -1026,15 +1126,260 @@ export default function EditorPage() {
                                 >
                                     <span className="icon">📑</span> Select All
                                 </button>
+
+                                <button
+                                    className={`caps-toggle-btn ${isDragEnabled ? 'active' : ''}`}
+                                    onClick={() => setIsDragEnabled(!isDragEnabled)}
+                                    title="Toggle Free Dragging: Move lines anywhere on the page"
+                                >
+                                    <span className="icon">⚓</span> Move Mode
+                                </button>
                             </div>
                         </div>
                     );
                 })()}
 
+                {/* Word Level Control */}
+                <div className="navigator-section bottom" style={{ flex: 1, paddingTop: '12px', display: (window.innerWidth < 1024 && mobileActivePanel === 'pages') ? 'none' : 'block' }}>
+                    {activeNodeData ? (
+                        <div className="word-level-panel">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <strong style={{ fontSize: '0.8rem', color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Word Selector</strong>
+                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                    <button
+                                        className="select-all-btn"
+                                        style={{ fontSize: '0.65rem' }}
+                                        onClick={() => {
+                                            const content = nodeEdits[activeNodeId]?.content || activeNodeData.content || "";
+                                            const words = content.split(/\s+/).filter(Boolean);
+                                            setSelectedWordIndices(words.map((_, i) => i));
+                                            setIsMultiSelect(true);
+                                        }}
+                                    >
+                                        Select All
+                                    </button>
+                                    <button
+                                        className="deselect-all-btn"
+                                        style={{ fontSize: '0.65rem' }}
+                                        onClick={() => {
+                                            setSelectedWordIndices([]);
+                                            setIsMultiSelect(false);
+                                        }}
+                                    >
+                                        Deselect All
+                                    </button>
+                                    <button
+                                        className={`tab-pill ${isMultiSelect ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setIsMultiSelect(!isMultiSelect);
+                                            if (isMultiSelect) setSelectedWordIndices([]);
+                                        }}
+                                        style={{ padding: '4px 8px', fontSize: '0.65rem' }}
+                                    >
+                                        {isMultiSelect ? 'Multi: ON' : 'Multi-Select'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="word-pill-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {(nodeEdits[activeNodeId]?.content || activeNodeData.content || "").split(/\s+/).filter(Boolean).map((word, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`word-pill ${selectedWordIndices.includes(idx) ? 'active' : ''}`}
+                                        onClick={() => {
+                                            if (isMultiSelect) {
+                                                setSelectedWordIndices(prev =>
+                                                    prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
+                                                );
+                                            } else {
+                                                setSelectedWordIndices(prev =>
+                                                    prev.includes(idx) && prev.length === 1 ? [] : [idx]
+                                                );
+                                            }
+                                        }}
+                                    >
+                                        {word}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {selectedWordIndices.length > 0 && (
+                                <div className="quick-actions-panel">
+                                    <div className="quick-actions-header">
+                                        <div className="selection-count">
+                                            Editing {selectedWordIndices.length} {selectedWordIndices.length === 1 ? 'Word' : 'Words'}
+                                        </div>
+                                        <button className="close-actions" onClick={() => setSelectedWordIndices([])}>Close</button>
+                                    </div>
+
+                                    {/* Size Controls - REMOVED for Unification as per User Request */}
+
+                                    {/* Color Picker */}
+                                    <div className="action-row">
+                                        <span className="action-label">Color</span>
+                                        <input
+                                            type="color"
+                                            className="action-color-picker"
+                                            value={rgbToHex(getActiveNodeStyle()?.color || [0, 0, 0])}
+                                            onChange={(e) => handleStyleUpdate(activeNodeId, 'color', hexToRgb(e.target.value), selectedWordIndices)}
+                                        />
+                                    </div>
+
+                                    {/* Font Style Toggles */}
+                                    <div className="action-row">
+                                        <span className="action-label">Style</span>
+                                        <div className="style-toggles">
+                                            <button
+                                                className={`toggle-btn ${getActiveNodeStyle()?.is_bold ? 'active' : ''}`}
+                                                onClick={() => handleStyleUpdate(activeNodeId, 'is_bold', !getActiveNodeStyle()?.is_bold, selectedWordIndices)}
+                                            >B</button>
+                                            <button
+                                                className={`toggle-btn ${getActiveNodeStyle()?.is_italic ? 'active' : ''}`}
+                                                onClick={() => handleStyleUpdate(activeNodeId, 'is_italic', !getActiveNodeStyle()?.is_italic, selectedWordIndices)}
+                                            >I</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div style={{ color: '#666', fontSize: '0.8rem', textAlign: 'center', marginTop: '40px' }}>
+                            Select a line to edit individual words
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 2. MAIN WORKSPACE - Center */}
+            <div className="workspace-container">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+                    <h2 className="studio-header" style={{ margin: 0 }}>
+                        Studio <span>Workspace</span>
+                    </h2>
+
+                    <div className="zoom-controls">
+                        <button className="zoom-btn" onClick={() => handleZoom(-0.1)}>−</button>
+                        <span className="zoom-level">{Math.round(zoom * 100)}%</span>
+                        <button className="zoom-btn" onClick={() => handleZoom(0.1)}>+</button>
+                    </div>
+
+                    <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {pages.length > VISIBLE_PAGE_COUNT && (
+                            <button 
+                                className="sidebar-thumb" 
+                                style={{ width: 'auto', padding: '0 10px', minWidth: 'unset' }}
+                                onClick={() => setPageOffset(prev => Math.max(0, prev - 1))}
+                                disabled={pageOffset === 0}
+                            >
+                                <i className="fa-solid fa-chevron-left" style={{ fontSize: '0.7rem' }}></i>
+                            </button>
+                        )}
+                        <div className="navigator-grid" style={{ display: 'flex', gap: '8px' }}>
+                            {pages.slice(pageOffset, pageOffset + VISIBLE_PAGE_COUNT).map((_, i) => {
+                                const realIdx = pageOffset + i;
+                                return (
+                                    <div
+                                        key={realIdx}
+                                        onClick={() => setActivePageIndex(realIdx)}
+                                        className={`sidebar-thumb ${activePageIndex === realIdx ? 'active' : ''}`}
+                                        style={{ minWidth: '40px' }}
+                                    >
+                                        {realIdx + 1}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {pages.length > VISIBLE_PAGE_COUNT && (
+                            <button 
+                                className="sidebar-thumb" 
+                                style={{ width: 'auto', padding: '0 10px', minWidth: 'unset' }}
+                                onClick={() => setPageOffset(prev => Math.min(pages.length - VISIBLE_PAGE_COUNT, prev + 1))}
+                                disabled={pageOffset >= pages.length - VISIBLE_PAGE_COUNT}
+                            >
+                                <i className="fa-solid fa-chevron-right" style={{ fontSize: '0.7rem' }}></i>
+                            </button>
+                        )}
+                    </div>
+
+                    <div style={{ flex: 1 }}></div>
+
+                    <button className="download-btn-premium" onClick={handleDownload}>
+                        <span style={{ fontSize: '1rem' }}>📥</span> Download PDF
+                    </button>
+                </div>
+
+                <div className="preview-stage">
+                    {/* PROPERTY HUD BAR */}
+                    {activeNodeProps && (
+                        <div className="property-hud">
+                            <div className="hud-group">
+                                <span className="hud-label">Font</span>
+                                <span className="hud-value">{activeNodeProps.font.split(',')[0].replace(/'/g, "")}</span>
+                            </div>
+                            <div className="hud-divider"></div>
+                            <div className="hud-group">
+                                <span className="hud-label">Size</span>
+                                <span className="hud-value">
+                                     {activeNodeProps.ratio < 0.999 ? (
+                                         <>
+                                             {activeNodeProps.size.toFixed(1)} <span className="hud-subvalue" style={{ fontSize: '0.7em', opacity: 0.7 }}>({(activeNodeProps.size * activeNodeProps.ratio).toFixed(1)} effective)</span> pt
+                                         </>
+                                     ) : (
+                                         <>{activeNodeProps.size.toFixed(1)} pt</>
+                                     )}
+                                 </span>
+                            </div>
+                            <div className="hud-divider"></div>
+                            <div className="hud-group">
+                                <span className="hud-label">Scale</span>
+                                <span className={`hud-value ${activeNodeProps.ratio < 1 ? 'warning' : ''}`}>
+                                    {(activeNodeProps.ratio * 100).toFixed(0)}%
+                                </span>
+                            </div>
+                            <div className="hud-divider"></div>
+                            <div className="hud-group">
+                                <span className="hud-label">Color</span>
+                                <div className="hud-color-swatch" style={{ background: rgbToHex(activeNodeProps.color) }}></div>
+                                <span className="hud-value monospace">{rgbToHex(activeNodeProps.color).toUpperCase()}</span>
+                            </div>
+                            <div className="hud-divider"></div>
+                            <div className="hud-group">
+                                <span className="hud-label">Pos</span>
+                                <span className="hud-value monospace">X:{activeNodeProps.x.toFixed(0)} Y:{activeNodeProps.y.toFixed(0)}</span>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="preview-content-wrapper">
+                        <PythonRenderer
+                            page={activePageData}
+                            pageIndex={activePageIndex}
+                            activeNodeId={activeNodeId}
+                            selectedWordIndices={selectedWordIndices}
+                            fontsKey={fontsKey}
+                            fonts={fonts}
+                            nodeEdits={nodeEdits}
+                            onUpdate={handlePageUpdate}
+                            onSelect={scrollToNode}
+                            onDoubleClick={handleDoubleClick}
+                            onMove={handleNodeMove}
+                            scale={zoom}
+                            isFitMode={isFitMode}
+                            isDragEnabled={isDragEnabled}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* 3. CONTENT STUDIO - Right */}
+            <div className={`editing-panel ${mobileActivePanel === 'edit' ? 'mobile-open' : ''}`}>
+                <div className="drawer-handle" onClick={() => setMobileActivePanel(null)}></div>
+                {/* Content Studio Panel */}
+
                 <div className="panel-header" style={{ flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                        <h3 className="highlight">
-                            Content <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Studio</span>
+                        <h3 className="studio-header">
+                            Content <span>Studio</span>
                         </h3>
                         <span className="page-count-mini">Page {activePageIndex + 1} · {textLines.length} {activeTab === 'text' ? 'Nodes' : 'Links'}</span>
                     </div>
@@ -1051,9 +1396,7 @@ export default function EditorPage() {
                 <div className="structure-list">
                     {textLines.slice().reverse().map((line, i) => {
                         const edit = nodeEdits[line.id] || {};
-                        const sStyle = edit.safetyStyle || line.originalStyle || {};
                         const displayContent = edit.content !== undefined ? edit.content : line.content;
-                        const displayUri = edit.uri !== undefined ? edit.uri : line.uri;
 
                         return (
                             <div
@@ -1094,24 +1437,16 @@ export default function EditorPage() {
                                         }}
                                         onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle, e.target.selectionStart)}
                                         placeholder="Enter text..."
-                                        style={{
-                                            fontFamily: sStyle.font ? `'${sStyle.font}', serif` : 'inherit',
-                                            fontWeight: sStyle.is_bold ? '700' : '400',
-                                            fontStyle: sStyle.is_italic ? 'italic' : 'normal',
-                                            fontSize: '1rem',
-                                            transition: 'all 0.2s'
-                                        }}
                                     />
-
-                                    {activeTab === 'links' && (
-                                        <div className="inline-link-field">
-                                            <label className="field-label">Hyperlink (URL)</label>
+                                    {line.uri && (
+                                        <div style={{ marginTop: '8px' }}>
+                                            <label className="field-label">Target URL</label>
                                             <input
                                                 type="text"
                                                 className="link-field"
-                                                value={displayUri || ''}
+                                                value={edit.uri !== undefined ? edit.uri : line.uri}
+                                                onChange={(e) => handleSidebarEdit(line.id, displayContent, line.originalStyle, undefined, e.target.value)}
                                                 placeholder="https://..."
-                                                onChange={(e) => handleLinkEdit(line.id, e.target.value, line.originalStyle)}
                                             />
                                         </div>
                                     )}
@@ -1119,193 +1454,6 @@ export default function EditorPage() {
                             </div>
                         );
                     })}
-                </div>
-            </div>
-
-            {/* 2. MAIN WORKSPACE - Center */}
-            <div className="workspace-container">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                    <h2 className="highlight" style={{ margin: 0 }}>
-                        Studio <span style={{ color: 'var(--studio-white)', WebkitTextFillColor: 'initial' }}>Workspace</span>
-                    </h2>
-
-                    <div className="zoom-controls">
-                        <button className="zoom-btn" onClick={() => handleZoom(-0.1)}>−</button>
-                        <span className="zoom-level">{Math.round(zoom * 100)}%</span>
-                        <button className="zoom-btn" onClick={() => handleZoom(0.1)}>+</button>
-                    </div>
-
-                    <div style={{ flex: 1 }}></div>
-
-                    <button className="download-btn-premium" onClick={handleDownload}>
-                        <span style={{ fontSize: '1rem' }}>📥</span> Download PDF
-                    </button>
-                </div>
-
-                <div className="preview-stage">
-                    <div className="preview-content-wrapper">
-                        {backend === 'python' ? (
-                            <PythonRenderer
-                                page={activePageData}
-                                pageIndex={activePageIndex}
-                                activeNodeId={activeNodeId}
-                                selectedWordIndices={selectedWordIndices}
-                                fontsKey={fontsKey}
-                                fonts={fonts}
-                                nodeEdits={nodeEdits}
-                                onUpdate={handlePageUpdate}
-                                onSelect={scrollToNode}
-                                onDoubleClick={handleDoubleClick}
-                                scale={zoom}
-                                isFitMode={isFitMode}
-                            />
-                        ) : (
-                            <WebGLRenderer
-                                page={activePageData}
-                                pageIndex={activePageIndex}
-                                activeNodeId={activeNodeId}
-                                fontsKey={fontsKey}
-                                nodeEdits={nodeEdits}
-                                onUpdate={handlePageUpdate}
-                                onSelect={scrollToNode}
-                                scale={zoom}
-                                isFitMode={isFitMode}
-                            />
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* 3. NAVIGATOR - Right */}
-            <div className={`navigator-sidebar ${(mobileActivePanel === 'pages' || mobileActivePanel === 'words') ? 'mobile-open' : ''}`}>
-                <div className="drawer-handle" onClick={() => setMobileActivePanel(null)}></div>
-                <div className="navigator-section top" style={{ display: (window.innerWidth < 1024 && mobileActivePanel === 'words') ? 'none' : 'block' }}>
-                    <div className="navigator-header">
-                        <h3 style={{ fontSize: '1rem', color: '#fff', margin: '0' }}>Pages Preview</h3>
-                    </div>
-                    <div className="navigator-grid">
-                        {pages.map((_, i) => (
-                            <div
-                                key={i}
-                                onClick={() => setActivePageIndex(i)}
-                                className={`sidebar-thumb ${activePageIndex === i ? 'active' : ''}`}
-                            >
-                                {i + 1}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="navigator-section bottom" style={{
-                    flex: 1,
-                    borderTop: '1px solid rgba(255,255,255,0.05)',
-                    paddingTop: '20px',
-                    marginTop: '10px',
-                    display: (window.innerWidth < 1024 && mobileActivePanel === 'pages') ? 'none' : 'block'
-                }}>
-                    {activeNodeData ? (
-                        <div className="word-level-panel">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                                <strong style={{ fontSize: '0.9rem', color: '#fff' }}>Word Styling</strong>
-                                <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                    <button
-                                        className="select-all-btn"
-                                        onClick={() => {
-                                            const content = nodeEdits[activeNodeId]?.content || activeNodeData.content || "";
-                                            const words = content.split(/\s+/).filter(Boolean);
-                                            setSelectedWordIndices(words.map((_, i) => i));
-                                            setIsMultiSelect(true);
-                                        }}
-                                    >
-                                        Select All
-                                    </button>
-                                    <button
-                                        className={`tab-pill ${isMultiSelect ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setIsMultiSelect(!isMultiSelect);
-                                            if (isMultiSelect) setSelectedWordIndices([]);
-                                        }}
-                                        style={{ fontSize: '0.7rem' }}
-                                    >
-                                        {isMultiSelect ? 'Multi: ON' : 'Multi-Select'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="word-pill-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                {(nodeEdits[activeNodeId]?.content || activeNodeData.content || "").split(/\s+/).filter(Boolean).map((word, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`word-pill ${selectedWordIndices.includes(idx) ? 'active' : ''}`}
-                                        onClick={() => {
-                                            if (isMultiSelect) {
-                                                setSelectedWordIndices(prev =>
-                                                    prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
-                                                );
-                                            } else {
-                                                setSelectedWordIndices(prev =>
-                                                    prev.includes(idx) && prev.length === 1 ? [] : [idx]
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        {word}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {selectedWordIndices.length > 0 && (
-                                <div className="quick-actions-panel">
-                                    <div className="quick-actions-header">
-                                        <div className="selection-count">
-                                            Editing {selectedWordIndices.length} {selectedWordIndices.length === 1 ? 'Word' : 'Words'}
-                                        </div>
-                                        <button className="close-actions" onClick={() => setSelectedWordIndices([])}>Close</button>
-                                    </div>
-
-                                    {/* Size Controls */}
-                                    <div className="action-row">
-                                        <span className="action-label">Size</span>
-                                        <div className="size-control">
-                                            <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) - 0.1, selectedWordIndices)}>−</button>
-                                            <span className="size-label">{(getActiveNodeStyle()?.size || 10).toFixed(1)}</span>
-                                            <button onClick={() => handleStyleUpdate(activeNodeId, 'size', (getActiveNodeStyle()?.size || 10) + 0.1, selectedWordIndices)}>+</button>
-                                        </div>
-                                    </div>
-
-                                    {/* Color Picker */}
-                                    <div className="action-row">
-                                        <span className="action-label">Color</span>
-                                        <input
-                                            type="color"
-                                            className="action-color-picker"
-                                            value={rgbToHex(getActiveNodeStyle()?.color || [0, 0, 0])}
-                                            onChange={(e) => handleStyleUpdate(activeNodeId, 'color', hexToRgb(e.target.value), selectedWordIndices)}
-                                        />
-                                    </div>
-
-                                    {/* Font Style Toggles */}
-                                    <div className="action-row">
-                                        <span className="action-label">Style</span>
-                                        <div className="style-toggles">
-                                            <button
-                                                className={`toggle-btn ${getActiveNodeStyle()?.is_bold ? 'active' : ''}`}
-                                                onClick={() => handleStyleUpdate(activeNodeId, 'is_bold', !getActiveNodeStyle()?.is_bold, selectedWordIndices)}
-                                            >B</button>
-                                            <button
-                                                className={`toggle-btn ${getActiveNodeStyle()?.is_italic ? 'active' : ''}`}
-                                                onClick={() => handleStyleUpdate(activeNodeId, 'is_italic', !getActiveNodeStyle()?.is_italic, selectedWordIndices)}
-                                            >I</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div style={{ color: '#666', fontSize: '0.8rem', textAlign: 'center', marginTop: '40px' }}>
-                            Select a line to edit individual words
-                        </div>
-                    )}
                 </div>
             </div>
 

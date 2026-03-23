@@ -38,8 +38,8 @@ self.onmessage = function (e) {
         const { targetWidth, fontBase, text, id } = e.data;
 
         // --- SAFETY MARGIN ---
-        // Ensure we target a slightly smaller width to guarantee zero overflow
-        const effectiveTarget = Math.max(1, targetWidth - 0.5);
+        // Direct target for high-fidelity fitting
+        const effectiveTarget = Math.max(0.1, targetWidth);
 
         // Parse the font string to modify the size
         // Expected format: "italic 700 12px Inter, sans-serif"

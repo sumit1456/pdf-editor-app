@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { uploadPdfToBackend } from "../../services/PdfBackendService";
-import "./NavBar.css";
+import ThemeToggle from "../ThemeToggle/ThemeToggle";
+import "./AdtrioxNavBar.css";
 
 
 export default function NavBar() {
@@ -63,9 +64,9 @@ export default function NavBar() {
   return (
     <>
       <nav className="nav-bar">
-        <div className="left">
-          <img src="./images/logo2.png" alt="error" />
-          <h1>THE PDF StudIO</h1>
+        <div className="left" onClick={() => navigate('/')}>
+          <div className="logo-icon"></div>
+          <h1>pdf<span>studio</span></h1>
         </div>
 
         <div className="hamburger" onClick={toggleSidebar}>
@@ -83,24 +84,29 @@ export default function NavBar() {
         </div>
 
         <div className="right-actions">
+          <ThemeToggle />
           <a
             href="https://mail.google.com/mail/?view=cm&fs=1&to=sumithatekar067@gmail.com&su=Feedback%20for%20THE%20PDF%20STUDIO"
             target="_blank"
             rel="noopener noreferrer"
-            className="feedback-btn"
-            title="Send Feedback via Gmail"
+            className="contact-btn"
           >
-            <i className="fa-solid fa-paper-plane"></i>
-            <span>Feedback</span>
+            Feedback
           </a>
         </div>
       </nav>
 
-      {/* Sidebar */}
+      {/* Sidebar for Mobile */}
       <div className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <img src="./images/logo2.png" alt="logo" className="sidebar-logo" />
-          <div className="close-btn" onClick={toggleSidebar}><i className="fa-solid fa-xmark"></i></div>
+          <div className="left">
+            <div className="logo-icon"></div>
+            <h1>pdfstudio</h1>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <ThemeToggle />
+            <div className="close-btn" onClick={toggleSidebar}><i className="fa-solid fa-xmark"></i></div>
+          </div>
         </div>
         <div className="sidebar-links">
           <Link to="/" onClick={toggleSidebar}><i className="fa-solid fa-house"></i> Home</Link>
@@ -112,10 +118,11 @@ export default function NavBar() {
             href="https://mail.google.com/mail/?view=cm&fs=1&to=sumithatekar067@gmail.com&su=Feedback%20for%20THE%20PDF%20STUDIO"
             target="_blank"
             rel="noopener noreferrer"
-            className="sidebar-feedback"
+            className="contact-btn"
+            style={{ textAlign: 'center', marginTop: '20px' }}
             onClick={toggleSidebar}
           >
-            <i className="fa-solid fa-paper-plane"></i> Send Feedback
+            Feedback
           </a>
         </div>
       </div>

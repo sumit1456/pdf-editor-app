@@ -1,0 +1,4545 @@
+{
+  "success": true,
+  "data": {
+    "pages": [
+      {
+        "index": 0,
+        "width": 793.7005665487671,
+        "height": 1122.5194133804932,
+        "blocks": [
+          {
+            "id": "f8866cf6-7e7a-44d7-8ccb-736fbb3ad87d",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "0d18085e-4403-4f0f-858d-82db846ee907",
+                "content": "I Welcome to the Editor",
+                "y": 133.3333,
+                "x0": 226.77567979695132,
+                "x1": 566.9248664067688,
+                "size": 29.333326000000003,
+                "height": 40.39198819301606,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "d9897706-1342-47bb-9e01-86f14e880695",
+                    "line_id": "9e13373b-8a62-4450-9d9a-8bfd9c1ef322",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      226.77567979695132,
+                      133.3333
+                    ],
+                    "x": 226.77567979695132,
+                    "y": 133.3333,
+                    "bbox": [
+                      226.77567979695132,
+                      108.38626440733339,
+                      249.09834674232485,
+                      137.71959040733338
+                    ],
+                    "width": 22.322666945373527,
+                    "height": 29.333326,
+                    "size": 29.333326000000003,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 226.77567979695132,
+                    "original_y": 133.3333,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "f8866cf6-7e7a-44d7-8ccb-736fbb3ad87d"
+                  },
+                  {
+                    "id": "6ce56797-36e5-495c-a446-315e877957e3",
+                    "line_id": "9e13373b-8a62-4450-9d9a-8bfd9c1ef322",
+                    "type": "text",
+                    "content": " Welcome to the Editor",
+                    "origin": [
+                      249.09834674232485,
+                      133.3333
+                    ],
+                    "x": 249.09834674232485,
+                    "y": 133.3333,
+                    "bbox": [
+                      249.09834674232485,
+                      101.94663995929719,
+                      566.9248664067688,
+                      142.33862815231325
+                    ],
+                    "width": 317.826519664444,
+                    "height": 40.39198819301606,
+                    "size": 29.333326000000003,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 249.09834674232485,
+                    "original_y": 133.3333,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "f8866cf6-7e7a-44d7-8ccb-736fbb3ad87d"
+                  }
+                ],
+                "bbox": [
+                  226.77567979695132,
+                  103.99997400000001,
+                  566.9248664067688,
+                  133.3333
+                ],
+                "origin": [
+                  226.77567979695132,
+                  133.3333
+                ],
+                "width": 340.14918660981755,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 29.333326000000003,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      226.77567979695132,
+                      133.3333
+                    ]
+                  },
+                  {
+                    "text": " Welcome to the Editor",
+                    "font": "Helvetica-Bold",
+                    "size": 29.333326000000003,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      249.09834674232485,
+                      133.3333
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              226.77567979695132,
+              103.99997400000001,
+              566.9248664067688,
+              133.3333
+            ],
+            "indentX": 226.77567979695132,
+            "textX": 226.77567979695132,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 29.333326000000003
+            },
+            "uri": null
+          },
+          {
+            "id": "c6476649-a126-4580-b5ba-b60dfb0a8f76",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "be68ee31-f000-47e3-bd76-e3e0e67d5b40",
+                "content": "Fast. Precise. Built for textIheavy documents.",
+                "y": 177.333289,
+                "x0": 205.30833897238162,
+                "x1": 588.3921868862916,
+                "size": 17.333329000000003,
+                "height": 23.86799533508301,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "2cae852a-05ef-40d1-b665-f756252b1bd0",
+                    "line_id": "885b281f-8590-4c85-b277-019b549add22",
+                    "type": "text",
+                    "content": "Fast. Precise. Built for text",
+                    "origin": [
+                      205.30833897238162,
+                      177.333289
+                    ],
+                    "x": 205.30833897238162,
+                    "y": 177.333289,
+                    "bbox": [
+                      205.30833897238162,
+                      158.78662208718873,
+                      423.9682371068726,
+                      182.65461742227174
+                    ],
+                    "width": 218.659898134491,
+                    "height": 23.86799533508301,
+                    "size": 17.333329000000003,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0.5019607843137255,
+                      0.5019607843137255,
+                      0.5019607843137255
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 205.30833897238162,
+                    "original_y": 177.333289,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c6476649-a126-4580-b5ba-b60dfb0a8f76"
+                  },
+                  {
+                    "id": "8c093cea-2c9b-4557-9ab7-3229afff5dd8",
+                    "line_id": "885b281f-8590-4c85-b277-019b549add22",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      423.9682371068726,
+                      177.333289
+                    ],
+                    "x": 423.9682371068726,
+                    "y": 177.333289,
+                    "bbox": [
+                      423.9682371068726,
+                      162.59185795228578,
+                      437.15890763732915,
+                      179.92518695228577
+                    ],
+                    "width": 13.190670530456543,
+                    "height": 17.333328999999992,
+                    "size": 17.333329000000003,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0.5019607843137255,
+                      0.5019607843137255,
+                      0.5019607843137255
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 423.9682371068726,
+                    "original_y": 177.333289,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c6476649-a126-4580-b5ba-b60dfb0a8f76"
+                  },
+                  {
+                    "id": "344b346a-6680-40be-a0dd-05d2d09e38ac",
+                    "line_id": "885b281f-8590-4c85-b277-019b549add22",
+                    "type": "text",
+                    "content": "heavy documents.",
+                    "origin": [
+                      437.15890763732915,
+                      177.333289
+                    ],
+                    "x": 437.15890763732915,
+                    "y": 177.333289,
+                    "bbox": [
+                      437.15890763732915,
+                      158.78662208718873,
+                      588.3921868862916,
+                      182.65461742227174
+                    ],
+                    "width": 151.23327924896245,
+                    "height": 23.86799533508301,
+                    "size": 17.333329000000003,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0.5019607843137255,
+                      0.5019607843137255,
+                      0.5019607843137255
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 437.15890763732915,
+                    "original_y": 177.333289,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c6476649-a126-4580-b5ba-b60dfb0a8f76"
+                  }
+                ],
+                "bbox": [
+                  205.30833897238162,
+                  159.99996000000002,
+                  588.3921868862916,
+                  177.333289
+                ],
+                "origin": [
+                  205.30833897238162,
+                  177.333289
+                ],
+                "width": 383.08384791390995,
+                "fragments": [
+                  {
+                    "text": "Fast. Precise. Built for text",
+                    "font": "Helvetica-Bold",
+                    "size": 17.333329000000003,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      205.30833897238162,
+                      177.333289
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 17.333329000000003,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      423.9682371068726,
+                      177.333289
+                    ]
+                  },
+                  {
+                    "text": "heavy documents.",
+                    "font": "Helvetica-Bold",
+                    "size": 17.333329000000003,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      437.15890763732915,
+                      177.333289
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              205.30833897238162,
+              159.99996000000002,
+              588.3921868862916,
+              177.333289
+            ],
+            "indentX": 205.30833897238162,
+            "textX": 205.30833897238162,
+            "style": {
+              "font": "Helvetica-Bold",
+              "size": 17.333329000000003
+            },
+            "uri": null
+          },
+          {
+            "id": "a961dc56-d897-4992-b6d0-9c4bb8076127",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "21be6fab-393e-4a98-8304-3bec1e3f60e3",
+                "content": "Thanks for trying out this editor. This tool is designed to make working with textIheavy",
+                "y": 231.999942,
+                "x0": 104,
+                "x1": 666.2024961680909,
+                "size": 14.666663000000002,
+                "height": 20.15199284611512,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "7c2d75c6-d300-4ab4-b9ab-32913321745b",
+                    "line_id": "135977c1-c733-4bb4-8546-52cad599d555",
+                    "type": "text",
+                    "content": "Thanks for trying out this editor. This tool is designed to make working with text",
+                    "origin": [
+                      104,
+                      231.999942
+                    ],
+                    "x": 104,
+                    "y": 231.999942,
+                    "bbox": [
+                      104,
+                      216.2332833440094,
+                      615.9105165535889,
+                      236.38527619012453
+                    ],
+                    "width": 511.91051655358893,
+                    "height": 20.15199284611512,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 231.999942,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a961dc56-d897-4992-b6d0-9c4bb8076127"
+                  },
+                  {
+                    "id": "0e7fe3c9-c9ce-4c10-bbef-9f2e36ca3800",
+                    "line_id": "135977c1-c733-4bb4-8546-52cad599d555",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      615.9105165535889,
+                      231.999942
+                    ],
+                    "x": 615.9105165535889,
+                    "y": 231.999942,
+                    "bbox": [
+                      615.9105165535889,
+                      219.5264343761902,
+                      627.0718500262756,
+                      234.1930973761902
+                    ],
+                    "width": 11.161333472686692,
+                    "height": 14.666663,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 615.9104905535889,
+                    "original_y": 231.999942,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a961dc56-d897-4992-b6d0-9c4bb8076127"
+                  },
+                  {
+                    "id": "918b9285-8433-413e-8592-dcaceda408d3",
+                    "line_id": "135977c1-c733-4bb4-8546-52cad599d555",
+                    "type": "text",
+                    "content": "heavy",
+                    "origin": [
+                      627.0718500262756,
+                      231.999942
+                    ],
+                    "x": 627.0718500262756,
+                    "y": 231.999942,
+                    "bbox": [
+                      627.0718500262756,
+                      216.2332833440094,
+                      666.2024961680909,
+                      236.38527619012453
+                    ],
+                    "width": 39.13064614181519,
+                    "height": 20.15199284611512,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 627.0718240262756,
+                    "original_y": 231.999942,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a961dc56-d897-4992-b6d0-9c4bb8076127"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  217.333279,
+                  666.2024961680909,
+                  231.999942
+                ],
+                "origin": [
+                  104,
+                  231.999942
+                ],
+                "width": 562.2024961680909,
+                "fragments": [
+                  {
+                    "text": "Thanks for trying out this editor. This tool is designed to make working with text",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      231.999942
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      615.9105165535889,
+                      231.999942
+                    ]
+                  },
+                  {
+                    "text": "heavy",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      627.0718500262756,
+                      231.999942
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "7dde54a4-ff71-4797-ad76-f435df781648",
+                "content": "documents smooth, fast, and intuitive — especially resumes and structured documents.",
+                "y": 253.33327000000003,
+                "x0": 104,
+                "x1": 671.3505254800416,
+                "size": 14.666663000000002,
+                "height": 20.15199284611512,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "0f8fcbb2-80c7-4351-8044-ca0037a70bc3",
+                    "line_id": "2a84f455-c674-4a62-9964-8afe761937c8",
+                    "type": "text",
+                    "content": "documents smooth, fast, and intuitive — especially resumes and structured documents.",
+                    "origin": [
+                      104,
+                      253.33327000000003
+                    ],
+                    "x": 104,
+                    "y": 253.33327000000003,
+                    "bbox": [
+                      104,
+                      237.56661134400943,
+                      671.3505254800416,
+                      257.71860419012455
+                    ],
+                    "width": 567.3505254800416,
+                    "height": 20.15199284611512,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 253.33327000000003,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a961dc56-d897-4992-b6d0-9c4bb8076127"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  238.66660700000003,
+                  671.3505254800416,
+                  253.33327000000003
+                ],
+                "origin": [
+                  104,
+                  253.33327000000003
+                ],
+                "width": 567.3505254800416,
+                "fragments": [
+                  {
+                    "text": "documents smooth, fast, and intuitive — especially resumes and structured documents.",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      253.33327000000003
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              217.333279,
+              671.3505254800416,
+              253.33327000000003
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "Helvetica",
+              "size": 14.666663000000002
+            },
+            "uri": null
+          },
+          {
+            "id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "fbcb7012-bb01-43de-8c06-316f7454693c",
+                "content": "I Key Features",
+                "y": 341.333248,
+                "x0": 104,
+                "x1": 250.3799682878113,
+                "size": 19.999995000000002,
+                "height": 27.540011832443213,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "61828447-7301-4bb6-811f-0b51f89dd390",
+                    "line_id": "f077028e-303f-4b19-aa25-eeb55f3889de",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      104,
+                      341.333248
+                    ],
+                    "x": 104,
+                    "y": 341.333248,
+                    "bbox": [
+                      104,
+                      324.32391387342835,
+                      119.21999741570282,
+                      344.32388852838136
+                    ],
+                    "width": 15.21999741570282,
+                    "height": 19.999974654953007,
+                    "size": 19.999995000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 341.333248,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  },
+                  {
+                    "id": "5fbf86a3-ccf3-48fa-8b69-3abc3cf00d78",
+                    "line_id": "f077028e-303f-4b19-aa25-eeb55f3889de",
+                    "type": "text",
+                    "content": " Key Features",
+                    "origin": [
+                      119.21999741570282,
+                      341.333248
+                    ],
+                    "x": 119.21999741570282,
+                    "y": 341.333248,
+                    "bbox": [
+                      119.21999741570282,
+                      319.93324928099065,
+                      250.3799682878113,
+                      347.47326111343386
+                    ],
+                    "width": 131.1599708721085,
+                    "height": 27.540011832443213,
+                    "size": 19.999995000000002,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 119.21997141570283,
+                    "original_y": 341.333248,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  321.333253,
+                  250.3799682878113,
+                  341.333248
+                ],
+                "origin": [
+                  104,
+                  341.333248
+                ],
+                "width": 146.3799682878113,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 19.999995000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      341.333248
+                    ]
+                  },
+                  {
+                    "text": " Key Features",
+                    "font": "Helvetica-Bold",
+                    "size": 19.999995000000002,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      119.21999741570282,
+                      341.333248
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "ac0f09f9-a864-46ae-89d3-193025fcc745",
+                "content": "G WordIlevel editing (edit, select, and fineItune individual words)",
+                "y": 374.666573,
+                "x0": 104,
+                "x1": 544.034435889801,
+                "size": 15.999996000000001,
+                "height": 21.485346191162137,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "1661475e-7856-4613-9123-a6a4bb1a9946",
+                    "line_id": "5cd0180f-04a7-4002-9321-e7992f1483f9",
+                    "type": "text",
+                    "content": "G",
+                    "origin": [
+                      104,
+                      374.666573
+                    ],
+                    "x": 104,
+                    "y": 374.666573,
+                    "bbox": [
+                      104,
+                      361.0591138367615,
+                      116.65600269537353,
+                      377.0591098367615
+                    ],
+                    "width": 12.65600269537353,
+                    "height": 15.999995999999953,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 374.666573,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  },
+                  {
+                    "id": "3a7cdd49-6ca4-4d07-862d-829044043ec1",
+                    "line_id": "5cd0180f-04a7-4002-9321-e7992f1483f9",
+                    "type": "text",
+                    "content": " Word",
+                    "origin": [
+                      116.65600269537353,
+                      374.666573
+                    ],
+                    "x": 116.65600269537353,
+                    "y": 374.666573,
+                    "bbox": [
+                      116.65600269537353,
+                      357.5665609989624,
+                      163.03865101181793,
+                      379.05190719012455
+                    ],
+                    "width": 46.3826483164444,
+                    "height": 21.485346191162137,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 116.65597669537354,
+                    "original_y": 374.666573,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  },
+                  {
+                    "id": "f7baa2c4-c82f-463e-a1b3-ed9c94c43f8e",
+                    "line_id": "5cd0180f-04a7-4002-9321-e7992f1483f9",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      163.03866118434144,
+                      373.33324000000005
+                    ],
+                    "x": 163.03866118434144,
+                    "y": 373.33324000000005,
+                    "bbox": [
+                      163.03866118434144,
+                      360.8597323761902,
+                      174.1999946570282,
+                      375.52639537619024
+                    ],
+                    "width": 11.161333472686778,
+                    "height": 14.666663000000028,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 163.03863518434144,
+                    "original_y": 373.33324000000005,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  },
+                  {
+                    "id": "cf1ce4f6-d22e-479e-8e84-b4af0fd3ccff",
+                    "line_id": "5cd0180f-04a7-4002-9321-e7992f1483f9",
+                    "type": "text",
+                    "content": "level editing (edit, select, and fine",
+                    "origin": [
+                      174.1999743119812,
+                      373.33324000000005
+                    ],
+                    "x": 174.1999743119812,
+                    "y": 373.33324000000005,
+                    "bbox": [
+                      174.1999743119812,
+                      357.5665609989624,
+                      391.0465184076233,
+                      377.7185741901245
+                    ],
+                    "width": 216.8465440956421,
+                    "height": 20.152013191162098,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 174.19994831198122,
+                    "original_y": 373.33324000000005,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  },
+                  {
+                    "id": "6bb21d46-4451-4c99-bed0-4f6bdf99c7e8",
+                    "line_id": "5cd0180f-04a7-4002-9321-e7992f1483f9",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      391.0465590977173,
+                      373.33324000000005
+                    ],
+                    "x": 391.0465590977173,
+                    "y": 373.33324000000005,
+                    "bbox": [
+                      391.0465590977173,
+                      360.8597323761902,
+                      402.20789257040406,
+                      375.52639537619024
+                    ],
+                    "width": 11.16133347268675,
+                    "height": 14.666663000000028,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 391.0465330977173,
+                    "original_y": 373.33324000000005,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  },
+                  {
+                    "id": "4daa4e80-3aad-410f-9b77-192ddcd7e2a6",
+                    "line_id": "5cd0180f-04a7-4002-9321-e7992f1483f9",
+                    "type": "text",
+                    "content": "tune individual words)",
+                    "origin": [
+                      402.2078518803101,
+                      373.33324000000005
+                    ],
+                    "x": 402.2078518803101,
+                    "y": 373.33324000000005,
+                    "bbox": [
+                      402.2078518803101,
+                      357.5665609989624,
+                      544.034435889801,
+                      377.7185741901245
+                    ],
+                    "width": 141.82658400949094,
+                    "height": 20.152013191162098,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 402.2078258803101,
+                    "original_y": 373.33324000000005,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5f50610e-d4f2-45ba-96c6-264bdf0f7ece"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  358.666577,
+                  544.034435889801,
+                  374.666573
+                ],
+                "origin": [
+                  104,
+                  374.666573
+                ],
+                "width": 440.034435889801,
+                "fragments": [
+                  {
+                    "text": "G",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      374.666573
+                    ]
+                  },
+                  {
+                    "text": " Word",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      116.65600269537353,
+                      374.666573
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      163.03866118434144,
+                      373.33324000000005
+                    ]
+                  },
+                  {
+                    "text": "level editing (edit, select, and fine",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      174.1999743119812,
+                      373.33324000000005
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      391.0465590977173,
+                      373.33324000000005
+                    ]
+                  },
+                  {
+                    "text": "tune individual words)",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      402.2078518803101,
+                      373.33324000000005
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              321.333253,
+              544.034435889801,
+              374.666573
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 19.999995000000002
+            },
+            "uri": null
+          },
+          {
+            "id": "7b6903d1-673c-4006-81fc-da3853fb4072",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "4daf1644-baf9-4b9c-8304-aa8501b03f70",
+                "content": "G Style controls (font size, bold, italic, alignment, spacing, etc.)",
+                "y": 411.99989700000003,
+                "x0": 104,
+                "x1": 520.0839210440979,
+                "size": 15.999996000000001,
+                "height": 21.485346191162137,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "86e4836a-b2cc-4ba5-907f-473793e4ee1f",
+                    "line_id": "3899cf64-a2ff-47a1-88c8-e1fd8bea0678",
+                    "type": "text",
+                    "content": "G",
+                    "origin": [
+                      104,
+                      411.99989700000003
+                    ],
+                    "x": 104,
+                    "y": 411.99989700000003,
+                    "bbox": [
+                      104,
+                      398.39243783676153,
+                      116.65600269537353,
+                      414.3924338367615
+                    ],
+                    "width": 12.65600269537353,
+                    "height": 15.999995999999953,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 411.99989700000003,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "7b6903d1-673c-4006-81fc-da3853fb4072"
+                  },
+                  {
+                    "id": "47ae769a-2ca8-4cac-9e56-c90e89fe3687",
+                    "line_id": "3899cf64-a2ff-47a1-88c8-e1fd8bea0678",
+                    "type": "text",
+                    "content": " Style controls (font size, bold, italic, alignment, spacing, etc.)",
+                    "origin": [
+                      116.65600269537353,
+                      411.99989700000003
+                    ],
+                    "x": 116.65600269537353,
+                    "y": 411.99989700000003,
+                    "bbox": [
+                      116.65600269537353,
+                      394.8998849989624,
+                      520.0839210440979,
+                      416.38523119012456
+                    ],
+                    "width": 403.42791834872446,
+                    "height": 21.485346191162137,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 116.65597669537354,
+                    "original_y": 411.99989700000003,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "7b6903d1-673c-4006-81fc-da3853fb4072"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  395.999901,
+                  520.0839210440979,
+                  411.99989700000003
+                ],
+                "origin": [
+                  104,
+                  411.99989700000003
+                ],
+                "width": 416.0839210440979,
+                "fragments": [
+                  {
+                    "text": "G",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      411.99989700000003
+                    ]
+                  },
+                  {
+                    "text": " Style controls (font size, bold, italic, alignment, spacing, etc.)",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      116.65600269537353,
+                      411.99989700000003
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              395.999901,
+              520.0839210440979,
+              411.99989700000003
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "5e401a91-30da-4cb9-b49a-fe0b0a913571",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "5f44f5ec-8772-44dd-b747-ec1cd96fbe9e",
+                "content": "G Color changer for text and elements",
+                "y": 449.333180309906,
+                "x0": 104,
+                "x1": 361.1412117563477,
+                "size": 15.999996000000001,
+                "height": 21.485346191162137,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "bce57620-0669-417f-a6a7-d74582d0e044",
+                    "line_id": "b360b553-9f84-4e08-a196-926def30c7b5",
+                    "type": "text",
+                    "content": "G",
+                    "origin": [
+                      104,
+                      449.333180309906
+                    ],
+                    "x": 104,
+                    "y": 449.333180309906,
+                    "bbox": [
+                      104,
+                      435.7257211466675,
+                      116.65600269537353,
+                      451.72571714666753
+                    ],
+                    "width": 12.65600269537353,
+                    "height": 15.99999600000001,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 449.333180309906,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5e401a91-30da-4cb9-b49a-fe0b0a913571"
+                  },
+                  {
+                    "id": "fa4d7a4e-6677-43ff-9220-3acc0ad87b83",
+                    "line_id": "b360b553-9f84-4e08-a196-926def30c7b5",
+                    "type": "text",
+                    "content": " Color changer for text and elements",
+                    "origin": [
+                      116.65600269537353,
+                      449.333180309906
+                    ],
+                    "x": 116.65600269537353,
+                    "y": 449.333180309906,
+                    "bbox": [
+                      116.65600269537353,
+                      432.2331683088684,
+                      361.1412117563477,
+                      453.71851450003055
+                    ],
+                    "width": 244.48520906097414,
+                    "height": 21.485346191162137,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 116.65597669537354,
+                    "original_y": 449.333180309906,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5e401a91-30da-4cb9-b49a-fe0b0a913571"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  433.333184309906,
+                  361.1412117563477,
+                  449.333180309906
+                ],
+                "origin": [
+                  104,
+                  449.333180309906
+                ],
+                "width": 257.1412117563477,
+                "fragments": [
+                  {
+                    "text": "G",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      449.333180309906
+                    ]
+                  },
+                  {
+                    "text": " Color changer for text and elements",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      116.65600269537353,
+                      449.333180309906
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              433.333184309906,
+              361.1412117563477,
+              449.333180309906
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "7e2b0334-04c2-4cac-8f73-a1df1a395e9b",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "24eb9681-ff16-4516-9c20-5b8a6b1bd645",
+                "content": "G Fast rendering and smooth editing experience",
+                "y": 486.66650430990603,
+                "x0": 104,
+                "x1": 426.3638517006836,
+                "size": 15.999996000000001,
+                "height": 21.485346191162137,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "ba653c1a-d1c4-4eb8-8a06-e9e2d17f1c9d",
+                    "line_id": "df4c5063-b4ef-4dfc-b3ff-eb9cfd3178ba",
+                    "type": "text",
+                    "content": "G",
+                    "origin": [
+                      104,
+                      486.66650430990603
+                    ],
+                    "x": 104,
+                    "y": 486.66650430990603,
+                    "bbox": [
+                      104,
+                      473.05904514666753,
+                      116.65600269537353,
+                      489.05904114666754
+                    ],
+                    "width": 12.65600269537353,
+                    "height": 15.99999600000001,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 486.66650430990603,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "7e2b0334-04c2-4cac-8f73-a1df1a395e9b"
+                  },
+                  {
+                    "id": "bf985ae9-b289-412d-97a9-888c60d499a0",
+                    "line_id": "df4c5063-b4ef-4dfc-b3ff-eb9cfd3178ba",
+                    "type": "text",
+                    "content": " Fast rendering and smooth editing experience",
+                    "origin": [
+                      116.65600269537353,
+                      486.66650430990603
+                    ],
+                    "x": 116.65600269537353,
+                    "y": 486.66650430990603,
+                    "bbox": [
+                      116.65600269537353,
+                      469.5664923088684,
+                      426.3638517006836,
+                      491.05183850003056
+                    ],
+                    "width": 309.7078490053101,
+                    "height": 21.485346191162137,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 116.65597669537354,
+                    "original_y": 486.66650430990603,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "7e2b0334-04c2-4cac-8f73-a1df1a395e9b"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  470.666508309906,
+                  426.3638517006836,
+                  486.66650430990603
+                ],
+                "origin": [
+                  104,
+                  486.66650430990603
+                ],
+                "width": 322.3638517006836,
+                "fragments": [
+                  {
+                    "text": "G",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      486.66650430990603
+                    ]
+                  },
+                  {
+                    "text": " Fast rendering and smooth editing experience",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      116.65600269537353,
+                      486.66650430990603
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              470.666508309906,
+              426.3638517006836,
+              486.66650430990603
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "b42013ac-42ca-4c3a-93f5-f8d5041927e7",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "3ceb11a2-770f-46f5-909c-dce6cb8db494",
+                "content": "G Export to PDF with layout preservation",
+                "y": 523.9998283099061,
+                "x0": 104,
+                "x1": 378.24256653048707,
+                "size": 15.999996000000001,
+                "height": 21.485346191162137,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "a67c48ae-c169-4fbb-ad74-3d888eb54b0d",
+                    "line_id": "ce1beee1-1b78-45b3-97ec-7b3c1bf32d99",
+                    "type": "text",
+                    "content": "G",
+                    "origin": [
+                      104,
+                      523.9998283099061
+                    ],
+                    "x": 104,
+                    "y": 523.9998283099061,
+                    "bbox": [
+                      104,
+                      510.39236914666753,
+                      116.65600269537353,
+                      526.3923651466675
+                    ],
+                    "width": 12.65600269537353,
+                    "height": 15.99999600000001,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 523.9998283099061,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b42013ac-42ca-4c3a-93f5-f8d5041927e7"
+                  },
+                  {
+                    "id": "a3759fbf-ab44-40a0-8813-5238f71c23a3",
+                    "line_id": "ce1beee1-1b78-45b3-97ec-7b3c1bf32d99",
+                    "type": "text",
+                    "content": " Export to PDF with layout preservation",
+                    "origin": [
+                      116.65600269537353,
+                      523.9998283099061
+                    ],
+                    "x": 116.65600269537353,
+                    "y": 523.9998283099061,
+                    "bbox": [
+                      116.65600269537353,
+                      506.8998163088684,
+                      378.24256653048707,
+                      528.3851625000306
+                    ],
+                    "width": 261.58656383511357,
+                    "height": 21.485346191162137,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 116.65597669537354,
+                    "original_y": 523.9998283099061,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b42013ac-42ca-4c3a-93f5-f8d5041927e7"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  507.9998323099061,
+                  378.24256653048707,
+                  523.9998283099061
+                ],
+                "origin": [
+                  104,
+                  523.9998283099061
+                ],
+                "width": 274.24256653048707,
+                "fragments": [
+                  {
+                    "text": "G",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      523.9998283099061
+                    ]
+                  },
+                  {
+                    "text": " Export to PDF with layout preservation",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      116.65600269537353,
+                      523.9998283099061
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              507.9998323099061,
+              378.24256653048707,
+              523.9998283099061
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "5d607c26-b42a-4220-a4a6-792da8daa1ed",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "793a990a-4e5a-45e4-8f08-51780d014d3e",
+                "content": "I Best Use Cases",
+                "y": 573.333149309906,
+                "x0": 104,
+                "x1": 274.83998414546204,
+                "size": 19.999995000000002,
+                "height": 27.539991487396264,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "d520e9c7-dbbc-4aa3-8d78-54888c211e48",
+                    "line_id": "779e5c51-db3e-4c7f-8688-56c6b3432ee8",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      104,
+                      573.333149309906
+                    ],
+                    "x": 104,
+                    "y": 573.333149309906,
+                    "bbox": [
+                      104,
+                      556.3237948382874,
+                      119.21999741570282,
+                      576.3237898382874
+                    ],
+                    "width": 15.21999741570282,
+                    "height": 19.999995000000013,
+                    "size": 19.999995000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 573.333149309906,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5d607c26-b42a-4220-a4a6-792da8daa1ed"
+                  },
+                  {
+                    "id": "ff7dc2b1-ab3d-4452-8133-17d7ddfdb422",
+                    "line_id": "779e5c51-db3e-4c7f-8688-56c6b3432ee8",
+                    "type": "text",
+                    "content": " Best Use Cases",
+                    "origin": [
+                      119.21999741570282,
+                      573.333149309906
+                    ],
+                    "x": 119.21999741570282,
+                    "y": 573.333149309906,
+                    "bbox": [
+                      119.21999741570282,
+                      551.9331709359436,
+                      274.83998414546204,
+                      579.4731624233399
+                    ],
+                    "width": 155.6199867297592,
+                    "height": 27.539991487396264,
+                    "size": 19.999995000000002,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 119.21997141570283,
+                    "original_y": 573.333149309906,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5d607c26-b42a-4220-a4a6-792da8daa1ed"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  553.333154309906,
+                  274.83998414546204,
+                  573.333149309906
+                ],
+                "origin": [
+                  104,
+                  573.333149309906
+                ],
+                "width": 170.83998414546204,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 19.999995000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      573.333149309906
+                    ]
+                  },
+                  {
+                    "text": " Best Use Cases",
+                    "font": "Helvetica-Bold",
+                    "size": 19.999995000000002,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      119.21999741570282,
+                      573.333149309906
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "d92c1987-f09f-4bfa-b6c3-5c07f0530d0a",
+                "content": "I Resumes and CVs",
+                "y": 606.6664743099061,
+                "x0": 104,
+                "x1": 250.26131597372438,
+                "size": 15.999996000000001,
+                "height": 20.15201319116204,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "2166ef42-0244-4a17-96ca-aaf54776b529",
+                    "line_id": "1cbb8fcc-cfeb-453c-bada-bd311d96ad1c",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      104,
+                      606.6664743099061
+                    ],
+                    "x": 104,
+                    "y": 606.6664743099061,
+                    "bbox": [
+                      104,
+                      593.0590151466675,
+                      116.17600200157166,
+                      609.0590111466676
+                    ],
+                    "width": 12.17600200157166,
+                    "height": 15.99999600000001,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 606.6664743099061,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5d607c26-b42a-4220-a4a6-792da8daa1ed"
+                  },
+                  {
+                    "id": "edc25a8c-fc5a-4fc9-a432-538fb38040ca",
+                    "line_id": "4cd4b7fe-b0e0-41b4-9579-fcf910556b7d",
+                    "type": "text",
+                    "content": "Resumes and CVs",
+                    "origin": [
+                      127.999994,
+                      605.3331413099061
+                    ],
+                    "x": 127.999994,
+                    "y": 605.3331413099061,
+                    "bbox": [
+                      127.999994,
+                      589.5664623088685,
+                      250.26131597372438,
+                      609.7184755000305
+                    ],
+                    "width": 122.26132197372438,
+                    "height": 20.15201319116204,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 605.3331413099061,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5d607c26-b42a-4220-a4a6-792da8daa1ed"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  590.6664783099061,
+                  250.26131597372438,
+                  606.6664743099061
+                ],
+                "origin": [
+                  104,
+                  606.6664743099061
+                ],
+                "width": 146.26131597372438,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      606.6664743099061
+                    ]
+                  },
+                  {
+                    "text": "Resumes and CVs",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      127.999994,
+                      605.3331413099061
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              553.333154309906,
+              274.83998414546204,
+              606.6664743099061
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 19.999995000000002
+            },
+            "uri": null
+          },
+          {
+            "id": "cbe5f3ea-8174-4614-8eee-73f267bba2e8",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "a47a0524-3831-410e-8b15-07a5a6a9b816",
+                "content": "I Cover letters",
+                "y": 643.999798309906,
+                "x0": 104,
+                "x1": 211.13064948686218,
+                "size": 15.999996000000001,
+                "height": 20.152013191162155,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "c3056a32-2771-4a40-9f65-d5357261c897",
+                    "line_id": "9200fae3-99c2-41c9-8617-4919b01a8e68",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      104,
+                      643.999798309906
+                    ],
+                    "x": 104,
+                    "y": 643.999798309906,
+                    "bbox": [
+                      104,
+                      630.3923391466675,
+                      116.17600200157166,
+                      646.3923351466675
+                    ],
+                    "width": 12.17600200157166,
+                    "height": 15.99999600000001,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 643.999798309906,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "cbe5f3ea-8174-4614-8eee-73f267bba2e8"
+                  },
+                  {
+                    "id": "11bd216c-7d7f-4a4f-a419-8bc0c6913935",
+                    "line_id": "7bb6e521-cd1f-413f-b738-6183f7ec12d2",
+                    "type": "text",
+                    "content": "Cover letters",
+                    "origin": [
+                      127.999994,
+                      642.666465309906
+                    ],
+                    "x": 127.999994,
+                    "y": 642.666465309906,
+                    "bbox": [
+                      127.999994,
+                      626.8997863088684,
+                      211.13064948686218,
+                      647.0517995000306
+                    ],
+                    "width": 83.13065548686218,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 642.666465309906,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "cbe5f3ea-8174-4614-8eee-73f267bba2e8"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  627.999802309906,
+                  211.13064948686218,
+                  643.999798309906
+                ],
+                "origin": [
+                  104,
+                  643.999798309906
+                ],
+                "width": 107.13064948686218,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      643.999798309906
+                    ]
+                  },
+                  {
+                    "text": "Cover letters",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      127.999994,
+                      642.666465309906
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              627.999802309906,
+              211.13064948686218,
+              643.999798309906
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "a3600384-2518-4498-a3b1-e11308fc5640",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "2c0c8c4b-2db2-4777-9855-c86d01307d79",
+                "content": "I Reports and textIheavy documents",
+                "y": 681.333163,
+                "x0": 104,
+                "x1": 361.7132330977173,
+                "size": 15.999996000000001,
+                "height": 20.152013191162155,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "a51a421a-fb6c-40c0-806a-2896f081e6f5",
+                    "line_id": "b47c7e41-03be-4cda-904c-a190376804e1",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      104,
+                      681.333163
+                    ],
+                    "x": 104,
+                    "y": 681.333163,
+                    "bbox": [
+                      104,
+                      667.7257038367616,
+                      116.17600200157166,
+                      683.7256591466676
+                    ],
+                    "width": 12.17600200157166,
+                    "height": 15.999955309906,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 681.333163,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a3600384-2518-4498-a3b1-e11308fc5640"
+                  },
+                  {
+                    "id": "9db69282-972f-49ad-b078-e07f077a0cb4",
+                    "line_id": "356faa31-0827-4894-aa05-97e2f83a18c8",
+                    "type": "text",
+                    "content": "Reports and text",
+                    "origin": [
+                      127.999994,
+                      679.9998300000001
+                    ],
+                    "x": 127.999994,
+                    "y": 679.9998300000001,
+                    "bbox": [
+                      127.999994,
+                      664.2331509989624,
+                      235.60930140756227,
+                      684.3851641901246
+                    ],
+                    "width": 107.60930740756227,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 679.9998300000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a3600384-2518-4498-a3b1-e11308fc5640"
+                  },
+                  {
+                    "id": "95c57591-b68c-45e4-90aa-54b034455db9",
+                    "line_id": "356faa31-0827-4894-aa05-97e2f83a18c8",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      235.60930140756227,
+                      679.9998300000001
+                    ],
+                    "x": 235.60930140756227,
+                    "y": 679.9998300000001,
+                    "bbox": [
+                      235.60930140756227,
+                      667.5263223761903,
+                      246.77063488024902,
+                      682.1929853761902
+                    ],
+                    "width": 11.16133347268675,
+                    "height": 14.666662999999971,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 235.60927540756228,
+                    "original_y": 679.9998300000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a3600384-2518-4498-a3b1-e11308fc5640"
+                  },
+                  {
+                    "id": "3b4d7598-2c0a-4ee5-af8c-416a622ec15d",
+                    "line_id": "356faa31-0827-4894-aa05-97e2f83a18c8",
+                    "type": "text",
+                    "content": "heavy documents",
+                    "origin": [
+                      246.77063488024902,
+                      679.9998300000001
+                    ],
+                    "x": 246.77063488024902,
+                    "y": 679.9998300000001,
+                    "bbox": [
+                      246.77063488024902,
+                      664.2331509989624,
+                      361.7132330977173,
+                      684.3851641901246
+                    ],
+                    "width": 114.94259821746829,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 246.77060888024903,
+                    "original_y": 679.9998300000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "a3600384-2518-4498-a3b1-e11308fc5640"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  665.333167,
+                  361.7132330977173,
+                  681.333163
+                ],
+                "origin": [
+                  104,
+                  681.333163
+                ],
+                "width": 257.7132330977173,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      681.333163
+                    ]
+                  },
+                  {
+                    "text": "Reports and text",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      127.999994,
+                      679.9998300000001
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      235.60930140756227,
+                      679.9998300000001
+                    ]
+                  },
+                  {
+                    "text": "heavy documents",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      246.77063488024902,
+                      679.9998300000001
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              665.333167,
+              361.7132330977173,
+              681.333163
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "0ba55178-7133-47ed-b277-254e049aa068",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "638e8df1-bba5-4b7a-8411-8daa221e715d",
+                "content": "I Simple structured layouts",
+                "y": 718.6664870000001,
+                "x0": 104,
+                "x1": 292.6479427468567,
+                "size": 15.999996000000001,
+                "height": 20.152013191162155,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "a7cdda83-b29f-479d-bf3c-7b70b188c569",
+                    "line_id": "97904a96-e837-406b-8a82-84ebbb2daedb",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      104,
+                      718.6664870000001
+                    ],
+                    "x": 104,
+                    "y": 718.6664870000001,
+                    "bbox": [
+                      104,
+                      705.0589871466675,
+                      116.17600200157166,
+                      721.0589831466675
+                    ],
+                    "width": 12.17600200157166,
+                    "height": 15.99999600000001,
+                    "size": 15.999996000000001,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 718.6664870000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "0ba55178-7133-47ed-b277-254e049aa068"
+                  },
+                  {
+                    "id": "3631d472-929b-41f2-9e39-36cdd8c2a88e",
+                    "line_id": "23294a0c-7a9d-447e-a3a5-a7459b10d413",
+                    "type": "text",
+                    "content": "Simple structured layouts",
+                    "origin": [
+                      127.999994,
+                      717.333154
+                    ],
+                    "x": 127.999994,
+                    "y": 717.333154,
+                    "bbox": [
+                      127.999994,
+                      701.5664749989625,
+                      292.6479427468567,
+                      721.7184881901246
+                    ],
+                    "width": 164.64794874685668,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 717.333154,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "0ba55178-7133-47ed-b277-254e049aa068"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  702.6664910000001,
+                  292.6479427468567,
+                  718.6664870000001
+                ],
+                "origin": [
+                  104,
+                  718.6664870000001
+                ],
+                "width": 188.6479427468567,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      718.6664870000001
+                    ]
+                  },
+                  {
+                    "text": "Simple structured layouts",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      127.999994,
+                      717.333154
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              702.6664910000001,
+              292.6479427468567,
+              718.6664870000001
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 15.999996000000001
+            },
+            "uri": null
+          },
+          {
+            "id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "0ed97136-cd5f-4278-99c1-d46e8454fb0f",
+                "content": "II Current Limitations",
+                "y": 767.999808,
+                "x0": 104,
+                "x1": 324.4599261675568,
+                "size": 19.999995000000002,
+                "height": 27.539950797302254,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "d7c57f0b-b9a4-4062-84d0-f95259d64b95",
+                    "line_id": "dd1eb3d4-351e-4735-a562-c23f6956c93a",
+                    "type": "text",
+                    "content": "II",
+                    "origin": [
+                      104,
+                      767.999808
+                    ],
+                    "x": 104,
+                    "y": 767.999808,
+                    "bbox": [
+                      104,
+                      750.9904535283814,
+                      134.43999483140564,
+                      770.9904485283814
+                    ],
+                    "width": 30.43999483140564,
+                    "height": 19.999995000000013,
+                    "size": 19.999995000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 767.999808,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad"
+                  },
+                  {
+                    "id": "f1e94378-20a0-4e50-a809-708e47d6b4c1",
+                    "line_id": "dd1eb3d4-351e-4735-a562-c23f6956c93a",
+                    "type": "text",
+                    "content": " Current Limitations",
+                    "origin": [
+                      134.43999483140564,
+                      767.999808
+                    ],
+                    "x": 134.43999483140564,
+                    "y": 767.999808,
+                    "bbox": [
+                      134.43999483140564,
+                      746.5998296260376,
+                      324.4599261675568,
+                      774.1397804233399
+                    ],
+                    "width": 190.01993133615113,
+                    "height": 27.539950797302254,
+                    "size": 19.999995000000002,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 134.43996883140565,
+                    "original_y": 767.999808,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  747.999813,
+                  324.4599261675568,
+                  767.999808
+                ],
+                "origin": [
+                  104,
+                  767.999808
+                ],
+                "width": 220.45992616755677,
+                "fragments": [
+                  {
+                    "text": "II",
+                    "font": "ZapfDingbats",
+                    "size": 19.999995000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      767.999808
+                    ]
+                  },
+                  {
+                    "text": " Current Limitations",
+                    "font": "Helvetica-Bold",
+                    "size": 19.999995000000002,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      134.43999483140564,
+                      767.999808
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "d7bbf537-4483-4f14-ae95-100793ba2c76",
+                "content": "This editor is currently optimized for simple and textIheavy documents. Some complex",
+                "y": 799.9998,
+                "x0": 104,
+                "x1": 669.4291392416383,
+                "size": 14.666663000000002,
+                "height": 20.15201319116204,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "f4ae6515-f636-4888-96b2-b5b981254880",
+                    "line_id": "ec3037e7-1eeb-40c0-bb56-5edec7f9ddf9",
+                    "type": "text",
+                    "content": "This editor is currently optimized for simple and text",
+                    "origin": [
+                      104,
+                      799.9998
+                    ],
+                    "x": 104,
+                    "y": 799.9998,
+                    "bbox": [
+                      104,
+                      784.2331209989625,
+                      438.1798887857361,
+                      804.3851341901245
+                    ],
+                    "width": 334.1798887857361,
+                    "height": 20.15201319116204,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 799.9998,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad"
+                  },
+                  {
+                    "id": "6efb9700-4c14-4f1a-9bc7-a57cbc9e5d41",
+                    "line_id": "ec3037e7-1eeb-40c0-bb56-5edec7f9ddf9",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      438.1798480956421,
+                      799.9998
+                    ],
+                    "x": 438.1798480956421,
+                    "y": 799.9998,
+                    "bbox": [
+                      438.1798480956421,
+                      787.5262516860962,
+                      449.34118156832886,
+                      802.1929146860963
+                    ],
+                    "width": 11.16133347268675,
+                    "height": 14.666663000000085,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 438.1798220956421,
+                    "original_y": 799.9998,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad"
+                  },
+                  {
+                    "id": "7ab8f6b3-23cc-4c0b-9509-3728ad6083c8",
+                    "line_id": "ec3037e7-1eeb-40c0-bb56-5edec7f9ddf9",
+                    "type": "text",
+                    "content": "heavy documents. Some complex",
+                    "origin": [
+                      449.34118156832886,
+                      799.9998
+                    ],
+                    "x": 449.34118156832886,
+                    "y": 799.9998,
+                    "bbox": [
+                      449.34118156832886,
+                      784.2331209989625,
+                      669.4291392416383,
+                      804.3851341901245
+                    ],
+                    "width": 220.08795767330935,
+                    "height": 20.15201319116204,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 449.3411555683289,
+                    "original_y": 799.9998,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  785.3331370000001,
+                  669.4291392416383,
+                  799.9998
+                ],
+                "origin": [
+                  104,
+                  799.9998
+                ],
+                "width": 565.4291392416383,
+                "fragments": [
+                  {
+                    "text": "This editor is currently optimized for simple and text",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      799.9998
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      438.1798480956421,
+                      799.9998
+                    ]
+                  },
+                  {
+                    "text": "heavy documents. Some complex",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      449.34118156832886,
+                      799.9998
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "9fe9ca75-d2a6-47ea-98e5-686a9871372d",
+                "content": "layouts may not import or render perfectly.",
+                "y": 821.3331280000001,
+                "x0": 104,
+                "x1": 378.6918665483704,
+                "size": 14.666663000000002,
+                "height": 20.152013191162155,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "795f4b63-f61f-490b-a5f2-d5ed7774fc9f",
+                    "line_id": "6d8ce257-98d8-4bbe-b44c-17fbfdacf6a3",
+                    "type": "text",
+                    "content": "layouts may not import or render perfectly.",
+                    "origin": [
+                      104,
+                      821.3331280000001
+                    ],
+                    "x": 104,
+                    "y": 821.3331280000001,
+                    "bbox": [
+                      104,
+                      805.5664489989624,
+                      378.6918665483704,
+                      825.7184621901246
+                    ],
+                    "width": 274.6918665483704,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 821.3331280000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "b5ff4839-9e66-499b-99bc-6ae8c9f7c1ad"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  806.6664650000001,
+                  378.6918665483704,
+                  821.3331280000001
+                ],
+                "origin": [
+                  104,
+                  821.3331280000001
+                ],
+                "width": 274.6918665483704,
+                "fragments": [
+                  {
+                    "text": "layouts may not import or render perfectly.",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      821.3331280000001
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              747.999813,
+              669.4291392416383,
+              821.3331280000001
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 19.999995000000002
+            },
+            "uri": null
+          },
+          {
+            "id": "512dfc4b-2184-42cd-bce2-0d221e73110c",
+            "type": "list-item",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "b3b7fef1-10ca-4be8-87b6-b7d18f4fea1a",
+                "content": "• Complex tables",
+                "y": 859.9997850000001,
+                "x0": 104,
+                "x1": 229.0679678970642,
+                "size": 15.999996000000001,
+                "height": 21.984043983154265,
+                "is_bullet_start": true,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "5dbea195-8e17-4ed0-8cd4-c3c7f94a21af",
+                    "line_id": "411c5d22-b1bf-4854-a506-b9256b851cee",
+                    "type": "text",
+                    "content": "•",
+                    "origin": [
+                      104,
+                      859.9997850000001
+                    ],
+                    "x": 104,
+                    "y": 859.9997850000001,
+                    "bbox": [
+                      104,
+                      842.7997567479249,
+                      109.5999945309906,
+                      864.7838007310792
+                    ],
+                    "width": 5.5999945309906,
+                    "height": 21.984043983154265,
+                    "size": 15.999996000000001,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 859.9997850000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "512dfc4b-2184-42cd-bce2-0d221e73110c"
+                  },
+                  {
+                    "id": "79debd33-cd77-4282-8962-e09e3fbd2891",
+                    "line_id": "e274a45b-a767-4459-9eb6-59b6c4e13511",
+                    "type": "text",
+                    "content": "Complex tables",
+                    "origin": [
+                      128,
+                      858.666452
+                    ],
+                    "x": 128,
+                    "y": 858.666452,
+                    "bbox": [
+                      128,
+                      842.8997729989625,
+                      229.0679678970642,
+                      863.0517861901246
+                    ],
+                    "width": 101.06796789706421,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 858.666452,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "512dfc4b-2184-42cd-bce2-0d221e73110c"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  843.9997890000001,
+                  229.0679678970642,
+                  859.9997850000001
+                ],
+                "origin": [
+                  104,
+                  859.9997850000001
+                ],
+                "width": 125.0679678970642,
+                "fragments": [
+                  {
+                    "text": "•",
+                    "font": "Helvetica",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      859.9997850000001
+                    ]
+                  },
+                  {
+                    "text": "Complex tables",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      128,
+                      858.666452
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              843.9997890000001,
+              229.0679678970642,
+              859.9997850000001
+            ],
+            "indentX": 104,
+            "textX": 128,
+            "style": {
+              "font": "Helvetica",
+              "size": 15.999996000000001
+            },
+            "uri": null,
+            "marker": "•",
+            "level": 0
+          },
+          {
+            "id": "24d9c807-93b3-4760-b588-87d0ef057ba6",
+            "type": "list-item",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "c9a680e6-c1fe-46d3-97c6-b6c0ea1eeb18",
+                "content": "• Advanced multiIcolumn magazine layouts",
+                "y": 897.333109,
+                "x0": 104,
+                "x1": 404.89189855044555,
+                "size": 15.999996000000001,
+                "height": 21.984043983154265,
+                "is_bullet_start": true,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "d5fe18bc-b8a1-4d06-80e2-fe1f7f2969e6",
+                    "line_id": "df0b16a3-9711-47d5-9721-b857ea3f7262",
+                    "type": "text",
+                    "content": "•",
+                    "origin": [
+                      104,
+                      897.333109
+                    ],
+                    "x": 104,
+                    "y": 897.333109,
+                    "bbox": [
+                      104,
+                      880.1330807479249,
+                      109.5999945309906,
+                      902.1171247310791
+                    ],
+                    "width": 5.5999945309906,
+                    "height": 21.984043983154265,
+                    "size": 15.999996000000001,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 897.333109,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "24d9c807-93b3-4760-b588-87d0ef057ba6"
+                  },
+                  {
+                    "id": "f434885c-938a-497f-88a6-2810d910d5d7",
+                    "line_id": "c95f1621-c528-4aaa-8a8f-7eff25eba061",
+                    "type": "text",
+                    "content": "Advanced multi",
+                    "origin": [
+                      128,
+                      895.9997760000001
+                    ],
+                    "x": 128,
+                    "y": 895.9997760000001,
+                    "bbox": [
+                      128,
+                      880.2330969989624,
+                      228.2613071286774,
+                      900.3851101901246
+                    ],
+                    "width": 100.26130712867739,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 895.9997760000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "24d9c807-93b3-4760-b588-87d0ef057ba6"
+                  },
+                  {
+                    "id": "fd0ec1c4-7ab1-411b-b76c-897d23c9a81e",
+                    "line_id": "c95f1621-c528-4aaa-8a8f-7eff25eba061",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      228.26132747372435,
+                      895.9997760000001
+                    ],
+                    "x": 228.26132747372435,
+                    "y": 895.9997760000001,
+                    "bbox": [
+                      228.26132747372435,
+                      883.5262276860963,
+                      239.42266094641116,
+                      898.1928906860962
+                    ],
+                    "width": 11.161333472686778,
+                    "height": 14.666662999999971,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 228.26129547372437,
+                    "original_y": 895.9997760000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "24d9c807-93b3-4760-b588-87d0ef057ba6"
+                  },
+                  {
+                    "id": "37fe60b8-4107-43f5-b626-3dce847d05dc",
+                    "line_id": "c95f1621-c528-4aaa-8a8f-7eff25eba061",
+                    "type": "text",
+                    "content": "column magazine layouts",
+                    "origin": [
+                      239.42266094641116,
+                      895.9997760000001
+                    ],
+                    "x": 239.42266094641116,
+                    "y": 895.9997760000001,
+                    "bbox": [
+                      239.42266094641116,
+                      880.2330969989624,
+                      404.89189855044555,
+                      900.3851101901246
+                    ],
+                    "width": 165.46923760403442,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 239.42262894641115,
+                    "original_y": 895.9997760000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "24d9c807-93b3-4760-b588-87d0ef057ba6"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  881.333113,
+                  404.89189855044555,
+                  897.333109
+                ],
+                "origin": [
+                  104,
+                  897.333109
+                ],
+                "width": 300.89189855044555,
+                "fragments": [
+                  {
+                    "text": "•",
+                    "font": "Helvetica",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      897.333109
+                    ]
+                  },
+                  {
+                    "text": "Advanced multi",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      128,
+                      895.9997760000001
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      228.26132747372435,
+                      895.9997760000001
+                    ]
+                  },
+                  {
+                    "text": "column magazine layouts",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      239.42266094641116,
+                      895.9997760000001
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              881.333113,
+              404.89189855044555,
+              897.333109
+            ],
+            "indentX": 104,
+            "textX": 128,
+            "style": {
+              "font": "Helvetica",
+              "size": 15.999996000000001
+            },
+            "uri": null,
+            "marker": "•",
+            "level": 0
+          },
+          {
+            "id": "c5703ddd-08a6-4d9e-bb24-ae73ebf7f9d8",
+            "type": "list-item",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "f9a24050-dd8b-4c53-be5d-955194a11ab8",
+                "content": "• Heavy imageIbased PDFs",
+                "y": 934.6664330000001,
+                "x0": 104,
+                "x1": 305.437292880249,
+                "size": 15.999996000000001,
+                "height": 21.984043983154265,
+                "is_bullet_start": true,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "08dea936-bd49-44f3-ab95-be0accf0b1af",
+                    "line_id": "d9ce3baa-0d28-4e30-bfa1-1fb4b90dc974",
+                    "type": "text",
+                    "content": "•",
+                    "origin": [
+                      104,
+                      934.6664330000001
+                    ],
+                    "x": 104,
+                    "y": 934.6664330000001,
+                    "bbox": [
+                      104,
+                      917.4664047479249,
+                      109.5999945309906,
+                      939.4504487310792
+                    ],
+                    "width": 5.5999945309906,
+                    "height": 21.984043983154265,
+                    "size": 15.999996000000001,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 934.6664330000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c5703ddd-08a6-4d9e-bb24-ae73ebf7f9d8"
+                  },
+                  {
+                    "id": "afbf3327-671c-43ec-8398-0c4289d0052b",
+                    "line_id": "39c8158c-1630-48ed-99a7-981c5c2c3db7",
+                    "type": "text",
+                    "content": "Heavy image",
+                    "origin": [
+                      128,
+                      933.3331000000001
+                    ],
+                    "x": 128,
+                    "y": 933.3331000000001,
+                    "bbox": [
+                      128,
+                      917.5664209989625,
+                      213.5799753497925,
+                      937.7184341901246
+                    ],
+                    "width": 85.57997534979249,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 933.3331000000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c5703ddd-08a6-4d9e-bb24-ae73ebf7f9d8"
+                  },
+                  {
+                    "id": "1c06baea-8b63-46cc-b21d-f21ee6e0eea6",
+                    "line_id": "39c8158c-1630-48ed-99a7-981c5c2c3db7",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      213.5799753497925,
+                      933.3331000000001
+                    ],
+                    "x": 213.5799753497925,
+                    "y": 933.3331000000001,
+                    "bbox": [
+                      213.5799753497925,
+                      920.8595516860962,
+                      224.74130882247925,
+                      935.5262146860963
+                    ],
+                    "width": 11.161333472686778,
+                    "height": 14.666663000000085,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 213.5799433497925,
+                    "original_y": 933.3331000000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c5703ddd-08a6-4d9e-bb24-ae73ebf7f9d8"
+                  },
+                  {
+                    "id": "cd9265aa-83a7-47b6-a0d0-a66b9f54f85a",
+                    "line_id": "39c8158c-1630-48ed-99a7-981c5c2c3db7",
+                    "type": "text",
+                    "content": "based PDFs",
+                    "origin": [
+                      224.74130882247925,
+                      933.3331000000001
+                    ],
+                    "x": 224.74130882247925,
+                    "y": 933.3331000000001,
+                    "bbox": [
+                      224.74130882247925,
+                      917.5664209989625,
+                      305.437292880249,
+                      937.7184341901246
+                    ],
+                    "width": 80.69598405776975,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 224.74127682247928,
+                    "original_y": 933.3331000000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "c5703ddd-08a6-4d9e-bb24-ae73ebf7f9d8"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  918.6664370000001,
+                  305.437292880249,
+                  934.6664330000001
+                ],
+                "origin": [
+                  104,
+                  934.6664330000001
+                ],
+                "width": 201.437292880249,
+                "fragments": [
+                  {
+                    "text": "•",
+                    "font": "Helvetica",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      934.6664330000001
+                    ]
+                  },
+                  {
+                    "text": "Heavy image",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      128,
+                      933.3331000000001
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      213.5799753497925,
+                      933.3331000000001
+                    ]
+                  },
+                  {
+                    "text": "based PDFs",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      224.74130882247925,
+                      933.3331000000001
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              918.6664370000001,
+              305.437292880249,
+              934.6664330000001
+            ],
+            "indentX": 104,
+            "textX": 128,
+            "style": {
+              "font": "Helvetica",
+              "size": 15.999996000000001
+            },
+            "uri": null,
+            "marker": "•",
+            "level": 0
+          },
+          {
+            "id": "bc48fd08-5cc7-46d8-b75f-227933e8adf6",
+            "type": "list-item",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "f2e9bb07-8e86-4978-9a33-0182128a9755",
+                "content": "• Diagrams and designIintensive documents",
+                "y": 971.999757,
+                "x0": 104,
+                "x1": 411.41854893701174,
+                "size": 15.999996000000001,
+                "height": 21.984043983154265,
+                "is_bullet_start": true,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "4868fd35-b04f-489b-917a-633d18b8cea6",
+                    "line_id": "2d8bc602-5894-4678-a98f-6c6ac4725bab",
+                    "type": "text",
+                    "content": "•",
+                    "origin": [
+                      104,
+                      971.999757
+                    ],
+                    "x": 104,
+                    "y": 971.999757,
+                    "bbox": [
+                      104,
+                      954.7997287479249,
+                      109.5999945309906,
+                      976.7837727310791
+                    ],
+                    "width": 5.5999945309906,
+                    "height": 21.984043983154265,
+                    "size": 15.999996000000001,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 971.999757,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "bc48fd08-5cc7-46d8-b75f-227933e8adf6"
+                  },
+                  {
+                    "id": "958bf6f9-435a-4408-9bf3-e7c93f79a999",
+                    "line_id": "397935c4-cfb0-40d2-84e4-660b54f0ea51",
+                    "type": "text",
+                    "content": "Diagrams and design",
+                    "origin": [
+                      128,
+                      970.6664240000001
+                    ],
+                    "x": 128,
+                    "y": 970.6664240000001,
+                    "bbox": [
+                      128,
+                      954.8997449989624,
+                      266.5706237232208,
+                      975.0517581901246
+                    ],
+                    "width": 138.57062372322082,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 127.99996800000001,
+                    "original_y": 970.6664240000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "bc48fd08-5cc7-46d8-b75f-227933e8adf6"
+                  },
+                  {
+                    "id": "2aeab11f-7749-4499-8421-8d6b3b4f7ad5",
+                    "line_id": "397935c4-cfb0-40d2-84e4-660b54f0ea51",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      266.5706237232208,
+                      970.6664240000001
+                    ],
+                    "x": 266.5706237232208,
+                    "y": 970.6664240000001,
+                    "bbox": [
+                      266.5706237232208,
+                      958.1928756860963,
+                      277.73195719590757,
+                      972.8595386860962
+                    ],
+                    "width": 11.16133347268675,
+                    "height": 14.666662999999971,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 266.57059172322084,
+                    "original_y": 970.6664240000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "bc48fd08-5cc7-46d8-b75f-227933e8adf6"
+                  },
+                  {
+                    "id": "3afde8c3-97e5-411f-ab12-ba3e0d9fd490",
+                    "line_id": "397935c4-cfb0-40d2-84e4-660b54f0ea51",
+                    "type": "text",
+                    "content": "intensive documents",
+                    "origin": [
+                      277.73195719590757,
+                      970.6664240000001
+                    ],
+                    "x": 277.73195719590757,
+                    "y": 970.6664240000001,
+                    "bbox": [
+                      277.73195719590757,
+                      954.8997449989624,
+                      411.41854893701174,
+                      975.0517581901246
+                    ],
+                    "width": 133.68659174110417,
+                    "height": 20.152013191162155,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 277.7319251959076,
+                    "original_y": 970.6664240000001,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "bc48fd08-5cc7-46d8-b75f-227933e8adf6"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  955.999761,
+                  411.41854893701174,
+                  971.999757
+                ],
+                "origin": [
+                  104,
+                  971.999757
+                ],
+                "width": 307.41854893701174,
+                "fragments": [
+                  {
+                    "text": "•",
+                    "font": "Helvetica",
+                    "size": 15.999996000000001,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      971.999757
+                    ]
+                  },
+                  {
+                    "text": "Diagrams and design",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      128,
+                      970.6664240000001
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      266.5706237232208,
+                      970.6664240000001
+                    ]
+                  },
+                  {
+                    "text": "intensive documents",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      277.73195719590757,
+                      970.6664240000001
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              955.999761,
+              411.41854893701174,
+              971.999757
+            ],
+            "indentX": 104,
+            "textX": 128,
+            "style": {
+              "font": "Helvetica",
+              "size": 15.999996000000001
+            },
+            "uri": null,
+            "marker": "•",
+            "level": 0
+          }
+        ],
+        "bg_items": []
+      },
+      {
+        "index": 1,
+        "width": 793.7005665487671,
+        "height": 1122.5194133804932,
+        "blocks": [
+          {
+            "id": "9621f65d-8670-4181-b4b5-ce0acf4afb09",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "afedf349-3fa7-4e3f-8f9c-8143ad0b56fc",
+                "content": "If a document is too complex, it may be imported as a nonIeditable background or may",
+                "y": 158.666627,
+                "x0": 104,
+                "x1": 671.9371138750612,
+                "size": 14.666663000000002,
+                "height": 20.15199284611512,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "0941ae35-0700-4f09-a20e-f017f4fc30d6",
+                    "line_id": "024e8825-dc45-4e0a-a419-5c3b6e96d871",
+                    "type": "text",
+                    "content": "If a document is too complex, it may be imported as a non",
+                    "origin": [
+                      104,
+                      158.666627
+                    ],
+                    "x": 104,
+                    "y": 158.666627,
+                    "bbox": [
+                      104,
+                      142.8999683440094,
+                      479.80386112713626,
+                      163.05196119012453
+                    ],
+                    "width": 375.80386112713626,
+                    "height": 20.15199284611512,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 158.666627,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "9621f65d-8670-4181-b4b5-ce0acf4afb09"
+                  },
+                  {
+                    "id": "aab2dfa8-299a-445f-b853-44740038c0a2",
+                    "line_id": "024e8825-dc45-4e0a-a419-5c3b6e96d871",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      479.80386112713626,
+                      158.666627
+                    ],
+                    "x": 479.80386112713626,
+                    "y": 158.666627,
+                    "bbox": [
+                      479.80386112713626,
+                      146.1931092036667,
+                      490.965194599823,
+                      160.8597722036667
+                    ],
+                    "width": 11.16133347268675,
+                    "height": 14.666663,
+                    "size": 14.666663000000002,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 479.80383512713627,
+                    "original_y": 158.666627,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "9621f65d-8670-4181-b4b5-ce0acf4afb09"
+                  },
+                  {
+                    "id": "8f5d9fd1-eb7b-45c0-bd74-8aa4891849bd",
+                    "line_id": "024e8825-dc45-4e0a-a419-5c3b6e96d871",
+                    "type": "text",
+                    "content": "editable background or may",
+                    "origin": [
+                      490.965194599823,
+                      158.666627
+                    ],
+                    "x": 490.965194599823,
+                    "y": 158.666627,
+                    "bbox": [
+                      490.965194599823,
+                      142.8999683440094,
+                      671.9371138750612,
+                      163.05196119012453
+                    ],
+                    "width": 180.97191927523812,
+                    "height": 20.15199284611512,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 490.965168599823,
+                    "original_y": 158.666627,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "9621f65d-8670-4181-b4b5-ce0acf4afb09"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  143.999964,
+                  671.9371138750612,
+                  158.666627
+                ],
+                "origin": [
+                  104,
+                  158.666627
+                ],
+                "width": 567.9371138750612,
+                "fragments": [
+                  {
+                    "text": "If a document is too complex, it may be imported as a non",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      158.666627
+                    ]
+                  },
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      479.80386112713626,
+                      158.666627
+                    ]
+                  },
+                  {
+                    "text": "editable background or may",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      490.965194599823,
+                      158.666627
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "d48eeff8-1066-452d-8216-5cd39d287347",
+                "content": "not render exactly as expected. We are continuously improving support for more advanced",
+                "y": 179.999955,
+                "x0": 104,
+                "x1": 689.7005371685791,
+                "size": 14.666663000000002,
+                "height": 20.15199284611512,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "57bdb786-a997-4eb8-8056-214c87980d80",
+                    "line_id": "56ba322b-6b26-4139-b237-087bae10955f",
+                    "type": "text",
+                    "content": "not render exactly as expected. We are continuously improving support for more advanced",
+                    "origin": [
+                      104,
+                      179.999955
+                    ],
+                    "x": 104,
+                    "y": 179.999955,
+                    "bbox": [
+                      104,
+                      164.2332963440094,
+                      689.7005371685791,
+                      184.38528919012452
+                    ],
+                    "width": 585.7005371685791,
+                    "height": 20.15199284611512,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 179.999955,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "9621f65d-8670-4181-b4b5-ce0acf4afb09"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  165.333292,
+                  689.7005371685791,
+                  179.999955
+                ],
+                "origin": [
+                  104,
+                  179.999955
+                ],
+                "width": 585.7005371685791,
+                "fragments": [
+                  {
+                    "text": "not render exactly as expected. We are continuously improving support for more advanced",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      179.999955
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "47e2a426-f617-4399-8128-affb1354a384",
+                "content": "layouts.",
+                "y": 201.33328300000002,
+                "x0": 104,
+                "x1": 154.54132851049806,
+                "size": 14.666663000000002,
+                "height": 20.151992846115093,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "e3ec90f4-0ff8-4040-9091-a9cc65df77fd",
+                    "line_id": "ce438d3a-6d6c-47e5-8e28-4c4a5ee94d5a",
+                    "type": "text",
+                    "content": "layouts.",
+                    "origin": [
+                      104,
+                      201.33328300000002
+                    ],
+                    "x": 104,
+                    "y": 201.33328300000002,
+                    "bbox": [
+                      104,
+                      185.56662434400943,
+                      154.54132851049806,
+                      205.71861719012452
+                    ],
+                    "width": 50.54132851049806,
+                    "height": 20.151992846115093,
+                    "size": 14.666663000000002,
+                    "font": "Helvetica",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0,
+                      0,
+                      0
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 103.99997400000001,
+                    "original_y": 201.33328300000002,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "9621f65d-8670-4181-b4b5-ce0acf4afb09"
+                  }
+                ],
+                "bbox": [
+                  104,
+                  186.66662000000002,
+                  154.54132851049806,
+                  201.33328300000002
+                ],
+                "origin": [
+                  104,
+                  201.33328300000002
+                ],
+                "width": 50.54132851049806,
+                "fragments": [
+                  {
+                    "text": "layouts.",
+                    "font": "Helvetica",
+                    "size": 14.666663000000002,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      104,
+                      201.33328300000002
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              104,
+              143.999964,
+              689.7005371685791,
+              201.33328300000002
+            ],
+            "indentX": 104,
+            "textX": 104,
+            "style": {
+              "font": "Helvetica",
+              "size": 14.666663000000002
+            },
+            "uri": null
+          },
+          {
+            "id": "5bb6fc48-4f5e-4311-b92c-6b808423d57f",
+            "type": "paragraph",
+            "is_right_aligned": false,
+            "lines": [
+              {
+                "id": "66c5825c-2749-4ebc-b176-ab26517dfffb",
+                "content": "I Start editing and build something awesome.",
+                "y": 297.333259,
+                "x0": 206.28766815463257,
+                "x1": 587.4128170139466,
+                "size": 17.333329000000003,
+                "height": 23.86799533508298,
+                "is_bullet_start": false,
+                "uri": null,
+                "items": [
+                  {
+                    "id": "b113c424-0f0f-4217-ab84-4f2e670a488e",
+                    "line_id": "dffbd49b-6e75-4402-8f5f-3630bc4df33f",
+                    "type": "text",
+                    "content": "I",
+                    "origin": [
+                      206.28766815463257,
+                      297.333259
+                    ],
+                    "x": 206.28766815463257,
+                    "y": 297.333259,
+                    "bbox": [
+                      206.28766815463257,
+                      282.59182795228577,
+                      219.47833868508914,
+                      299.9251569522858
+                    ],
+                    "width": 13.190670530456572,
+                    "height": 17.33332900000005,
+                    "size": 17.333329000000003,
+                    "font": "ZapfDingbats",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0.5019607843137255,
+                      0.5019607843137255,
+                      0.5019607843137255
+                    ],
+                    "is_bold": false,
+                    "is_italic": false,
+                    "flags": 0,
+                    "original_x": 206.28766815463257,
+                    "original_y": 297.333259,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5bb6fc48-4f5e-4311-b92c-6b808423d57f"
+                  },
+                  {
+                    "id": "e324f7db-5edf-4598-a379-6c6f28a46c19",
+                    "line_id": "dffbd49b-6e75-4402-8f5f-3630bc4df33f",
+                    "type": "text",
+                    "content": " Start editing and build something awesome.",
+                    "origin": [
+                      219.47833868508914,
+                      297.333259
+                    ],
+                    "x": 219.47833868508914,
+                    "y": 297.333259,
+                    "bbox": [
+                      219.47833868508914,
+                      278.78659208718875,
+                      587.4128170139466,
+                      302.65458742227173
+                    ],
+                    "width": 367.9344783288574,
+                    "height": 23.86799533508298,
+                    "size": 17.333329000000003,
+                    "font": "Helvetica-Bold",
+                    "google_font": "Inter",
+                    "font_variant": "normal",
+                    "color": [
+                      0.5019607843137255,
+                      0.5019607843137255,
+                      0.5019607843137255
+                    ],
+                    "is_bold": true,
+                    "is_italic": false,
+                    "flags": 16,
+                    "original_x": 219.47833868508914,
+                    "original_y": 297.333259,
+                    "matrix": [
+                      1,
+                      0,
+                      0,
+                      1,
+                      0,
+                      0
+                    ],
+                    "block_id": "5bb6fc48-4f5e-4311-b92c-6b808423d57f"
+                  }
+                ],
+                "bbox": [
+                  206.28766815463257,
+                  279.99993,
+                  587.4128170139466,
+                  297.333259
+                ],
+                "origin": [
+                  206.28766815463257,
+                  297.333259
+                ],
+                "width": 381.125148859314,
+                "fragments": [
+                  {
+                    "text": "I",
+                    "font": "ZapfDingbats",
+                    "size": 17.333329000000003,
+                    "is_bold": false,
+                    "is_italic": false,
+                    "origin": [
+                      206.28766815463257,
+                      297.333259
+                    ]
+                  },
+                  {
+                    "text": " Start editing and build something awesome.",
+                    "font": "Helvetica-Bold",
+                    "size": 17.333329000000003,
+                    "is_bold": true,
+                    "is_italic": false,
+                    "origin": [
+                      219.47833868508914,
+                      297.333259
+                    ]
+                  }
+                ]
+              }
+            ],
+            "bbox": [
+              206.28766815463257,
+              279.99993,
+              587.4128170139466,
+              297.333259
+            ],
+            "indentX": 206.28766815463257,
+            "textX": 206.28766815463257,
+            "style": {
+              "font": "ZapfDingbats",
+              "size": 17.333329000000003
+            },
+            "uri": null
+          }
+        ],
+        "bg_items": []
+      }
+    ],
+    "fonts": [],
+    "fonts_key": "0"
+  }
+}
