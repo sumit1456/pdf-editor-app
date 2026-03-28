@@ -74,6 +74,89 @@ const hexToRgb = (hex) => {
     ] : [0, 0, 0];
 };
 
+const MemoizedSidebarCard = React.memo(({ line, edit, isActive, isSelected, displayContent, onFocus, onChangeText, onChangeLink, onClick, i, isLineMultiSelect }) => {
+    const [localText, setLocalText] = React.useState(displayContent);
+    const [localLink, setLocalLink] = React.useState(edit.uri !== undefined ? edit.uri : line.uri);
+    const timeoutRef = React.useRef(null);
+
+    // Sync to upstream changes
+    React.useEffect(() => {
+        setLocalText(displayContent);
+    }, [displayContent]);
+
+    React.useEffect(() => {
+        if (edit.uri !== undefined || line.uri !== undefined) {
+            setLocalLink(edit.uri !== undefined ? edit.uri : line.uri);
+        }
+    }, [edit.uri, line.uri]);
+
+    const handleTextChange = (e) => {
+        const val = e.target.value;
+        const selStart = e.target.selectionStart;
+        setLocalText(val);
+        
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+            onChangeText(val, selStart);
+        }, 3000);
+    };
+
+    const handleLinkChange = (e) => {
+        const val = e.target.value;
+        setLocalLink(val);
+
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        timeoutRef.current = setTimeout(() => {
+            onChangeLink(val);
+        }, 3000);
+    };
+
+    return (
+        <div
+            id={`input-card-${line.id || line.dataIndex}`}
+            className={`premium-input-card ${edit.isModified ? 'modified' : ''} ${isActive || isSelected ? 'active' : ''}`}
+            onClick={onClick}
+        >
+            <div className="card-controls-row">
+                <div className="style-tools">
+                    <span className="node-id-label">Node {line.id?.substring(0, 4) || i}</span>
+                </div>
+                <div className="status-badge">
+                    {edit.isModified ? 'Edited' : 'Original'}
+                </div>
+            </div>
+
+            <div className="card-input-area">
+                <label className="field-label">{line.uri ? 'Hypertext' : 'Content'}</label>
+                <textarea
+                    value={localText}
+                    onFocus={onFocus}
+                    onChange={handleTextChange}
+                    placeholder="Enter text..."
+                />
+                {line.uri && (
+                    <div style={{ marginTop: '8px' }}>
+                        <label className="field-label">Target URL</label>
+                        <input
+                            type="text"
+                            className="link-field"
+                            value={localLink || ''}
+                            onChange={handleLinkChange}
+                            placeholder="https://..."
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}, (prev, next) => {
+    return prev.isActive === next.isActive &&
+        prev.isSelected === next.isSelected &&
+        prev.displayContent === next.displayContent &&
+        prev.isLineMultiSelect === next.isLineMultiSelect &&
+        prev.edit === next.edit;
+});
+
 export default function EditorPage() {
     const location = useLocation();
 
@@ -1492,18 +1575,25 @@ export default function EditorPage() {
                     {textLines.slice().reverse().map((line, i) => {
                         const edit = nodeEdits[line.id] || {};
                         const displayContent = edit.content !== undefined ? edit.content : line.content;
+                        const isActive = activeNodeId === (line.id || line.dataIndex);
+                        const isSelected = selectedNodeIds.includes(line.id);
 
                         return (
-                            <div
+                            <MemoizedSidebarCard
                                 key={line.id || i}
-                                id={`input-card-${line.id || line.dataIndex}`}
-                                className={`premium-input-card ${edit.isModified ? 'modified' : ''} ${selectedNodeIds.includes(line.id) || activeNodeId === (line.id || line.dataIndex) ? 'active' : ''}`}
+                                line={line}
+                                edit={edit}
+                                i={i}
+                                isActive={isActive}
+                                isSelected={isSelected}
+                                isLineMultiSelect={isLineMultiSelect}
+                                displayContent={displayContent}
                                 onClick={() => {
                                     if (isLineMultiSelect) {
                                         setSelectedNodeIds(prev => {
-                                            const isSelected = prev.includes(line.id);
-                                            const next = isSelected ? prev.filter(id => id !== line.id) : [...prev, line.id];
-                                            if (!isSelected) setActiveNodeId(line.id);
+                                            const currentlySelected = prev.includes(line.id);
+                                            const next = currentlySelected ? prev.filter(id => id !== line.id) : [...prev, line.id];
+                                            if (!currentlySelected) setActiveNodeId(line.id);
                                             return next;
                                         });
                                     } else {
@@ -1511,42 +1601,14 @@ export default function EditorPage() {
                                         setSelectedNodeIds([line.id]);
                                     }
                                 }}
-                            >
-                                <div className="card-controls-row">
-                                    <div className="style-tools">
-                                        <span className="node-id-label">Node {line.id?.substring(0, 4) || i}</span>
-                                    </div>
-                                    <div className="status-badge">
-                                        {edit.isModified ? 'Edited' : 'Original'}
-                                    </div>
-                                </div>
-
-                                <div className="card-input-area">
-                                    <label className="field-label">{line.uri ? 'Hypertext' : 'Content'}</label>
-                                    <textarea
-                                        value={displayContent}
-                                        onFocus={() => {
-                                            setActiveNodeId(line.id);
-                                            if (!isLineMultiSelect) setSelectedNodeIds([line.id]);
-                                            else if (!selectedNodeIds.includes(line.id)) setSelectedNodeIds(prev => [...prev, line.id]);
-                                        }}
-                                        onChange={(e) => handleSidebarEdit(line.id, e.target.value, line.originalStyle, e.target.selectionStart)}
-                                        placeholder="Enter text..."
-                                    />
-                                    {line.uri && (
-                                        <div style={{ marginTop: '8px' }}>
-                                            <label className="field-label">Target URL</label>
-                                            <input
-                                                type="text"
-                                                className="link-field"
-                                                value={edit.uri !== undefined ? edit.uri : line.uri}
-                                                onChange={(e) => handleSidebarEdit(line.id, displayContent, line.originalStyle, undefined, e.target.value)}
-                                                placeholder="https://..."
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                                onFocus={() => {
+                                    setActiveNodeId(line.id);
+                                    if (!isLineMultiSelect) setSelectedNodeIds([line.id]);
+                                    else if (!selectedNodeIds.includes(line.id)) setSelectedNodeIds(prev => [...prev, line.id]);
+                                }}
+                                onChangeText={(val, selectionStart) => handleSidebarEdit(line.id, val, line.originalStyle, selectionStart)}
+                                onChangeLink={(val) => handleSidebarEdit(line.id, displayContent, line.originalStyle, undefined, val)}
+                            />
                         );
                     })}
                 </div>

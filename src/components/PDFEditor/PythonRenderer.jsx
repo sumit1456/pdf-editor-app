@@ -618,7 +618,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                         <BlockLayer
                             blocks={page.blocks} nodeEdits={nodeEdits || {}} pageIndex={pageIndex} activeNodeId={activeNodeId}
                             selectedWordIndices={selectedWordIndices} fontsKey={fontsKey} fontStyles={fontStyles} metricRatio={metricRatio}
-                            onDoubleClick={onDoubleClick} isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate} isReflowEnabled={isReflowEnabled} workerRef={workerRef}
+                            onDoubleClick={onDoubleClick} onSelect={onSelect} isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate} isReflowEnabled={isReflowEnabled} workerRef={workerRef}
                             itemRefs={itemRefs} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} isDragEnabled={isDragEnabled}
                             showAllBboxes={showAllBboxes} onScaleUpdate={onScaleUpdate}
                         />
@@ -764,18 +764,18 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
     );
 }
 
-function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, isFitMode, isFitModeV2, onFitUpdate, onFitUpdateBatch, isReflowEnabled, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
+function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, onSelect, isFitMode, isFitModeV2, onFitUpdate, onFitUpdateBatch, isReflowEnabled, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
     return (
         <g className="block-layer" key={fontsKey}>
             <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
             {blocks.map((block, bi) => (
-                <SemanticBlock key={block.id || bi} block={block} nodeEdits={nodeEdits} pageIndex={pageIndex} activeNodeId={activeNodeId} selectedWordIndices={selectedWordIndices} metricRatio={metricRatio} onDoubleClick={onDoubleClick} isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate} isReflowEnabled={isReflowEnabled} workerRef={workerRef} itemRefs={itemRefs} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} isDragEnabled={isDragEnabled} showAllBboxes={showAllBboxes} onScaleUpdate={onScaleUpdate} />
+                <SemanticBlock key={block.id || bi} block={block} nodeEdits={nodeEdits} pageIndex={pageIndex} activeNodeId={activeNodeId} selectedWordIndices={selectedWordIndices} metricRatio={metricRatio} onDoubleClick={onDoubleClick} onSelect={onSelect} isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate} isReflowEnabled={isReflowEnabled} workerRef={workerRef} itemRefs={itemRefs} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} isDragEnabled={isDragEnabled} showAllBboxes={showAllBboxes} onScaleUpdate={onScaleUpdate} />
             ))}
         </g>
     );
 }
 
-function BlockContainer({ block, edit, nodeEdits, pageIndex, activeNodeId, metricRatio, onDoubleClick, isFitMode, isFitModeV2, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
+function BlockContainer({ block, edit, nodeEdits, pageIndex, activeNodeId, metricRatio, onDoubleClick, onSelect, isFitMode, isFitModeV2, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
     const isList = block.type === 'list_item';
     const bbox = block.bbox || [0, 0, 100, 100];
     const width = bbox[2] - bbox[0];
@@ -895,6 +895,12 @@ function BlockContainer({ block, edit, nodeEdits, pageIndex, activeNodeId, metri
                 contentEditable={isDragEnabled}
                 suppressContentEditableWarning={true}
                 onDoubleClick={(e) => onDoubleClick(e, `block-reflow-${block.id}`)}
+                onClick={(e) => {
+                    if (!isDragEnabled && onSelect) {
+                        e.stopPropagation();
+                        onSelect(`block-reflow-${block.id}`);
+                    }
+                }}
             >
                 {isList ? (
                     <ul style={{ margin: 0, paddingLeft: '1.2em', listStyleType: 'disc' }}>
@@ -908,7 +914,7 @@ function BlockContainer({ block, edit, nodeEdits, pageIndex, activeNodeId, metri
     );
 }
 
-function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, isFitModeV2, onFitUpdate, isReflowEnabled, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
+function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, isFitMode, isFitModeV2, onFitUpdate, isReflowEnabled, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
     const edit = nodeEdits[block.id] || {};
     const isModified = !!edit.isModified;
     const lines = useMemo(() => {
@@ -977,7 +983,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWord
                 <BlockContainer
                     block={block} edit={edit} nodeEdits={nodeEdits}
                     pageIndex={pageIndex} activeNodeId={activeNodeId}
-                    metricRatio={metricRatio} onDoubleClick={onDoubleClick}
+                    metricRatio={metricRatio} onDoubleClick={onDoubleClick} onSelect={onSelect}
                     isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate}
                     workerRef={workerRef}
                     itemRefs={itemRefs} onPointerDown={onPointerDown}
@@ -995,7 +1001,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWord
                                 line={line} block={block} nodeEdits={nodeEdits}
                                 pageIndex={pageIndex} activeNodeId={activeNodeId}
                                 selectedWordIndices={selectedWordIndices}
-                                metricRatio={metricRatio} onDoubleClick={onDoubleClick}
+                                metricRatio={metricRatio} onDoubleClick={onDoubleClick} onSelect={onSelect}
                                 isFitMode={isFitMode}
                                 isFitModeV2={isFitModeV2}
                                 onFitUpdate={onFitUpdate}
@@ -1018,7 +1024,7 @@ function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWord
     );
 }
 
-function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, isFitModeV2, onFitUpdate, forcedScale, isReflowEnabled, workerRef, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onFitUpdateBatch, onScaleUpdate }) {
+function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, isFitMode, isFitModeV2, onFitUpdate, forcedScale, isReflowEnabled, workerRef, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onFitUpdateBatch, onScaleUpdate }) {
     const targetId = (isReflowEnabled && line.blockId) ? `block-reflow-${line.blockId}` : line.id;
     const isActive = activeNodeId === targetId;
 
@@ -1144,7 +1150,6 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
         let currentTextWidth = measuredWidth;
 
         if (isModified) {
-            const mCtx = document.createElement('canvas').getContext('2d');
             const sStyle = edit.safetyStyle || styleItem;
             const fontStr = getRealFontString(
                 sStyle.font || styleItem.font,
@@ -1153,8 +1158,8 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                 sStyle.size || styleItem.size,
                 (sStyle.is_italic !== undefined ? sStyle.is_italic : styleItem.is_italic) ? 'italic' : 'normal'
             );
-            mCtx.font = fontStr;
-            currentTextWidth = mCtx.measureText(content || '').width;
+            MEASURE_CTX.font = fontStr;
+            currentTextWidth = MEASURE_CTX.measureText(content || '').width;
         }
 
         // Calculate the baseline calibration scale of the original unedited text
@@ -1226,7 +1231,14 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                 onDoubleClick(pageIndex, line.id, styleItem, e.currentTarget.getBoundingClientRect(), {
                     safetyStyle: { size: styleItem.size || line.size, font: styleItem.font, color: styleItem.color, is_bold: styleItem.is_bold, is_italic: styleItem.is_italic, font_variant: styleItem.font_variant || 'normal', uri: line.uri }
                 });
-            }}>
+            }}
+            onClick={(e) => {
+                if (!isDragEnabled && onSelect) {
+                    e.stopPropagation();
+                    onSelect(targetId);
+                }
+            }}
+        >
             {/* DEBUG: Red Bounding Box for ALL text - Show when showAllBboxes is true */}
             {(isActive || showAllBboxes) && <rect x={edit.bbox ? edit.bbox[0] : line.x0} y={edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill="none" stroke={isActive ? "#2563eb" : "#dc2626"} strokeWidth="2" opacity={isActive ? 1 : 0.8} strokeDasharray={isActive ? "4 2" : "3 1"} pointerEvents="none" style={{ animation: isActive ? 'blink 2s infinite' : 'none' }} />}
             <rect x={(edit.bbox ? edit.bbox[0] : line.x0) - 5} y={(edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))) - 4} width={Math.max(50, finalPdfWidth + 10)} height={(line.height || line.size || 12) + 8} fill="transparent" pointerEvents="all" />
