@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./css-files/AdtrioxHome.css";
 import { uploadPdfToBackend } from "../../services/PdfBackendService";
+import TextImportModal from "../../components/TextImportModal/TextImportModal";
 
 export default function HomePage() {
   const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const handleUploadClick = () => {
     fileInputRef.current.click();
@@ -60,6 +62,35 @@ export default function HomePage() {
     }
   };
 
+  const handleImportText = async (text) => {
+    if (!text) return;
+
+    setIsImportModalOpen(false);
+    window.showLoading(true, "Generating PDF from text...");
+    try {
+      const { createPdfFromText } = await import("../../services/PdfBackendService");
+      const response = await createPdfFromText(text);
+
+      if (!response.success) throw new Error(response.error || "Failed to create PDF");
+
+      const { data } = response;
+      window.showLoading(false);
+      window.showMessage("Success", "PDF created successfully.", "success");
+
+      navigate('/editor', {
+        state: {
+          sceneGraph: data,
+          originalPdfBase64: data.pdf_base64,
+          pdfName: "Imported_Text.pdf"
+        }
+      });
+    } catch (error) {
+      console.error("Error creating PDF from text:", error);
+      window.showLoading(false);
+      window.showMessage("Error", "Could not create PDF from text.", "error");
+    }
+  };
+
   return (
     <div className="home-container">
       <div className="bg-decoration"></div>
@@ -100,11 +131,16 @@ export default function HomePage() {
           </div>
 
           <div className="hero-actions">
-            <button className="btn-primary" onClick={handleUploadClick}>
-              Upload PDF
-            </button>
-            <button className="btn-secondary" onClick={handleTryDemo}>
-              Try Live Demo
+            <div className="hero-main-actions">
+              <button className="btn-primary" onClick={handleUploadClick}>
+                Upload PDF
+              </button>
+              <button className="btn-secondary" onClick={handleTryDemo}>
+                Try Live Demo
+              </button>
+            </div>
+            <button className="btn-import-text" onClick={() => setIsImportModalOpen(true)}>
+               Import Text
             </button>
           </div>
 
@@ -115,9 +151,13 @@ export default function HomePage() {
             accept=".pdf"
             style={{ display: "none" }}
           />
+
+          <TextImportModal 
+            isOpen={isImportModalOpen} 
+            onClose={() => setIsImportModalOpen(false)} 
+            onSubmit={handleImportText} 
+          />
         </section>
-
-
 
         <section className="vision-banner">
           <h3>Native Document Freedom.</h3>

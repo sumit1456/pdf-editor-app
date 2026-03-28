@@ -49,3 +49,28 @@ export const savePdfToBackend = async (payload) => {
         throw error;
     }
 };
+
+/**
+ * Service to create a PDF from raw text input.
+ */
+export const createPdfFromText = async (text) => {
+    try {
+        const response = await fetch(`${BASE_URL}${ENDPOINTS.CREATE_FROM_TEXT}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Creation Error ${response.status}: ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("PDF Creation Failed:", error);
+        throw error;
+    }
+};

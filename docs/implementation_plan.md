@@ -24,7 +24,10 @@ Since PDF data often arrives as "loose" characters or small chunks, we need an a
 ### Step 1: Extract Primitives
 We receive raw data chunks (Position, Character/Image/Path) from the PDF parser/worker. These are mapped to `PrimitiveNode` (lightweight# Implementation Plan - Sidebar "Short Form" Editor
 
-The user wants to make the text items in the "Structure" sidebar editable. Edits made in the sidebar should reflect in the main WebGL/PDF view.
+The## E2E Diagnostic Goals
+- **Quantify the failure**: Measure exactly how much text overflows its container using `getBoundingClientRect()`.
+- **Iterative Debugging**: Quickly re-run tests after each small logic change to see the "delta" in behavior.
+- **Visual Capture**: Automated screenshots of failed reflow states for deep analysis.
 
 ## Proposed Changes
 

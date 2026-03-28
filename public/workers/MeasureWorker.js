@@ -37,9 +37,11 @@ self.onmessage = function (e) {
 
         const { targetWidth, fontBase, text, id } = e.data;
 
-        // --- SAFETY MARGIN ---
-        // Direct target for high-fidelity fitting
-        const effectiveTarget = Math.max(0.1, targetWidth);
+        // --- AGGRESSIVE SAFETY MARGIN ---
+        // Target a significantly smaller width to eliminate overflow completely
+        const effectiveTarget = Math.max(1, targetWidth - 2.0); // Increased from 0.5 to 2.0px
+        
+        console.log(`[Worker] AGGRESSIVE measureFit received for id=${id}, targetWidth=${targetWidth.toFixed(2)}px, effectiveTarget=${effectiveTarget.toFixed(2)}px`);
 
         // Parse the font string to modify the size
         // Expected format: "italic 700 12px Inter, sans-serif"
@@ -60,9 +62,9 @@ self.onmessage = function (e) {
             return ctx.measureText(text).width;
         };
 
-        // Binary Search for optimal font size
-        let minSize = 1;
+        // AGGRESSIVE Binary Search for optimal font size
         let maxSize = baseSize; // We NEVER want to grow larger than baseSize in fit mode
+        let minSize = Math.max(6, baseSize * 0.65); // More aggressive minimum size
         let optimalSize = baseSize;
 
         // Initial check: if already fits, we might not need to shrink
@@ -73,9 +75,9 @@ self.onmessage = function (e) {
             // CRITICAL FIX: Initialize optimalSize to minSize in case the loop doesn't find a fit
             optimalSize = minSize;
 
-            // Binary search to find the largest size that fits
-            // 20 iterations = ~0.0001px precision for 1-100 range
-            for (let i = 0; i < 20; i++) {
+            // AGGRESSIVE Binary search to find the largest size that fits
+            // 25 iterations for higher precision
+            for (let i = 0; i < 25; i++) {
                 let mid = (minSize + maxSize) / 2;
                 if (getWidthAtSize(mid) <= effectiveTarget) {
                     optimalSize = mid;
@@ -86,10 +88,13 @@ self.onmessage = function (e) {
             }
         }
 
+        const finalWidth = getWidthAtSize(optimalSize);
+        console.log(`[Worker] AGGRESSIVE id=${id} fit complete: optimalSize=${optimalSize.toFixed(2)}pt, width=${finalWidth.toFixed(2)}px, target=${effectiveTarget.toFixed(2)}px`);
+
         self.postMessage({
             type: 'measureFitResult',
             fontSize: optimalSize,
-            width: getWidthAtSize(optimalSize),
+            width: finalWidth,
             id: id
         });
     }

@@ -2,6 +2,8 @@ import React, { useMemo, useEffect, useRef, useState, useCallback, useLayoutEffe
 import * as PIXI from 'pixi.js';
 import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
+import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
+import { MEASURE_CTX, getRealFontString, normalizeFont, getWeightFromFont } from './reflowUtils';
 
 // Now purely a Single Page Renderer for Python Backend
 
@@ -27,102 +29,7 @@ const getSVGColor = (c, fallback = 'black') => {
     return `rgb(${r}, ${g}, ${b})`;
 };
 
-const getWeightFromFont = (font, isBold) => {
-    if (isBold) return '700';
-    if (!font) return '400';
-    const name = font.toLowerCase().replace(/[_-]/g, "");
-    if (name.includes('black') || name.includes('heavy')) return '900';
-    if (name.includes('extrabold') || name.includes('ultrabold')) return '800';
-    if (name.includes('bold')) return '700';
-    if (name.includes('semibold') || name.includes('demibold') || name.includes('demi')) return '600';
-    if (name.includes('medium')) return '500';
-    if (name.includes('regular') || name.includes('book')) return '400';
-    if (name.includes('light')) return '300';
-    if (name.includes('extralight') || name.includes('thin')) return '200';
-    return '400';
-};
-
-// ==================== SHARED TYPOGRAPHIC ENGINE ====================
-
-const normalizeFont = (fontName, googleFont) => {
-    // Priority 1: Backend-mapped Google Font (The "Source of Truth")
-    if (googleFont) {
-        const gf = googleFont.toLowerCase();
-        if (gf.includes('inter')) return "'Inter', sans-serif";
-        if (gf.includes('source serif')) return "'Source Serif 4', serif";
-        if (gf.includes('roboto')) return "'Roboto', sans-serif";
-        if (gf.includes('open sans')) return "'Open Sans', sans-serif";
-        if (gf.includes('montserrat')) return "'Montserrat', sans-serif";
-        if (gf.includes('lora')) return "'Lora', serif";
-        if (gf.includes('merriweather')) return "'Merriweather', serif";
-        if (gf.includes('libre baskerville')) return "'Libre Baskerville', serif";
-        if (gf.includes('playfair display')) return "'Playfair Display', serif";
-        if (gf.includes('oswald')) return "'Oswald', sans-serif";
-        if (gf.includes('roboto mono')) return "'Roboto Mono', monospace";
-        if (gf.includes('jetbrains mono')) return "'JetBrains Mono', monospace";
-        if (gf.includes('fira code')) return "'Fira Code', monospace";
-        if (gf.includes('poppins')) return "'Poppins', sans-serif";
-        if (gf.includes('crimson pro')) return "'Crimson Pro', serif";
-        if (gf.includes('dancing script')) return "'Dancing Script', cursive";
-        if (gf.includes('orbitron')) return "'Orbitron', sans-serif";
-        if (gf.includes('pt serif')) return "'PT Serif', serif";
-        if (gf.includes('pt sans')) return "'PT Sans', sans-serif";
-        if (gf.includes('ubuntu')) return "'Ubuntu', sans-serif";
-    }
-
-    if (!fontName) return "'Source Serif 4', serif";
-    const name = fontName.toLowerCase();
-
-    // 0. EXPLICIT MATCH (For user-selected fonts)
-    if (name === 'inter') return "'Inter', sans-serif";
-    if (name === 'roboto') return "'Roboto', sans-serif";
-    if (name === 'open sans') return "'Open Sans', sans-serif";
-    if (name.includes('montserrat')) return "'Montserrat', sans-serif";
-    if (name.includes('lora')) return "'Lora', serif";
-    if (name.includes('merriweather')) return "'Merriweather', serif";
-    if (name.includes('libre baskerville')) return "'Libre Baskerville', serif";
-    if (name.includes('playfair display')) return "'Playfair Display', serif";
-    if (name === 'oswald') return "'Oswald', sans-serif";
-    if (name === 'roboto mono') return "'Roboto Mono', monospace";
-    if (name === 'jetbrains mono') return "'JetBrains Mono', monospace";
-    if (name === 'fira code') return "'Fira Code', monospace";
-    if (name === 'source serif 4') return "'Source Serif 4', serif";
-    if (name === 'poppins') return "'Poppins', sans-serif";
-
-    // 1. Monospace / Code
-    if (name.includes('mono') || name.includes('courier') || name.includes('consolas') || name.includes('lucida console')) {
-        return 'var(--mono-code)';
-    }
-
-    // 2. Serif (Classic/Academic/LaTeX)
-    if (
-        name.includes('times') || name.includes('serif') || name.includes('roman') ||
-        name.includes('cm') || name.includes('sfrm') || name.includes('nimbus') ||
-        name.includes('georgia') || name.includes('palatino') || name.includes('minion') ||
-        name.includes('baskerville') || name.includes('cambria') || name.includes('garamond') ||
-        name.includes('libertine') || name.includes('antiqua') || name.includes('didot')
-    ) {
-        if (name.includes('merriweather')) return 'var(--serif-academic)';
-        if (name.includes('playfair')) return 'var(--serif-high-contrast)';
-        // Sync with Backend: Use Latin Modern / Source Serif 4 as the LaTeX/Academic primary
-        return "var(--serif-latex)";
-    }
-
-    // 3. Sans-Serif (Modern/Geometric/System)
-    if (
-        name.includes('inter') || name.includes('poppins') || name.includes('sans') ||
-        name.includes('arial') || name.includes('helvetica') || name.includes('calibri') ||
-        name.includes('verdana') || name.includes('tahoma') || name.includes('ubuntu') ||
-        name.includes('geometric') || name.includes('modern')
-    ) {
-        if (name.includes('poppins')) return 'var(--sans-geometric)';
-        if (name.includes('open') && name.includes('sans')) return 'var(--sans-readable)';
-        return 'var(--sans-modern)'; // Inter
-    }
-
-    // Default: Inter (Clean Modern)
-    return 'var(--sans-modern)';
-};
+// Typographic helpers moved to reflowUtils.js
 
 /**
  * Typographic Helper: Simulate Small-Caps in Preview
@@ -192,7 +99,18 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
     });
 };
 
-const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, isFitMode, onMove, isDragEnabled }) => {
+const mapContent = (text) => {
+    if (!text) return text;
+    return text
+        .replace(/\u00ad/g, '-') // Soft hyphen
+        .replace(/\u25cf/g, '●') // Circle bullet
+        .replace(/\u2022/g, '•').replace(/\u2217/g, '*').replace(/\u22c6/g, '*')
+        .replace(/\u2013/g, '–').replace(/\u2014/g, '—')
+        .replace(/\u0083/g, '\uf095').replace(/\u00a7/g, '\uf09b')
+        .replace(/\u00ef/g, '\uf08c').replace(/\u00d0/g, '\uf121');
+};
+
+const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, isFitMode, isFitModeV2, onFitUpdate, onFitUpdateBatch, isReflowEnabled, onMove, isDragEnabled, onCalibrated, showAllBboxes, onScaleUpdate }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);
     // Reflow Engine was removed as it broke bounding box logic
@@ -202,6 +120,24 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
 
     // --- DRAG ENGINE ---
     const itemRefs = useRef(new Map());
+    const workerRef = useRef(null);
+
+    // Initialize MeasureWorker on mount
+    useEffect(() => {
+        if (!workerRef.current) {
+            console.log("[PythonRenderer] Initializing MeasureWorker for Page", pageIndex + 1);
+            workerRef.current = new Worker('/workers/MeasureWorker.js');
+            workerRef.current.postMessage({ type: 'init' });
+        }
+        return () => {
+            if (workerRef.current) {
+                console.log("[PythonRenderer] Terminating MeasureWorker for Page", pageIndex + 1);
+                workerRef.current.terminate();
+                workerRef.current = null;
+            }
+        };
+    }, []);
+
     const dragRef = useRef({
         draggingId: null,
         startX: 0,
@@ -209,6 +145,12 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         itemStartX: 0,
         itemStartY: 0,
         node: null
+    });
+
+    // --- BATCH FIT V3 COORDINATION ---
+    const onFitUpdateBatchRef = useRef(onFitUpdateBatch);
+    useLayoutEffect(() => {
+        onFitUpdateBatchRef.current = onFitUpdateBatch;
     });
 
     const handlePointerDown = useCallback((e, id, initialX, initialY) => {
@@ -312,7 +254,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         };
 
         console.log("DOM_CAPTURE_RESULTS:", captureData);
-        
+
         // Download as JSON
         const blob = new Blob([JSON.stringify(captureData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -385,6 +327,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                 if (validRatios.length > 0) {
                     const avgRatio = validRatios.reduce((a, b) => a + b, 0) / validRatios.length;
                     setMetricRatio(avgRatio);
+                    if (onCalibrated) onCalibrated(avgRatio);
                 }
             } catch (err) {
                 setMetricRatio(1.0);
@@ -395,15 +338,6 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         return () => clearTimeout(timer);
     }, [page, fontsKey]);
 
-    const workerRef = useRef(null);
-    useEffect(() => {
-        workerRef.current = new Worker('/workers/MeasureWorker.js');
-        workerRef.current.postMessage({ type: 'init' });
-
-        return () => {
-            if (workerRef.current) workerRef.current.terminate();
-        };
-    }, []);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -680,26 +614,21 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                     shapeRendering="geometricPrecision"
                     style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}
                 >
-                    {page && page.blocks ? (
+                    {page && (page.blocks ? (
                         <BlockLayer
                             blocks={page.blocks} nodeEdits={nodeEdits || {}} pageIndex={pageIndex} activeNodeId={activeNodeId}
                             selectedWordIndices={selectedWordIndices} fontsKey={fontsKey} fontStyles={fontStyles} metricRatio={metricRatio}
-                            onDoubleClick={onDoubleClick} isFitMode={isFitMode} workerRef={workerRef}
+                            onDoubleClick={onDoubleClick} isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate} isReflowEnabled={isReflowEnabled} workerRef={workerRef}
                             itemRefs={itemRefs} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} isDragEnabled={isDragEnabled}
+                            showAllBboxes={showAllBboxes} onScaleUpdate={onScaleUpdate}
                         />
-                    ) : page && (
-                        <EditableTextLayer
-                            items={textItems} nodeEdits={nodeEdits || {}} activeNodeId={activeNodeId} height={page.height} pageIndex={pageIndex}
-                            fontsKey={fontsKey} fonts={fonts} fontStyles={fontStyles} metricRatio={metricRatio} onDoubleClick={onDoubleClick}
-                            isFitMode={isFitMode} workerRef={workerRef} itemRefs={itemRefs} onPointerDown={handlePointerDown}
-                            onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} isDragEnabled={isDragEnabled}
-                        />
-                    )}
+                    ) : null)}
                 </svg>
             </div>
         </div>
     );
 }, (prev, next) => {
+    if (!prev || !next) return false;
     return prev.page === next.page &&
         prev.pageIndex === next.pageIndex &&
         prev.scale === next.scale &&
@@ -707,25 +636,17 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         prev.activeNodeId === next.activeNodeId &&
         prev.selectedWordIndices === next.selectedWordIndices &&
         prev.fontsKey === next.fontsKey &&
-        prev.isDragEnabled === next.isDragEnabled;
+        prev.isDragEnabled === next.isDragEnabled &&
+        prev.isFitMode === next.isFitMode &&
+        prev.isFitModeV2 === next.isFitModeV2 &&
+        prev.onFitUpdate === next.onFitUpdate &&
+        prev.isReflowEnabled === next.isReflowEnabled &&
+        prev.showAllBboxes === next.showAllBboxes;
 });
 
 export default PythonRenderer;
 
-const MEASURE_CANVAS = document.createElement('canvas');
-const MEASURE_CTX = MEASURE_CANVAS.getContext('2d');
-
-function getRealFontString(fontName, googleFont, weight, size, style) {
-    let family = normalizeFont(fontName, googleFont);
-    if (family.includes('var(--serif-latex)')) family = "'Source Serif 4', serif";
-    else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
-    else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
-    else if (family.includes('var(--serif-academic)')) family = "'Merriweather', serif";
-    else if (family.includes('var(--serif-high-contrast)')) family = "'Playfair Display', serif";
-    else if (family.includes('var(--sans-geometric)')) family = "'Poppins', sans-serif";
-    else if (family.includes('var(--sans-readable)')) family = "'Open Sans', sans-serif";
-    return `${style} ${weight} ${size}px ${family}`;
-}
+// Typographic tools moved to reflowUtils.js
 
 function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, fontsKey, fonts, fontStyles, metricRatio, onDoubleClick, isFitMode, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled }) {
     return (
@@ -744,78 +665,93 @@ function EditableTextLayer({ items, nodeEdits, activeNodeId, height, pageIndex, 
 }
 
 function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, metricRatio, isFitMode, onDoubleClick, workerRef, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled }) {
-    if (item.type !== 'text' || !item.bbox) return null;
     const isModified = !!edit.isModified;
     const content = edit.content !== undefined ? edit.content : item.content;
-    if (content === "" && isModified) return null;
-
-    const [x0, y0, x1, y1] = edit.bbox || item.bbox;
+    const [x0, y0, x1, y1] = edit.bbox || item.bbox || [0, 0, 0, 0];
     const rectW = x1 - x0;
-
     const color = getSVGColor(item.color, 'black');
-    const baselineY = edit.origin ? edit.origin[1] : (item.origin ? item.origin[1] : item.bbox[1]);
-    const startX = edit.origin ? edit.origin[0] : (item.origin ? item.origin[0] : item.bbox[0]);
+    const baselineY = edit.origin ? edit.origin[1] : (item.origin ? item.origin[1] : (item.bbox ? item.bbox[1] : 0));
+    const startX = edit.origin ? edit.origin[0] : (item.origin ? item.origin[0] : (item.bbox ? item.bbox[0] : 0));
     const rectY = y0 - 3;
     const rectH = y1 - y0;
-
     const sStyle = edit.safetyStyle || { size: item.size, font: item.font, googleFont: item.google_font, is_bold: item.is_bold, is_italic: item.is_italic, font_variant: item.font_variant || 'normal' };
     const OPTICAL_HEIGHT_FACTOR = 1.0;
-    let fittedFontSize = sStyle.size * OPTICAL_HEIGHT_FACTOR;
     const weight = (sStyle.font_variant === 'small-caps' || (sStyle.font || '').toLowerCase().includes('cmcsc')) ? '500' : (sStyle.is_bold ? '700' : '400');
     const style = sStyle.is_italic ? 'italic' : 'normal';
-
     const matchingFont = fonts && fonts.find(f => {
         const norm = f.name.toLowerCase().replace(/[_-]/g, ' ');
         return norm.includes((sStyle.font || '').toLowerCase()) || ((sStyle.googleFont || sStyle.google_font) && norm.includes((sStyle.googleFont || sStyle.google_font).toLowerCase()));
     });
-
     let measureFamily = matchingFont ? `'${matchingFont.name}'` : normalizeFont(sStyle.font, sStyle.googleFont || sStyle.google_font);
     if (measureFamily.includes('var(')) {
         measureFamily = getRealFontString(sStyle.font, sStyle.googleFont, weight, sStyle.size, style).split(' px ')[1] || 'serif';
     }
-
     MEASURE_CTX.font = `${style} ${weight} ${sStyle.size}px ${measureFamily}`;
-    const measuredWidth = MEASURE_CTX.measureText(content).width;
-    const dynamicPdfWidth = isModified ? (measuredWidth / (metricRatio || 1.0)) : (item.width || rectW);
-    // FROZEN: never expand beyond original bbox — use rectW as the hard ceiling
-    const finalRectWidth = rectW;
+    const measuredWidth = MEASURE_CTX.measureText(content || "").width;
 
-    // No BBox Adjusting as per user request (pure font sizes)
-    let safeRatio = 1.0;
-    fittedFontSize = (sStyle.size || item.size) * OPTICAL_HEIGHT_FACTOR * safeRatio;
+    const { finalFittedFontSize, fittingScale, currentPdfWidth: finalCurrentPdfWidth, targetWidth: finalTargetWidth } = useMemo(() => {
+        // CSS SCALE FIT MODE: Instead of adjusting font size, we scale the entire text element horizontally
+        const targetWidth = rectW;
+        const currentPdfWidth = measuredWidth / (metricRatio || 1.0);
+        const isBullet = /^[\u2022\u25E6\u25A0\u2023\u25B8\u2043\u2219\xB7\xD7\xBB\-\u2013\u2014]/.test(content.trim()) || (content.trim().length === 1 && !/[a-zA-Z0-9]/.test(content.trim()));
 
-    // BBox Debug console log removed
+        let fittingScale = (isFitMode && !isBullet && currentPdfWidth > 0 && Math.abs(currentPdfWidth - targetWidth) > 1.0)
+            ? (targetWidth / currentPdfWidth)
+            : 1.0;
+
+        // LESS RESTRICTIVE CONSTRAINT: Allow slight scaling up (stretch) to perfectly fill bounding box
+        if (fittingScale > 1.05) fittingScale = 1.05;
+
+        return {
+            finalFittedFontSize: (sStyle.size || item.size) * OPTICAL_HEIGHT_FACTOR,
+            fittingScale,
+            currentPdfWidth,
+            targetWidth
+        };
+    }, [isFitMode, rectW, measuredWidth, metricRatio, content, sStyle, item]);
+
+    if (item.type !== 'text' || !item.bbox) return null;
+    if (content === "" && isModified) return null;
 
     const renderWeight = (matchingFont && /bold|medium|semibold|black|heavy/i.test(matchingFont.name)) ? 'normal' : (sStyle.is_bold ? '700' : '400');
 
     return (
         <g key={item.id || index} ref={itemRef} id={`item-debug-${item.id || index}`}>
             {activeNodeId === (item.id || index) && (
-                <rect x={x0} y={y0} width={finalRectWidth} height={y1 - y0} fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" strokeDasharray="4 2" pointerEvents="none" />
+                <rect x={x0} y={y0} width={rectW} height={y1 - y0} fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" strokeDasharray="4 2" pointerEvents="none" />
             )}
             <rect
-                x={x0} y={rectY} width={finalRectWidth} height={rectH} fill="transparent" cursor="move" pointerEvents="all"
+                x={x0} y={rectY} width={rectW} height={rectH} fill="transparent" cursor="move" pointerEvents="all"
                 onPointerDown={(e) => isDragEnabled && onPointerDown(e, item.id || index, startX, baselineY)}
                 onPointerMove={isDragEnabled ? onPointerMove : undefined} onPointerUp={isDragEnabled ? onPointerUp : undefined}
                 onDoubleClick={(e) => { e.preventDefault(); e.stopPropagation(); onDoubleClick(pageIndex, index, item, e.target.getBoundingClientRect(), { safetyStyle: sStyle }); }}
             />
             <text
-                fontSize={Math.max(1, Math.abs(fittedFontSize))} fontFamily={measureFamily.replace(/'/g, "")}
+                fontSize={Math.max(1, Math.abs(finalFittedFontSize))} fontFamily={measureFamily.replace(/'/g, "")}
                 fontWeight={renderWeight} fontStyle={style} fill={getSVGColor(sStyle.color, color)}
-                dominantBaseline="alphabetic" style={{ userSelect: 'none', pointerEvents: 'none' }}
+                dominantBaseline="alphabetic"
+                style={{
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                    transform: fittingScale !== 1.0 ? `scale(${fittingScale}, 1)` : 'none',
+                    transformOrigin: `${startX}px ${baselineY}px`
+                }}
+                data-fit-measured-width={finalCurrentPdfWidth}
+                data-fit-target-width={finalTargetWidth}
+                data-fit-scale={fittingScale}
             >
                 {isModified ? (
-                    <tspan x={startX} y={baselineY}>{renderVisualText(content, (item.font_variant === 'small-caps'), fittedFontSize)}</tspan>
+                    <tspan x={startX} y={baselineY}>{renderVisualText(content, (item.font_variant === 'small-caps'), finalFittedFontSize)}</tspan>
                 ) : (
                     (item.items || [item]).map((span, si) => {
                         const spanX = span.origin ? span.origin[0] : (span.x || item.x);
                         const prevX1 = si > 0 ? (item.items[si - 1].bbox ? item.items[si - 1].bbox[2] : item.items[si - 1].x + 10) : -1;
                         const forceX = si === 0 || (Math.abs(spanX - prevX1) > 0.1);
                         const spanIsSmallCaps = span.font_variant === 'small-caps' || (span.font || '').toLowerCase().includes('cmcsc');
-                        const spanFittedSize = span.size * (fittedFontSize / item.size);
+                        const spanSize = span.size; // Natural size, scale is on parent
                         return (
-                            <tspan key={si} x={forceX ? spanX : undefined} y={span.origin ? span.origin[1] : (span.y || item.y)} fontSize={Math.max(1, Math.abs(spanFittedSize))} fill={getSVGColor(span.color, color)} fontWeight={spanIsSmallCaps ? '500' : (span.is_bold ? '700' : '400')} fontStyle={span.is_italic ? 'italic' : undefined} fontFamily={span.font ? normalizeFont(span.font, span.google_font) : undefined} xmlSpace="preserve" style={{ fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal' }}>
-                                {renderVisualText(span.content, spanIsSmallCaps, spanFittedSize)}
+                            <tspan key={si} x={forceX ? spanX : undefined} y={span.origin ? span.origin[1] : (span.y || item.y)} fontSize={Math.max(1, Math.abs(spanSize))} fill={getSVGColor(span.color, color)} fontWeight={spanIsSmallCaps ? '500' : (span.is_bold ? '700' : '400')} fontStyle={span.is_italic ? 'italic' : undefined} fontFamily={span.font ? normalizeFont(span.font, span.google_font) : undefined} xmlSpace="preserve" style={{ fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal' }}>
+                                {renderVisualText(span.content, spanIsSmallCaps, spanSize)}
                             </tspan>
                         );
                     })
@@ -828,39 +764,320 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
     );
 }
 
-function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, isFitMode, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled }) {
+function BlockLayer({ blocks, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, isFitMode, isFitModeV2, onFitUpdate, onFitUpdateBatch, isReflowEnabled, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
     return (
         <g className="block-layer" key={fontsKey}>
             <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
             {blocks.map((block, bi) => (
-                <SemanticBlock key={block.id || bi} block={block} nodeEdits={nodeEdits} pageIndex={pageIndex} activeNodeId={activeNodeId} selectedWordIndices={selectedWordIndices} metricRatio={metricRatio} onDoubleClick={onDoubleClick} isFitMode={isFitMode} workerRef={workerRef} itemRefs={itemRefs} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} isDragEnabled={isDragEnabled} />
+                <SemanticBlock key={block.id || bi} block={block} nodeEdits={nodeEdits} pageIndex={pageIndex} activeNodeId={activeNodeId} selectedWordIndices={selectedWordIndices} metricRatio={metricRatio} onDoubleClick={onDoubleClick} isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate} isReflowEnabled={isReflowEnabled} workerRef={workerRef} itemRefs={itemRefs} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} isDragEnabled={isDragEnabled} showAllBboxes={showAllBboxes} onScaleUpdate={onScaleUpdate} />
             ))}
         </g>
     );
 }
 
-function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled }) {
+function BlockContainer({ block, edit, nodeEdits, pageIndex, activeNodeId, metricRatio, onDoubleClick, isFitMode, isFitModeV2, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
+    const isList = block.type === 'list_item';
+    const bbox = block.bbox || [0, 0, 100, 100];
+    const width = bbox[2] - bbox[0];
+    const height = bbox[3] - bbox[1];
+
+    // Calculate dynamic line-height from original PDF metrics
+    const lineHeightRatio = useMemo(() => {
+        if (block.lines.length < 2) return 1.4;
+        const deltaY = block.lines[1].y - block.lines[0].y;
+        const fontSize = block.lines[0].size || 10;
+        return (deltaY / fontSize).toFixed(2);
+    }, [block.lines]);
+
+    // Aggregate text with style retention
+    const displayContent = edit.content !== undefined ? edit.content : null;
+
+    const renderContent = () => {
+        if (displayContent !== null) {
+            return displayContent;
+        }
+
+        return block.lines.map((line, li) => (
+            <span key={li} style={{ display: 'block' }}>
+                {(line.fragments || []).map((frag, fi) => (
+                    <span
+                        key={fi}
+                        style={{
+                            fontWeight: frag.is_bold ? 'bold' : 'normal',
+                            fontStyle: frag.is_italic ? 'italic' : 'normal',
+                            color: frag.color ? `rgb(${frag.color.join(',')})` : 'inherit',
+                            fontSize: frag.size ? `${frag.size}px` : 'inherit'
+                        }}
+                    >
+                        {frag.text}
+                    </span>
+                ))}
+                {li < block.lines.length - 1 ? ' ' : ''}
+            </span>
+        ));
+    };
+
+    const styleItem = block.lines[0]?.items[0] || {};
+    const baseFontSize = Math.abs(styleItem.size || block.style?.size || 10);
+    const fontFamily = normalizeFont(styleItem.font || block.style?.font || 'Source Serif 4', styleItem.googleFont);
+
+    // Fit Mode Scaling for Block
+    const fittingScale = useMemo(() => {
+        if (!isFitMode) return 1.0;
+
+        const measureFamily = fontFamily;
+        MEASURE_CTX.font = `${styleItem.is_italic ? 'italic' : 'normal'} ${getWeightFromFont(styleItem.font, styleItem.is_bold)} ${baseFontSize}px ${measureFamily}`;
+
+        let maxWidth = 0;
+
+        if (displayContent !== null) {
+            // Measure the edited content (as a single block or split by lines)
+            const lines = displayContent.split('\n');
+            lines.forEach(lineContent => {
+                const measured = MEASURE_CTX.measureText(lineContent).width;
+                const pdfMeasured = measured / (metricRatio || 1.0);
+                if (pdfMeasured > maxWidth) maxWidth = pdfMeasured;
+            });
+        } else {
+            // Measure original lines
+            block.lines.forEach(line => {
+                const lineContent = line.content || "";
+                const measured = MEASURE_CTX.measureText(lineContent).width;
+                const pdfMeasured = measured / (metricRatio || 1.0);
+                if (pdfMeasured > maxWidth) maxWidth = pdfMeasured;
+            });
+        }
+
+        const targetWidth = width;
+        if (maxWidth > targetWidth + 1.0) {
+            return Math.min(1.0, targetWidth / maxWidth);
+        }
+        return 1.0;
+    }, [block.lines, displayContent, isFitMode, width, metricRatio, baseFontSize, fontFamily, styleItem]);
+
+    const isBlockActive = activeNodeId === `block-reflow-${block.id}` || block.lines.some(l => l.id === activeNodeId);
+    useEffect(() => {
+        if (isBlockActive && onScaleUpdate) {
+            onScaleUpdate(fittingScale);
+        }
+    }, [isBlockActive, fittingScale, onScaleUpdate]);
+
+    return (
+        <foreignObject
+            x={bbox[0] - 5}
+            y={bbox[1] - (baseFontSize * 0.8)} // Align top of container with cap height
+            width={width + 60}
+            height={height + 200}
+            className={`block-container ${block.type}`}
+            style={{ pointerEvents: 'none' }}
+        >
+            <div
+                xmlns="http://www.w3.org/1999/xhtml"
+                style={{
+                    fontFamily: fontFamily,
+                    fontSize: `${baseFontSize}px`,
+                    color: styleItem.color ? `rgb(${styleItem.color.join(',')})` : 'black',
+                    lineHeight: lineHeightRatio,
+                    width: `${width}px`,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    outline: 'none',
+                    minHeight: '1em',
+                    padding: '4px',
+                    border: '1px dashed rgba(59, 130, 246, 0.4)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.02)',
+                    borderRadius: '2px',
+                    pointerEvents: 'auto',
+                    textAlign: block.is_right_aligned ? 'right' : 'left',
+                    transform: fittingScale !== 1.0 ? `scale(${fittingScale}, 1)` : 'none',
+                    transformOrigin: 'left top'
+                }}
+                contentEditable={isDragEnabled}
+                suppressContentEditableWarning={true}
+                onDoubleClick={(e) => onDoubleClick(e, `block-reflow-${block.id}`)}
+            >
+                {isList ? (
+                    <ul style={{ margin: 0, paddingLeft: '1.2em', listStyleType: 'disc' }}>
+                        <li>{renderContent()}</li>
+                    </ul>
+                ) : (
+                    renderContent()
+                )}
+            </div>
+        </foreignObject>
+    );
+}
+
+function SemanticBlock({ block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, isFitModeV2, onFitUpdate, isReflowEnabled, workerRef, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onScaleUpdate }) {
     const edit = nodeEdits[block.id] || {};
     const isModified = !!edit.isModified;
     const lines = useMemo(() => {
         return block.lines || [];
     }, [block]);
 
+    const isBlockActive = activeNodeId === `block-reflow-${block.id}` || lines.some(l => l.id === activeNodeId);
+
+    // Determine if this block should use the new BlockContainer rendering
+    const containerTypes = ['paragraph', 'list_item', 'heading', 'metadata_row', 'caption', 'code_block'];
+    const shouldUseContainer = isReflowEnabled && containerTypes.includes(block.type);
+
+    // --- V2 FIT MODE: Block-level uniform scale ---
+    // V2 computes ONE scale for the entire block by measuring only the REPRESENTATIVE line:
+    //   - For paragraphs: the first line (the widest line that sets the paragraph's bbox width)
+    //   - For list_items: the first line that has is_bullet_start=true (ignore continuation lines)
+    //   - For all other types: the first line
+    // All lines in the block then share that single scale so typography stays uniform.
+    const v2ForcedScale = useMemo(() => {
+        if (!isFitModeV2 || lines.length === 0) return undefined;
+
+        // Pick representative line: for list_item blocks, use the bullet-start line
+        let repLine = lines[0];
+        if (block.type === 'list_item') {
+            repLine = lines.find(l => l.is_bullet_start) || lines[0];
+        }
+
+        const edit = nodeEdits[repLine.id] || {};
+        const sStyle = edit.safetyStyle || repLine.items?.[0] || {};
+        const baseSize = Math.abs(sStyle.size || repLine.size || 10);
+        const content = edit.content !== undefined ? edit.content : (repLine.content || '');
+
+        const measureFamily = normalizeFont(
+            sStyle.font || repLine.items?.[0]?.font,
+            sStyle.googleFont || repLine.items?.[0]?.google_font
+        );
+        MEASURE_CTX.font = `${sStyle.is_italic ? 'italic' : 'normal'} ${getWeightFromFont(sStyle.font || repLine.items?.[0]?.font, sStyle.is_bold)} ${baseSize}px ${measureFamily}`;
+        const measuredWidth = MEASURE_CTX.measureText(content).width;
+        const currentPdfWidth = measuredWidth / (metricRatio || 1.0);
+
+        const targetWidth = repLine.width || (repLine.bbox ? repLine.bbox[2] - repLine.bbox[0] : (block.bbox ? block.bbox[2] - block.bbox[0] : 50));
+
+        if (currentPdfWidth > 0 && Math.abs(currentPdfWidth - targetWidth) > 1.0) {
+            const scale = targetWidth / currentPdfWidth;
+            return Math.min(1.0, scale); // Never scale up
+        }
+        return 1.0;
+    }, [isFitModeV2, lines, block, nodeEdits, metricRatio]);
+
     return (
         <g className={`semantic-block ${block.type}`} id={`block-${block.id}`}>
-            {lines.map((line, li) => (
-                <g key={li} className="line-row">
-                    {line.items && line.items.length > 0 && (
-                        <LineRenderer key={line.id || li} line={line} block={block} nodeEdits={nodeEdits} pageIndex={pageIndex} activeNodeId={activeNodeId} selectedWordIndices={selectedWordIndices} metricRatio={metricRatio} onDoubleClick={onDoubleClick} isFitMode={isFitMode} workerRef={workerRef} itemRef={(el) => itemRefs.current.set(line.id, el)} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} isDragEnabled={isDragEnabled} />
-                    )}
-                </g>
-            ))}
+            {isReflowEnabled && isBlockActive && block.bbox && (
+                <rect
+                    x={block.bbox[0] - 2}
+                    y={block.bbox[1] - 2}
+                    width={block.bbox[2] - block.bbox[0] + 4}
+                    height={block.bbox[3] - block.bbox[1] + 4}
+                    fill="none"
+                    stroke="var(--brand-primary, #3b82f6)"
+                    strokeWidth="2"
+                    opacity="0.8"
+                    pointerEvents="none"
+                />
+            )}
+            {shouldUseContainer ? (
+                <BlockContainer
+                    block={block} edit={edit} nodeEdits={nodeEdits}
+                    pageIndex={pageIndex} activeNodeId={activeNodeId}
+                    metricRatio={metricRatio} onDoubleClick={onDoubleClick}
+                    isFitMode={isFitMode} isFitModeV2={isFitModeV2} onFitUpdate={onFitUpdate}
+                    workerRef={workerRef}
+                    itemRefs={itemRefs} onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove} onPointerUp={onPointerUp}
+                    isDragEnabled={isDragEnabled}
+                    showAllBboxes={showAllBboxes}
+                    onScaleUpdate={onScaleUpdate}
+                />
+            ) : (
+                lines.map((line, li) => (
+                    <g key={li} className="line-row">
+                        {line.items && line.items.length > 0 && (
+                            <LineRenderer
+                                key={line.id || li}
+                                line={line} block={block} nodeEdits={nodeEdits}
+                                pageIndex={pageIndex} activeNodeId={activeNodeId}
+                                selectedWordIndices={selectedWordIndices}
+                                metricRatio={metricRatio} onDoubleClick={onDoubleClick}
+                                isFitMode={isFitMode}
+                                isFitModeV2={isFitModeV2}
+                                onFitUpdate={onFitUpdate}
+                                forcedScale={v2ForcedScale}
+                                isReflowEnabled={isReflowEnabled}
+                                workerRef={workerRef}
+                                itemRef={(el) => itemRefs.current.set(line.id, el)}
+                                onPointerDown={onPointerDown}
+                                onPointerMove={onPointerMove}
+                                onPointerUp={onPointerUp}
+                                isDragEnabled={isDragEnabled}
+                                showAllBboxes={showAllBboxes}
+                                onScaleUpdate={onScaleUpdate}
+                            />
+                        )}
+                    </g>
+                ))
+            )}
         </g>
     );
 }
 
-function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, workerRef, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled }) {
-    const isActive = activeNodeId === line.id;
+function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, isFitMode, isFitModeV2, onFitUpdate, forcedScale, isReflowEnabled, workerRef, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, onFitUpdateBatch, onScaleUpdate }) {
+    const targetId = (isReflowEnabled && line.blockId) ? `block-reflow-${line.blockId}` : line.id;
+    const isActive = activeNodeId === targetId;
+
+    // --- ASYNC WORKER FITTING (Exact legacy copy) ---
+    const [workerFontSize, setWorkerFontSize] = useState(null);
+
+    useEffect(() => {
+        if (!isFitMode || !workerRef?.current || !line) {
+            setWorkerFontSize(null);
+            return;
+        }
+
+        const edit = nodeEdits[line.id] || {};
+        const content = edit.content !== undefined ? edit.content : line.content || "";
+
+        const runWorkerFit = () => {
+            const sStyle = edit.safetyStyle || styleItem;
+            const fontStr = getRealFontString(
+                sStyle.font || styleItem.font,
+                sStyle.googleFont || sStyle.google_font || styleItem.google_font,
+                getWeightFromFont(sStyle.font || styleItem.font, sStyle.is_bold !== undefined ? sStyle.is_bold : styleItem.is_bold),
+                sStyle.size || styleItem.size,
+                (sStyle.is_italic !== undefined ? sStyle.is_italic : styleItem.is_italic) ? 'italic' : 'normal'
+            );
+
+            const targetWidth = line.width || (line.bbox ? line.bbox[2] - line.bbox[0] : 50);
+            const browserTarget = targetWidth * (metricRatio || 1.0);
+
+            const handler = (e) => {
+                if (e.data.type === 'measureFitResult' && e.data.id === line.id) {
+                    workerRef.current.removeEventListener('message', handler);
+                    setWorkerFontSize(e.data.fontSize);
+
+                    // 🔧 MODIFICATION: Use existing handler instead of direct update
+                    if (onFitUpdateBatch) {
+                        onFitUpdateBatch({
+                            [line.id]: {
+                                fontSize: e.data.fontSize,
+                                font: sStyle.font || styleItem.font,
+                                is_bold: sStyle.is_bold !== undefined ? sStyle.is_bold : styleItem.is_bold,
+                                is_italic: sStyle.is_italic !== undefined ? sStyle.is_italic : styleItem.is_italic
+                            }
+                        });
+                    }
+                }
+            };
+            workerRef.current.addEventListener('message', handler);
+            workerRef.current.postMessage({
+                type: 'measureFit',
+                fontBase: fontStr,
+                text: content,
+                targetWidth: browserTarget,
+                id: line.id
+            });
+        };
+
+        // DECOUPLED BINARY FOR NOW: Disabling worker execution to rely purely on CSS scaling
+        // runWorkerFit();
+    }, [isFitMode, line, line.width, metricRatio, workerRef, nodeEdits, onFitUpdateBatch]);
 
     // Pick the best representative style item for the line (skip pure-gray chars)
     const styleItem = useMemo(() => {
@@ -875,40 +1092,127 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
         return line.items[0] || {};
     }, [line]);
 
-    const firstItem = line.items[0];
     const edit = nodeEdits[line.id] || {};
     const isModified = !!edit.isModified;
-    const content = edit.content !== undefined ? edit.content : line.content;
-
+    const content = (isReflowEnabled && line.blockId) ? line.content : (edit.content !== undefined ? edit.content : line.content);
+    const firstItem = line.items?.[0] || {};
     const initialStartX = edit.origin ? edit.origin[0] : (firstItem?.origin ? firstItem.origin[0] : (firstItem?.bbox ? firstItem.bbox[0] : 0));
     const baselineY = edit.origin ? edit.origin[1] : (firstItem?.origin ? firstItem.origin[1] : (firstItem?.bbox ? firstItem.bbox[1] : 0));
     const isSmallCaps = (firstItem?.font_variant === 'small-caps') || (firstItem?.font || '').toLowerCase().includes('cmcsc');
+    // --- LEGACY FONT SIZE CALCULATION (Exact copy) ---
+    const { calibratedFontSize: finalFontSize, fittingRatio: finalFittingRatio, dynamicPdfWidth: finalPdfWidth, targetBrowserWidth, chosenWeight: finalWeight } = useMemo(() => {
+        const baseSize = Math.abs(styleItem.size || line.size || 10);
 
-    const mapContent = (text) => {
-        if (!text) return text;
-        return text
-            .replace(/\u2022/g, '•').replace(/\u2217/g, '*').replace(/\u22c6/g, '*')
-            .replace(/\u2013/g, '–').replace(/\u2014/g, '—')
-            .replace(/\u0083/g, '\uf095').replace(/\u00a7/g, '\uf09b')
-            .replace(/\u00ef/g, '\uf08c').replace(/\u00d0/g, '\uf121');
-    };
+        // --- MULTI-SPAN MEASUREMENT ENGINE ---
+        let totalWidth = 0;
+        let measureFontSummary = "";
 
-    const { finalFontSize, finalFittingRatio, finalPdfWidth, finalWeight } = useMemo(() => {
-        const sStyle = edit.safetyStyle || styleItem;
-        const baseSize = Math.abs(sStyle.size || styleItem.size || line.size || 10);
-        
-        // Always anchor to original line geometry
+        line.items.forEach((item, idx) => {
+            const itemText = item.content || '';
+            if (!itemText) return;
+
+            const itemWeight = item.is_bold ? '700' : '400';
+            const itemStyle = item.is_italic ? 'italic' : 'normal';
+            let itemFamily = normalizeFont(item.font, item.google_font);
+            const itemSize = Math.abs(item.size || baseSize);
+
+            // Icon Detection (PUA Ranges)
+            const mappedText = mapContent(itemText);
+            const isItemIcon = /[\uf000-\uf999]/.test(mappedText);
+
+            let mWeight = itemWeight;
+            let mStyle = itemStyle;
+            if (isItemIcon) {
+                itemFamily = '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif';
+                mWeight = '900';
+                mStyle = 'normal';
+            }
+
+            MEASURE_CTX.font = `${mStyle} ${mWeight} ${itemSize}px ${itemFamily}`;
+            const itemWidth = MEASURE_CTX.measureText(itemText).width;
+            totalWidth += itemWidth;
+
+            if (idx === 0 || isItemIcon) {
+                measureFontSummary = `${mStyle} ${mWeight} ${itemSize}px ${itemFamily.substring(0, 20)}...`;
+            }
+        });
+
+        const measuredWidth = totalWidth;
         const targetWidth = line.width || (line.bbox ? line.bbox[2] - line.bbox[0] : 50);
-        const finalPdfW = targetWidth;
 
-        // NO FITTING for any nodes as per user request (pure font sizes everywhere)
+        // --- HYBRID ENGINE: GROWTH + SCALING ---
+        let currentTextWidth = measuredWidth;
+
+        if (isModified) {
+            const mCtx = document.createElement('canvas').getContext('2d');
+            const sStyle = edit.safetyStyle || styleItem;
+            const fontStr = getRealFontString(
+                sStyle.font || styleItem.font,
+                sStyle.googleFont || sStyle.google_font || styleItem.google_font,
+                getWeightFromFont(sStyle.font || styleItem.font, sStyle.is_bold !== undefined ? sStyle.is_bold : styleItem.is_bold),
+                sStyle.size || styleItem.size,
+                (sStyle.is_italic !== undefined ? sStyle.is_italic : styleItem.is_italic) ? 'italic' : 'normal'
+            );
+            mCtx.font = fontStr;
+            currentTextWidth = mCtx.measureText(content || '').width;
+        }
+
+        // Calculate the baseline calibration scale of the original unedited text
+        const browserTargetForBaseline = targetWidth * (metricRatio || 1.0);
+        let baselineRatio = 1.0;
+        if (measuredWidth > browserTargetForBaseline && browserTargetForBaseline > 0) {
+            baselineRatio = browserTargetForBaseline / measuredWidth;
+        }
+
+        const dynamicPdfW = (currentTextWidth / (metricRatio || 1.0)) * baselineRatio;
+        
+        // ALLOW expansion in all modes when editing, so the text isn't statically squished when adding new words.
+        const finalPdfW = isModified ? Math.max(targetWidth, dynamicPdfW) : targetWidth;
+
+        // --- HYBRID SCALING (Relative to DYNAMIC BBOX) ---
+        const safetyCushion = 0.5;
+        const effectiveDynamicTarget = Math.max(1, finalPdfW - safetyCushion);
+
+        let chosenWeight = getWeightFromFont(edit.safetyStyle?.font || styleItem.font, edit.safetyStyle?.is_bold !== undefined ? edit.safetyStyle?.is_bold : styleItem.is_bold);
+
+        // Retain the baseline optical look so we don't 'pop' to 1.0x
+        let ratio = baselineRatio; 
+
+        if (currentTextWidth > 0 && isModified) {
+            const currentBrowserTarget = effectiveDynamicTarget * (metricRatio || 1.0);
+            if (currentTextWidth > currentBrowserTarget) {
+               ratio = currentBrowserTarget / currentTextWidth;
+            }
+        }
+
+        // LESS RESTRICTIVE SCALING: Allow up to 1.05 and down to 0.4
+        const maxRatio = isFitMode ? 1.05 : 1.25;
+        const safeRatio = Math.min(maxRatio, Math.max(0.4, ratio));
+
+        // Use worker result if available and we are in fit mode
+        let fontSizeResult;
+        // DECOUPLED BINARY FOR NOW
+        // if (isFitMode && workerFontSize) {
+        //     fontSizeResult = workerFontSize;
+        // } else {
+            fontSizeResult = baseSize * safeRatio;
+        // }
+
         return {
-            finalFontSize: baseSize,
-            finalFittingRatio: 1.0,
-            finalPdfWidth: targetWidth,
-            finalWeight: getWeightFromFont(sStyle.font || styleItem.font, sStyle.is_bold !== undefined ? sStyle.is_bold : styleItem.is_bold)
+            calibratedFontSize: fontSizeResult,
+            fittingRatio: safeRatio,
+            dynamicPdfWidth: finalPdfW,
+            targetBrowserWidth: currentTextWidth,
+            chosenWeight: chosenWeight
         };
-    }, [line, styleItem, isModified, metricRatio, edit.safetyStyle]);
+    }, [line, styleItem, isModified, metricRatio, isFitMode, edit.safetyStyle, workerFontSize, content]);
+
+    // Update HUD with scale value for the actively selected line
+    useEffect(() => {
+        if (isActive && onScaleUpdate) {
+            onScaleUpdate(finalFittingRatio);
+        }
+    }, [isActive, finalFittingRatio, onScaleUpdate]);
 
     // BBox Debug console log removed
 
@@ -923,28 +1227,38 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                     safetyStyle: { size: styleItem.size || line.size, font: styleItem.font, color: styleItem.color, is_bold: styleItem.is_bold, is_italic: styleItem.is_italic, font_variant: styleItem.font_variant || 'normal', uri: line.uri }
                 });
             }}>
-            {/* DEBUG: Red Bounding Box for ALL text - REMOVED for production */}
-            
-            
-            {isActive && <rect x={edit.bbox ? edit.bbox[0] : line.x0} y={edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.8" strokeDasharray="4 2" pointerEvents="none" style={{ animation: 'blink 2s infinite' }} />}
+            {/* DEBUG: Red Bounding Box for ALL text - Show when showAllBboxes is true */}
+            {(isActive || showAllBboxes) && <rect x={edit.bbox ? edit.bbox[0] : line.x0} y={edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill="none" stroke={isActive ? "#2563eb" : "#dc2626"} strokeWidth="2" opacity={isActive ? 1 : 0.8} strokeDasharray={isActive ? "4 2" : "3 1"} pointerEvents="none" style={{ animation: isActive ? 'blink 2s infinite' : 'none' }} />}
             <rect x={(edit.bbox ? edit.bbox[0] : line.x0) - 5} y={(edit.bbox ? edit.bbox[1] : (line.y - (line.height || line.size || 10))) - 4} width={Math.max(50, finalPdfWidth + 10)} height={(line.height || line.size || 12) + 8} fill="transparent" pointerEvents="all" />
             <text
                 x={initialStartX} y={baselineY}
-                fontSize={finalFontSize}
+                fontSize={Math.max(1, Math.abs(finalFontSize))}
                 fontFamily={normalizeFont(edit.safetyStyle?.font || styleItem.font, edit.safetyStyle?.googleFont || edit.safetyStyle?.google_font || styleItem.google_font)}
                 fill={getSVGColor(edit.safetyStyle?.color || styleItem.color, 'black')}
-                fontWeight={finalWeight}
                 fontStyle={(edit.safetyStyle?.is_italic !== undefined ? edit.safetyStyle.is_italic : styleItem.is_italic) ? 'italic' : 'normal'}
+                fontWeight={finalWeight}
                 dominantBaseline="alphabetic" xmlSpace="preserve"
-                style={{ userSelect: 'none', pointerEvents: 'none', whiteSpace: 'pre', letterSpacing: 'normal' }}>
+                style={{
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                    whiteSpace: 'pre',
+                    letterSpacing: 'normal',
+                    transform: finalFittingRatio !== 1.0 ? `scale(${finalFittingRatio}, 1)` : 'none',
+                    transformOrigin: `${initialStartX}px ${baselineY}px`
+                }}
+                data-fit-measured-width={finalPdfWidth}
+                data-fit-target-width={targetBrowserWidth}
+                data-fit-scale={finalFittingRatio}
+            >
                 {isModified ? (
                     (() => {
-                        const sStyle = edit.safetyStyle || {};
-                        const safeSize = sStyle.size || styleItem.size || line.size;
-                        const activeSmallCaps = (sStyle.font_variant || 'normal') === 'small-caps' || isSmallCaps;
-                        const safeBSize = safeSize * finalFittingRatio;
+                        const hasSafetyStyle = edit.safetyStyle && Object.keys(edit.safetyStyle).length > 0;
+                        const activeStyle = hasSafetyStyle ? edit.safetyStyle : styleItem;
+                        const safeSize = activeStyle.size || styleItem.size || line.size;
+                        const activeSmallCaps = (activeStyle.font_variant || 'normal') === 'small-caps' || isSmallCaps;
+                        const safeBSize = safeSize; // No internal scaling, scale is on parent
                         return <tspan x={initialStartX} y={baselineY} style={{ fontVariant: activeSmallCaps ? 'small-caps' : 'normal' }}>
-                            {renderWordStyledText(mapContent(content), edit.wordStyles || {}, sStyle || styleItem, activeSmallCaps, safeBSize)}
+                            {renderWordStyledText(mapContent(content), edit.wordStyles || {}, activeStyle, activeSmallCaps, safeBSize)}
                         </tspan>;
                     })()
                 ) : (
@@ -966,14 +1280,14 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
                                 key={si}
                                 x={forceX}
                                 y={span.origin ? span.origin[1] : baselineY}
-                                fontSize={Math.max(1, Math.abs(span.size * finalFittingRatio))}
+                                fontSize={Math.max(1, Math.abs(span.size))}
                                 fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font)}
                                 fill={getSVGColor(span.color, 'black')}
                                 xmlSpace="preserve"
                                 style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>
-                                {renderVisualText(mapped, isOriginalSmallCaps, span.size * finalFittingRatio)}
+                                {renderVisualText(mapped, isOriginalSmallCaps, span.size)}
                             </tspan>
                         );
                     })
@@ -984,5 +1298,5 @@ function LineRenderer({ line, block, nodeEdits, pageIndex, activeNodeId, selecte
     );
 }
 
-export { MEASURE_CTX, getRealFontString, LineRenderer };
+export { LineRenderer };
 

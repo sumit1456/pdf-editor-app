@@ -120,7 +120,16 @@ export const mergeFragmentsIntoLines = (items) => {
                 is_bold: first.is_bold,
                 is_italic: first.is_italic,
                 type: 'text',
-                items: [...currentSubGroup]
+                items: [...currentSubGroup],
+                originalStyle: {
+                    font: first.font,
+                    size: first.size,
+                    color: first.color,
+                    is_bold: first.is_bold,
+                    is_italic: first.is_italic,
+                    font_variant: first.font_variant || 'normal',
+                    googleFont: first.google_font || first.googleFont
+                }
             };
 
             // Calculate total bbox for the sub-group

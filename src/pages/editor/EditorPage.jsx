@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
-import PythonRenderer, { MEASURE_CTX, getRealFontString } from '../../components/PDFEditor/PythonRenderer';
+import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
+import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { savePdfToBackend } from '../../services/PdfBackendService';
 import './EditorPage.css';
 
@@ -55,42 +56,6 @@ const FONT_OPTIONS = [
     { label: 'PT Serif', value: 'PT Serif' },
     { label: 'PT Sans', value: 'PT Sans' }
 ];
-
-// TYPOGRAPHIC AUDITOR: Measures natural density of fonts to find the best match
-const getWeightFromFont = (font, isBold) => {
-    if (isBold) return '700';
-    if (!font) return '400';
-    const name = font.toLowerCase().replace(/[_-]/g, "");
-    if (name.includes('black') || name.includes('heavy')) return '900';
-    if (name.includes('extrabold') || name.includes('ultrabold')) return '800';
-    if (name.includes('bold')) return '700';
-    if (name.includes('semibold') || name.includes('demibold') || name.includes('demi')) return '600';
-    if (name.includes('medium')) return '500';
-    if (name.includes('regular') || name.includes('book')) return '400';
-    if (name.includes('light')) return '300';
-    if (name.includes('extralight') || name.includes('thin')) return '200';
-    return '400';
-};
-
-const measureLineDensity = (text, font, size, weight = 'normal', isBold = false) => {
-    if (typeof window === 'undefined') return 0;
-    if (!window.__canvas_auditor) {
-        window.__canvas_auditor = document.createElement('canvas').getContext('2d');
-    }
-    const ctx = window.__canvas_auditor;
-
-    // Resolve CSS Vars for Sidebar Consistency
-    let family = font || 'Source Serif 4';
-    if (family.includes('var(--serif-latex)')) family = "'Source Serif 4', serif";
-    else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
-    else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
-
-    // PDF sizes are in points (pt). Canvas measureText uses CSS pixels.
-    // 1pt = 1.333px at 96dpi (96/72). Without this, font is ~33% oversized → bbox inflates.
-    const sizePx = size * (96 / 72);
-    ctx.font = `${weight} ${sizePx}px ${family}, sans-serif`;
-    return ctx.measureText(text).width;
-};
 
 const rgbToHex = (color) => {
     if (!color || color.length < 3) return '#000000';
@@ -172,6 +137,7 @@ export default function EditorPage() {
     const [originalPdfBase64] = useState(location.state?.originalPdfBase64 || '');
     const [activePageIndex, setActivePageIndex] = useState(0);
     const [isAdvanced, setIsAdvanced] = useState(true);
+    const reflowEngine = useMemo(() => new ReflowEngine(fonts), [fonts]);
 
     // NODE-BASED EDITING STATE: Persistent edits keyed by unique item ID
     const [nodeEdits, setNodeEdits] = useState({});
@@ -181,9 +147,12 @@ export default function EditorPage() {
     const [smartStyling, setSmartStyling] = useState(true);
     const [selectedWordIndices, setSelectedWordIndices] = useState([]);
     const [isMultiSelect, setIsMultiSelect] = useState(false);
-    const [isFitMode, setIsFitMode] = useState(false);
+    const [isFitMode, setIsFitMode] = useState(false); // Exact legacy fit mode
+    const [showAllBboxes, setShowAllBboxes] = useState(false);
+    const [isReflowEnabled, setIsReflowEnabled] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [isCalibrated, setIsCalibrated] = useState(false); // Tracks if fonts are calibrated
+    const [metricRatio, setMetricRatio] = useState(1.333333); // Default PT to PX ratio
     const [selectedNodeIds, setSelectedNodeIds] = useState([]);
     const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
     const [mobileActivePanel, setMobileActivePanel] = useState(null); // 'edit', 'pages', 'words' or null
@@ -197,6 +166,8 @@ export default function EditorPage() {
             setMobileActivePanel('edit');
         }
     }, [activeNodeId]);
+
+    const [activeScale, setActiveScale] = useState(1.0);
 
 
 
@@ -270,9 +241,11 @@ export default function EditorPage() {
             return style;
         }
 
-        // TARGETING FIX: When searching for "Active Style" in original data
+        // --- STYLE INHERITANCE FIX ---
         for (const page of pages) {
-            const found = (page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || [])).find(l => l.id === activeNodeId);
+            const flattened = (page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || []));
+            const found = flattened.find(l => l.id === activeNodeId);
+
             if (found) {
                 // Return style of the LAST item (span) as per user targeting preference
                 const base = (found.items && found.items.length > 0) ? found.items[found.items.length - 1] : found;
@@ -284,6 +257,24 @@ export default function EditorPage() {
                     is_italic: base.is_italic,
                     font_variant: base.font_variant || 'normal'
                 };
+            }
+
+            // If it's a reflow block ID, find the block and use its first line's style
+            if (activeNodeId.startsWith('block-reflow-')) {
+                const blockId = activeNodeId.replace('block-reflow-', '');
+                const block = page.blocks?.find(b => b.id === blockId);
+                if (block && block.lines.length > 0) {
+                    const firstLine = block.lines[0];
+                    const base = (firstLine.items && firstLine.items.length > 0) ? firstLine.items[0] : firstLine;
+                    return {
+                        size: parseFloat(base.size),
+                        font: base.font,
+                        color: base.color,
+                        is_bold: base.is_bold,
+                        is_italic: base.is_italic,
+                        font_variant: base.font_variant || 'normal'
+                    };
+                }
             }
         }
         return null;
@@ -311,36 +302,19 @@ export default function EditorPage() {
         let bbox = edit.bbox || activeNodeData.bbox;
         if (!bbox && activeNodeData.origin) {
             const w = activeNodeData.width || 50;
-            const h = activeNodeData.height || style?.size || 10;
+            const h = activeNodeData.size || 12;
             bbox = [activeNodeData.origin[0], activeNodeData.origin[1] - h, activeNodeData.origin[0] + w, activeNodeData.origin[1]];
         }
-
-        // Pure font sizes - no scaling in HUD
-        let ratio = 1.0;
 
         return {
             font: style?.font || 'Default',
             size: style?.size || activeNodeData.size || 0,
             color: style?.color || activeNodeData.color || [0, 0, 0],
-            ratio: ratio,
             x: bbox ? bbox[0] : (activeNodeData.origin ? activeNodeData.origin[0] : 0),
             y: bbox ? bbox[1] : (activeNodeData.origin ? activeNodeData.origin[1] : 0)
         };
-    }, [activeNodeId, activeNodeData, nodeEdits, isFitMode, selectedWordIndices]);
+    }, [activeNodeId, activeNodeData, nodeEdits, selectedWordIndices]);
 
-
-    // Feature Request: Initially select all words when a line is selected
-    React.useEffect(() => {
-        if (activeNodeId && activeNodeData) {
-            const content = nodeEdits[activeNodeId]?.content || activeNodeData.content || "";
-            const words = content.split(/\s+/).filter(Boolean);
-            setSelectedWordIndices(words.map((_, i) => i));
-            setIsMultiSelect(words.length > 0);
-        } else if (!activeNodeId) {
-            setSelectedWordIndices([]);
-            setIsMultiSelect(false);
-        }
-    }, [activeNodeId, activeNodeData]); // Also depend on activeNodeData to ensure content is ready
 
     // AUTO-SELECT FIRST NODE ON LOAD
     // This ensures the sidebar is "active" immediately for a better first impression
@@ -502,14 +476,6 @@ export default function EditorPage() {
     const handleZoom = (delta) => {
         setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
     };
-    const [measureCanvas] = useState(() => document.createElement('canvas'));
-
-    // Helper for measuring text width
-    const getTextWidth = (text, font, size) => {
-        const context = measureCanvas.getContext('2d');
-        context.font = `${Math.abs(size)}px "${font}", serif`;
-        return context.measureText(text).width;
-    };
 
     // Handle updates from Renderers (e.g. Text Edit)
     const handlePageUpdate = (newItems) => {
@@ -523,9 +489,17 @@ export default function EditorPage() {
     };
 
     const handleDoubleClick = (pIdx, lineId, item, rect, extraData) => {
+        let targetLineId = lineId;
+
+        // MAPPING FIX: If Reflow is enabled, select the unified block instead of the isolated line
+        if (isReflowEnabled && pages[activePageIndex]?.blocks) {
+            const block = pages[activePageIndex].blocks.find(b => b.lines.some(l => l.id === lineId));
+            if (block && block.type === 'paragraph') targetLineId = `block-reflow-${block.id}`;
+        }
+
         // --- AUTO-TAB SWITCHING ---
         // If the clicked line isn't in the current tab, flip tabs
-        const nodeInCurrentTab = textLines.find(l => l.id === lineId);
+        const nodeInCurrentTab = textLines.find(l => l.id === targetLineId);
         if (!nodeInCurrentTab) {
             setActiveTab(prev => prev === 'text' ? 'links' : 'text');
         }
@@ -533,7 +507,7 @@ export default function EditorPage() {
         // --- STYLE SAFETY MECHANIC ---
         // Capture and store original styles if not already set or not yet modified
         setNodeEdits(prev => {
-            const currentEdit = prev[lineId] || {};
+            const currentEdit = prev[targetLineId] || {};
             // If already modified, we don't want to revert the user's manual style choices
             if (currentEdit.isModified) return prev;
 
@@ -542,7 +516,7 @@ export default function EditorPage() {
 
             return {
                 ...prev,
-                [lineId]: {
+                [targetLineId]: {
                     ...currentEdit,
                     wordStyles: initialWordStyles,
                     safetyStyle: extraData?.safetyStyle || {
@@ -560,7 +534,7 @@ export default function EditorPage() {
         });
 
         // Trigger existing scroll logic with a slight delay to allow tab render
-        setTimeout(() => scrollToNode(lineId), 100);
+        setTimeout(() => scrollToNode(targetLineId), 100);
     };
 
     const scrollToNode = (idOrIndex) => {
@@ -616,6 +590,55 @@ export default function EditorPage() {
 
         setNodeEdits(prev => {
             const current = prev[lineId] || {};
+            const sStyle = current.safetyStyle || originalStyle || {};
+
+            // --- EXPERIMENTAL REFLOW ENGINE (Unified Block) ---
+            if (isReflowEnabled && lineId.startsWith('block-reflow-')) {
+                const realBlockId = lineId.replace('block-reflow-', '');
+                const page = pages[activePageIndex];
+                if (page && page.blocks) {
+                    const blockIndex = page.blocks.findIndex(b => b.id === realBlockId);
+                    if (blockIndex !== -1) {
+                        const block = page.blocks[blockIndex];
+                        const sStyle = originalStyle || {}; // base paragraph style
+
+                        // The user edits the full paragraph directly now
+                        const fullText = newText.replace(/\s{2,}/g, ' ');
+                        const newLines = reflowEngine.reflowBlock({ ...block, style: sStyle }, fullText);
+
+                        // Sync structurally
+                        setPages(prevPages => {
+                            const nextPages = [...prevPages];
+                            const p = { ...nextPages[activePageIndex] };
+                            const newBlocks = [...(p.blocks || [])];
+                            newBlocks[blockIndex] = { ...block, lines: newLines };
+                            p.blocks = newBlocks;
+                            nextPages[activePageIndex] = p;
+                            return nextPages;
+                        });
+
+                        const nextEdits = { ...prev };
+                        newLines.forEach(nl => {
+                            // Retain existing line specific styles if possible
+                            const prevStyle = prev[nl.id]?.safetyStyle || sStyle;
+                            nextEdits[nl.id] = {
+                                ...(prev[nl.id] || {}),
+                                content: nl.content,
+                                bbox: nl.bbox,
+                                origin: [nl.bbox[0], nl.y],
+                                safetyStyle: prevStyle,
+                                isModified: true
+                            };
+                        });
+
+                        // Keep memory of the unified block edit directly so UI is fast
+                        nextEdits[lineId] = { isModified: true, content: newText, safetyStyle: sStyle };
+
+                        return nextEdits;
+                    }
+                }
+            }
+
             const oldText = current.content || "";
             const oldWords = oldText.split(/(\s+)/);
             const newWords = newText.split(/(\s+)/);
@@ -631,18 +654,20 @@ export default function EditorPage() {
                     const textBeforeCursor = newText.substring(0, cursorIndex);
                     const currentWordIdx = Math.max(0, textBeforeCursor.trim().split(/\s+/).length - 1);
 
+                    const lastWordIdx = Object.keys(wordStyles).length - 1;
+                    const styleSource = lastWordIdx >= 0 ? wordStyles[lastWordIdx] : sStyle;
                     const newWordStylesMap = {};
+
                     if (diff > 0) {
                         // ADDITION: Shift subsequent words forward
-                        const styleSource = wordStyles[currentWordIdx - 1] || wordStyles[currentWordIdx];
                         Object.entries(wordStyles).forEach(([idx, sty]) => {
                             const i = parseInt(idx);
                             if (i >= currentWordIdx) newWordStylesMap[i + diff] = sty;
                             else newWordStylesMap[i] = sty;
                         });
-                        // Inherit style for the new words
+                        // Inherit style for the new words from the styleSource
                         for (let k = 0; k < diff; k++) {
-                            if (styleSource) newWordStylesMap[currentWordIdx + k] = { ...styleSource };
+                            newWordStylesMap[currentWordIdx + k] = { ...styleSource };
                         }
                     } else {
                         // DELETION: Shift subsequent words backward
@@ -658,10 +683,11 @@ export default function EditorPage() {
                     // Atomic update of wordStyles
                     Object.keys(wordStyles).forEach(k => delete wordStyles[k]);
                     Object.assign(wordStyles, newWordStylesMap);
+                } else if (Object.keys(wordStyles).length === 0 && Object.keys(sStyle).length > 0) {
+                    // diff === 0 but wordStyles is empty (initial edit of a word)
+                    wordStyles[0] = { ...sStyle };
                 }
             }
-
-            const sStyle = current.safetyStyle || originalStyle || {};
 
             // Resolve bbox from cached state or original node — NEVER mutate width/height
             let newBBox = current.bbox ? [...current.bbox] : null;
@@ -705,6 +731,16 @@ export default function EditorPage() {
         });
     };
 
+    // Handle batch font size updates from worker fitting
+    const handleFitUpdateBatch = (resultsMap) => {
+        Object.entries(resultsMap).forEach(([lineId, result]) => {
+            if (result.fontSize !== undefined) handleStyleUpdate(lineId, 'size', result.fontSize);
+            if (result.font !== undefined) handleStyleUpdate(lineId, 'font', result.font);
+            if (result.is_bold !== undefined) handleStyleUpdate(lineId, 'is_bold', result.is_bold);
+            if (result.is_italic !== undefined) handleStyleUpdate(lineId, 'is_italic', result.is_italic);
+        });
+    };
+
     const handleStyleUpdate = (lineId, field, value, wordIndices = null) => {
         const targetIds = (isLineMultiSelect && selectedNodeIds.length > 0) ? selectedNodeIds : [lineId];
 
@@ -722,6 +758,13 @@ export default function EditorPage() {
                         if (!wordStyles[idx]) wordStyles[idx] = {};
                         wordStyles[idx] = { ...wordStyles[idx], [field]: value };
                     });
+
+                    // FIX: Also update base safetyStyle if in Multi-Line Batch mode
+                    // This ensures trailing words in other lines also get the update.
+                    if (isLineMultiSelect) {
+                        sStyle[field] = value;
+                        if (field === 'font') sStyle.googleFont = value;
+                    }
                 } else if (isLineMultiSelect) {
                     // TARGET ALL WORDS in Multi-Line batch mode
                     const contentStr = current.content || "";
@@ -880,28 +923,55 @@ export default function EditorPage() {
         if (activePageData.blocks) {
             // Flatten all lines from all blocks for granular editing
             activePageData.blocks.forEach(block => {
-                block.lines.forEach(line => {
-                    // Style Safety: Use the first item for the default text style
-                    const contentItem = line.items[0] || {};
+                if (isReflowEnabled && block.type === 'paragraph' && block.lines.length > 0) {
+                    // Unified Block TextArea for Reflow Engine
+                    const fullContent = block.lines.map(l => {
+                        return nodeEdits[l.id]?.isModified ? nodeEdits[l.id].content : l.content;
+                    }).join(' ').replace(/\s{2,}/g, ' ');
+
+                    const firstLine = block.lines[0];
+                    const contentItem = firstLine.items[0] || {};
 
                     flattenedLines.push({
-                        id: line.id,
-                        content: line.content,
+                        id: `block-reflow-${block.id}`,
+                        content: fullContent,
                         type: 'text',
-                        dataIndex: line.id,
-                        isBlock: false,
+                        dataIndex: block.id,
+                        isBlock: true,
                         level: block.level || 0,
                         blockId: block.id,
-                        uri: line.uri,
                         originalStyle: {
-                            size: contentItem.size || line.size,
+                            size: contentItem.size || firstLine.size,
                             font: contentItem.font,
                             color: contentItem.color,
-                            is_bold: contentItem.is_bold, // No longer line scanning
+                            is_bold: contentItem.is_bold,
                             is_italic: contentItem.is_italic
                         }
                     });
-                });
+                } else {
+                    block.lines.forEach(line => {
+                        // Style Safety: Use the first item for the default text style
+                        const contentItem = line.items[0] || {};
+
+                        flattenedLines.push({
+                            id: line.id,
+                            content: nodeEdits[line.id]?.isModified ? nodeEdits[line.id].content : line.content,
+                            type: 'text',
+                            dataIndex: line.id,
+                            isBlock: false,
+                            level: block.level || 0,
+                            blockId: block.id,
+                            uri: line.uri,
+                            originalStyle: {
+                                size: contentItem.size || line.size,
+                                font: contentItem.font,
+                                color: contentItem.color,
+                                is_bold: contentItem.is_bold, // No longer line scanning
+                                is_italic: contentItem.is_italic
+                            }
+                        });
+                    });
+                }
             });
         } else {
             // Legacy Path (Java)
@@ -940,7 +1010,7 @@ export default function EditorPage() {
             {/* 1. NAVIGATOR - Left */}
             <div className={`navigator-sidebar ${(mobileActivePanel === 'pages' || mobileActivePanel === 'words') ? 'mobile-open' : ''}`}>
                 <div className="drawer-handle" onClick={() => setMobileActivePanel(null)}></div>
-                
+
                 <div className="panel-header" style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
                     <div className="section-badge" style={{ marginBottom: '8px' }}>Navigator</div>
                     <h3 className="studio-header">
@@ -989,12 +1059,14 @@ export default function EditorPage() {
 
                                 <div className="size-control">
                                     <button disabled={!activeNodeId} onClick={() => {
+                                        console.log('➖ Font Size Decrease - Current:', (activeStyle?.size || 10));
                                         handleStyleUpdate(activeNodeId, 'size', (activeStyle?.size || 10) - 1, isWordSelection ? selectedWordIndices : null);
                                     }}>−</button>
                                     <span className="size-label">
                                         {activeNodeId ? Math.round(Math.abs(activeStyle?.size || 10)) : '--'}
                                     </span>
                                     <button disabled={!activeNodeId} onClick={() => {
+                                        console.log('➕ Font Size Increase - Current:', (activeStyle?.size || 10));
                                         handleStyleUpdate(activeNodeId, 'size', (activeStyle?.size || 10) + 1, isWordSelection ? selectedWordIndices : null);
                                     }}>+</button>
                                 </div>
@@ -1084,6 +1156,23 @@ export default function EditorPage() {
                                 </button>
 
                                 <button
+                                    className={`caps-toggle-btn ${showAllBboxes ? 'active' : ''}`}
+                                    onClick={() => setShowAllBboxes(!showAllBboxes)}
+                                    title="Show/Hide bounding boxes for all lines"
+                                >
+                                    <span className="icon">📦</span> BBox
+                                </button>
+
+                                <button
+                                    className={`caps-toggle-btn ${isReflowEnabled ? 'active' : ''}`}
+                                    onClick={() => setIsReflowEnabled(!isReflowEnabled)}
+                                    title="Experimental: Block-level word wrapping inside the bounding box"
+                                >
+                                    <span className="icon">🌊</span> Reflow
+                                    {isReflowEnabled && <span className="dev-tag" style={{ background: 'var(--brand-primary)' }}>ON</span>}
+                                </button>
+
+                                <button
                                     className={`caps-toggle-btn ${isLineMultiSelect ? 'active' : ''}`}
                                     onClick={() => {
                                         const nextState = !isLineMultiSelect;
@@ -1109,17 +1198,19 @@ export default function EditorPage() {
                                 <button
                                     className="caps-toggle-btn"
                                     onClick={() => {
-                                        const ids = textLines.map(l => l.id);
+                                        // FIX: Select ALL items on page, ignoring tab filter for batch styling
+                                        const pageNodes = activePageData.blocks
+                                            ? activePageData.blocks.flatMap(b => b.lines)
+                                            : (activePageData.items || []);
+                                        const ids = pageNodes.map(l => l.id);
+
                                         setSelectedNodeIds(ids);
                                         setIsLineMultiSelect(true);
+                                        setIsMultiSelect(false); // Disable word-level indices for full line batch
+                                        setSelectedWordIndices([]);
+
                                         if (ids.length > 0) {
-                                            const firstId = ids[0];
-                                            setActiveNodeId(firstId);
-                                            const line = textLines.find(l => l.id === firstId);
-                                            const content = nodeEdits[firstId]?.content || line?.content || "";
-                                            const words = content.split(/\s+/).filter(Boolean);
-                                            setSelectedWordIndices(words.map((_, i) => i));
-                                            setIsMultiSelect(true);
+                                            setActiveNodeId(ids[0]);
                                         }
                                     }}
                                     title="Select all lines on the current page"
@@ -1265,8 +1356,8 @@ export default function EditorPage() {
 
                     <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {pages.length > VISIBLE_PAGE_COUNT && (
-                            <button 
-                                className="sidebar-thumb" 
+                            <button
+                                className="sidebar-thumb"
                                 style={{ width: 'auto', padding: '0 10px', minWidth: 'unset' }}
                                 onClick={() => setPageOffset(prev => Math.max(0, prev - 1))}
                                 disabled={pageOffset === 0}
@@ -1290,8 +1381,8 @@ export default function EditorPage() {
                             })}
                         </div>
                         {pages.length > VISIBLE_PAGE_COUNT && (
-                            <button 
-                                className="sidebar-thumb" 
+                            <button
+                                className="sidebar-thumb"
                                 style={{ width: 'auto', padding: '0 10px', minWidth: 'unset' }}
                                 onClick={() => setPageOffset(prev => Math.min(pages.length - VISIBLE_PAGE_COUNT, prev + 1))}
                                 disabled={pageOffset >= pages.length - VISIBLE_PAGE_COUNT}
@@ -1312,6 +1403,8 @@ export default function EditorPage() {
                     {/* PROPERTY HUD BAR */}
                     {activeNodeProps && (
                         <div className="property-hud">
+
+
                             <div className="hud-group">
                                 <span className="hud-label">Font</span>
                                 <span className="hud-value">{activeNodeProps.font.split(',')[0].replace(/'/g, "")}</span>
@@ -1320,20 +1413,14 @@ export default function EditorPage() {
                             <div className="hud-group">
                                 <span className="hud-label">Size</span>
                                 <span className="hud-value">
-                                     {activeNodeProps.ratio < 0.999 ? (
-                                         <>
-                                             {activeNodeProps.size.toFixed(1)} <span className="hud-subvalue" style={{ fontSize: '0.7em', opacity: 0.7 }}>({(activeNodeProps.size * activeNodeProps.ratio).toFixed(1)} effective)</span> pt
-                                         </>
-                                     ) : (
-                                         <>{activeNodeProps.size.toFixed(1)} pt</>
-                                     )}
-                                 </span>
+                                    {activeNodeProps.size.toFixed(1)} pt
+                                </span>
                             </div>
                             <div className="hud-divider"></div>
                             <div className="hud-group">
                                 <span className="hud-label">Scale</span>
-                                <span className={`hud-value ${activeNodeProps.ratio < 1 ? 'warning' : ''}`}>
-                                    {(activeNodeProps.ratio * 100).toFixed(0)}%
+                                <span className="hud-value monospace" style={{ color: activeScale !== 1.0 ? 'var(--brand-primary, #2563eb)' : 'inherit' }}>
+                                    {activeScale.toFixed(2)}x
                                 </span>
                             </div>
                             <div className="hud-divider"></div>
@@ -1365,7 +1452,15 @@ export default function EditorPage() {
                             onMove={handleNodeMove}
                             scale={zoom}
                             isFitMode={isFitMode}
+                            isReflowEnabled={isReflowEnabled}
                             isDragEnabled={isDragEnabled}
+                            showAllBboxes={showAllBboxes}
+                            onFitUpdateBatch={handleFitUpdateBatch}
+                            onScaleUpdate={setActiveScale}
+                            onCalibrated={(ratio) => {
+                                setMetricRatio(ratio);
+                                setIsCalibrated(true);
+                            }}
                         />
                     </div>
                 </div>

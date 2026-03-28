@@ -5,7 +5,7 @@
    Only the preview canvas has presence. Everything else is air.
    ═══════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Open+Sans:wght@400;600&family=Source+Serif+4:wght@400;600;700&family=Syne:wght@400;600;700;800&family=Geist:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,400;1,700&family=Roboto:ital,wght@0,400;0,700;1,400;1,700&family=Source+Serif+4:ital,wght@0,400;0,700;1,400;1,700&family=Open+Sans:ital,wght@0,400;0,600;1,400;1,600&family=Syne:wght@400;700&family=Geist:wght@300;400;500;700&display=swap');
 
 :root {
     --bg: var(--bg-primary);
@@ -536,8 +536,15 @@
 }
 
 @keyframes slideDownFade {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .hud-group {
@@ -1144,7 +1151,8 @@
         bottom: -100%;
         left: 0;
         width: 100%;
-        height: 55vh;
+        height: 50vh;
+        /* Reduced from 55vh for better preview visibility */
         z-index: 3000;
         border-radius: 24px 24px 0 0;
         transition: bottom var(--t-slow) var(--ease);
@@ -1171,6 +1179,11 @@
         overflow: hidden;
     }
 
+    .property-hud {
+        display: none !important;
+        /* Disabled for mobile to save space */
+    }
+
     .preview-stage {
         border-radius: 0;
         padding: 5px;
@@ -1190,9 +1203,10 @@
         left: 50%;
         transform: translateX(-50%);
         z-index: 1000;
-        background: rgba(255, 255, 255, 0.95);
+        background: var(--bg-secondary);
         backdrop-filter: blur(16px);
         box-shadow: var(--sh-md);
+        border: 1px solid var(--border);
     }
 
     .workspace-container .download-btn-premium {
@@ -1205,7 +1219,7 @@
         left: 0;
         width: 100%;
         height: 68px;
-        background: rgba(255, 255, 255, 0.97);
+        background: var(--bg-secondary);
         backdrop-filter: blur(20px);
         display: flex;
         justify-content: space-around;
@@ -1291,4 +1305,79 @@
     .caps-toggle-btn {
         padding: 0 8px;
     }
+}
+
+/* --------------------------------
+ FIT V3 OVERFLOW SLIDER
+ -------------------------------- */
+.fit-v3-options-popup {
+    width: 100%;
+    padding: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    margin: 8px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    animation: slideDownFade 0.2s var(--ease-out);
+}
+
+.overflow-slider-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.overflow-value {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--white);
+    padding: 2px 8px;
+    border-radius: var(--r-xs);
+    border: 1px solid var(--border-mid);
+    font-family: var(--font-body);
+}
+
+.premium-range-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border-mid);
+    border-radius: var(--r-pill);
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.premium-range-slider:hover {
+    background: var(--ink-4);
+}
+
+.premium-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--ink);
+    border: 2px solid var(--white);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: var(--sh-sm);
+    transition: transform 0.1s var(--ease);
+}
+
+.premium-range-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.premium-range-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--ink);
+    border: 2px solid var(--white);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: var(--sh-sm);
 }
