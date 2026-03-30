@@ -1381,3 +1381,24 @@
     cursor: pointer;
     box-shadow: var(--sh-sm);
 }
+/* --------------------------------
+   FitV3 ANIMATIONS
+   -------------------------------- */
+
+.fitting-active {
+    animation: fitting-shimmer 1.5s infinite var(--ease);
+    pointer-events: none !important;
+}
+
+@keyframes fitting-shimmer {
+    0% { opacity: 0.6; filter: blur(0px); }
+    50% { opacity: 0.3; filter: blur(0.5px); fill: var(--brand-primary, #3b82f6); }
+    100% { opacity: 0.6; filter: blur(0px); }
+}
+
+/* Smooth font-size sink */
+text {
+    transition: font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
+                fill 0.3s var(--ease), 
+                opacity 0.4s var(--ease);
+}

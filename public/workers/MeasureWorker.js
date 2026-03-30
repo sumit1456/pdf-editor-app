@@ -1,32 +1,67 @@
 /**
- * MeasureWorker.js - Off-thread text measurement
+ * MeasureWorker.js - Multi-Span Proportional Font Fitting
  */
 let canvas = null;
 let ctx = null;
 
+const normalizeFont = (fontName, googleFont) => {
+    if (googleFont) return `"${googleFont}", serif`;
+    const fn = (fontName || '').toLowerCase();
+    if (fn.includes('symbol') || fn.includes('cmsy')) return 'Symbol, "Apple Symbols", "Segoe UI Symbol", serif';
+    if (fn.includes('zapf') || fn.includes('dingbat')) return 'ZapfDingbats, "Apple Color Emoji", "Segoe UI Emoji", serif';
+    return '"Source Serif 4", serif';
+};
+
+/**
+ * Detect structural/decorative spans (bullets, icons, symbols) so we skip them
+ * when looking for the representative body-text span.
+ * Mirrors the isStructuralSpan() heuristic in PythonRenderer.
+ */
+const isStructuralSpan = (span) => {
+    const raw = (span?.content || '').trim();
+    if (!raw) return true;
+    // Private Use Area — FontAwesome, icon fonts etc.
+    if (/[\uE000-\uF8FF]/.test(raw)) return true;
+    // Short content with no letter characters → symbol / emoji / bullet
+    if (raw.length <= 4) {
+        const hasLetter = /[a-zA-Z\u00C0-\u024F\u0370-\u03FF\u0400-\u04FF\u0600-\u06FF\u4E00-\u9FFF\u3040-\u30FF]/.test(raw);
+        if (!hasLetter) return true;
+    }
+    return false;
+};
+
+/**
+ * Find the representative body-text span, mirroring LineRenderer's styleItem logic.
+ * This is the span whose .size should be used when reporting `fontSize` back to the renderer,
+ * so that LineRenderer can derive the correct scale via (workerFontSize / styleItem.size).
+ */
+const findRepresentativeSpan = (spans) => {
+    const startIdx = (isStructuralSpan(spans[0]) && spans.length > 1) ? 1 : 0;
+    for (let i = startIdx; i < spans.length; i++) {
+        const s = spans[i];
+        if (!s.content || s.content.trim().length === 0) continue;
+        if (s.color) {
+            const [r, g, b] = s.color;
+            const isGray = Math.abs(r - g) < 0.05 && Math.abs(g - b) < 0.05;
+            const brightness = (r + g + b) / 3;
+            if (isGray && brightness > 0.75) continue; // light grey separator, skip
+        }
+        return s;
+    }
+    // Fallback: first non-whitespace span
+    for (let i = startIdx; i < spans.length; i++) {
+        if (spans[i].content && spans[i].content.trim().length > 0) return spans[i];
+    }
+    return spans[0];
+};
+
 self.onmessage = function (e) {
-    const { type, font, text, id } = e.data;
+    const { type, font, text, id, items, targetWidth } = e.data;
 
     if (type === 'init') {
         canvas = new OffscreenCanvas(100, 100);
         ctx = canvas.getContext('2d');
         return;
-    }
-
-    if (type === 'measure') {
-        if (!ctx) {
-            canvas = new OffscreenCanvas(100, 100);
-            ctx = canvas.getContext('2d');
-        }
-
-        ctx.font = font;
-        const width = ctx.measureText(text).width;
-
-        self.postMessage({
-            type: 'measureResult',
-            width: width,
-            id: id
-        });
     }
 
     if (type === 'measureFit') {
@@ -35,67 +70,74 @@ self.onmessage = function (e) {
             ctx = canvas.getContext('2d');
         }
 
-        const { targetWidth, fontBase, text, id } = e.data;
+        const effectiveTarget = targetWidth;
+        const spans = items || [];
 
-        // --- AGGRESSIVE SAFETY MARGIN ---
-        // Target a significantly smaller width to eliminate overflow completely
-        const effectiveTarget = Math.max(1, targetWidth - 2.0); // Increased from 0.5 to 2.0px
-        
-        console.log(`[Worker] AGGRESSIVE measureFit received for id=${id}, targetWidth=${targetWidth.toFixed(2)}px, effectiveTarget=${effectiveTarget.toFixed(2)}px`);
-
-        // Parse the font string to modify the size
-        // Expected format: "italic 700 12px Inter, sans-serif"
-        const fontParts = fontBase.split(' ');
-        let sizeIdx = fontParts.findIndex(p => p.includes('px'));
-        if (sizeIdx === -1) {
-            // Fallback if no px found
-            self.postMessage({ type: 'measureFitResult', fontSize: 12, width: 0, id });
+        if (spans.length === 0) {
+            self.postMessage({ type: 'measureFitResult', fontSize: 12, scale: 1.0, width: 0, id });
             return;
         }
 
-        const baseSize = parseFloat(fontParts[sizeIdx]);
-        const fontPrefix = fontParts.slice(0, sizeIdx).join(' ');
-        const fontSuffix = fontParts.slice(sizeIdx + 1).join(' ');
-
-        const getWidthAtSize = (sz) => {
-            ctx.font = `${fontPrefix} ${sz}px ${fontSuffix}`;
-            return ctx.measureText(text).width;
+        // Multi-span measurement: scale ALL spans proportionally
+        const getWidthAtScale = (scale) => {
+            let total = 0;
+            spans.forEach(s => {
+                const style = s.is_italic ? 'italic' : 'normal';
+                const weight = s.is_bold ? '700' : '400';
+                const size = (s.size || 12) * scale;
+                const family = normalizeFont(s.font, s.google_font);
+                ctx.font = `${style} ${weight} ${size}px ${family}`;
+                total += ctx.measureText(s.content || '').width;
+            });
+            return total;
         };
 
-        // AGGRESSIVE Binary Search for optimal font size
-        let maxSize = baseSize; // We NEVER want to grow larger than baseSize in fit mode
-        let minSize = Math.max(6, baseSize * 0.65); // More aggressive minimum size
-        let optimalSize = baseSize;
+        // Binary Search for optimal scale factor
+        // Allow up to 20% shrink and 15% growth to stay within bbox without
+        // causing vertical overlap.
+        let minScale = 0.8;
+        let maxScale = 1.15;
+        let optimalScale = 1.0;
 
-        // Initial check: if already fits, we might not need to shrink
-        let initialWidth = getWidthAtSize(baseSize);
+        const initialWidth = getWidthAtScale(1.0);
+
         if (initialWidth <= effectiveTarget) {
-            optimalSize = baseSize;
+            // Text fits at scale=1 → only look upward for a tighter fill
+            minScale = 1.0;
         } else {
-            // CRITICAL FIX: Initialize optimalSize to minSize in case the loop doesn't find a fit
-            optimalSize = minSize;
-
-            // AGGRESSIVE Binary search to find the largest size that fits
-            // 25 iterations for higher precision
-            for (let i = 0; i < 25; i++) {
-                let mid = (minSize + maxSize) / 2;
-                if (getWidthAtSize(mid) <= effectiveTarget) {
-                    optimalSize = mid;
-                    minSize = mid;
-                } else {
-                    maxSize = mid;
-                }
-            }
+            // Text overflows → only shrink
+            maxScale = 1.0;
         }
 
-        const finalWidth = getWidthAtSize(optimalSize);
-        console.log(`[Worker] AGGRESSIVE id=${id} fit complete: optimalSize=${optimalSize.toFixed(2)}pt, width=${finalWidth.toFixed(2)}px, target=${effectiveTarget.toFixed(2)}px`);
+        for (let i = 0; i < 100; i++) {
+            const mid = (minScale + maxScale) / 2;
+            const currentW = getWidthAtScale(mid);
+            if (currentW <= effectiveTarget) {
+                optimalScale = mid;
+                minScale = mid;
+            } else {
+                maxScale = mid;
+            }
+            if (maxScale - minScale < 0.001) break;
+        }
+
+        const finalWidth = getWidthAtScale(optimalScale);
+
+        // ── KEY FIX ──────────────────────────────────────────────────────────
+        // Report fontSize based on the REPRESENTATIVE body-text span (same heuristic
+        // as LineRenderer's styleItem), NOT spans[0] which is often a bullet/icon.
+        // This ensures LineRenderer can safely recover scale = workerFontSize / styleItem.size
+        // without any cross-size contamination.
+        const repSpan = findRepresentativeSpan(spans);
+        const repBaseSize = repSpan?.size || 12;
 
         self.postMessage({
             type: 'measureFitResult',
-            fontSize: optimalSize,
+            fontSize: repBaseSize * optimalScale,  // aligned with styleItem in LineRenderer
+            scale: optimalScale,                   // raw scale, can be used directly
             width: finalWidth,
-            id: id
+            id,
+            fullFont: `Multi-Span Scale: ${optimalScale.toFixed(3)} | repSpan: ${(repSpan?.content || '').substring(0, 10)} @${repBaseSize}pt`
         });
     }
 };

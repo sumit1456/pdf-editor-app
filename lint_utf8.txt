@@ -1,0 +1,899 @@
+﻿﻿─ Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Wrote backend unit tests using JUnit a..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(31)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented Cypress end-to-end testing..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Configured CI/CD pipelines using GitHu..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(31)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Projects..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "ResumeMaker Pro — GPU Accelerated Resume..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(14)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "[Link]..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Sep 2025 – Dec 2025..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(9)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "React, PixiJS (WebGL), Spring Boot, Apac..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(13)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Built a browser-based resume editor us..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(33)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented a hybrid rendering system ..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Developed backend PDF generation servi..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Ensured exported resumes remain search..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "PDF Editor App — JSON Based PDF Reconstr..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(16)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "[Link]..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Dec 2025 – Present..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Python, FastAPI, PyMuPDF, React..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Built a PDF processing backend using F..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(33)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "documents...."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Reconstructed PDFs from extracted JSON..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(23)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Replaced embedded fonts with Google Fo..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented coordinate mapping logic t..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(23)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Education..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Master of Science in Computer Applicatio..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(11)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "2025 – 2027 (Expected)..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Savitribai Phule Pune University — First..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(15)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Bachelor of Science in Chemistry..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(9)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "2021 – 2024..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Shivaji University — 65%..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Higher Secondary Certificate..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "2019 – 2021..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Yashwantrao Chavan Institute of Science,..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(15)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Secondary School Certificate..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "2018 – 2019..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "The Modern English School, Koregaon — 87..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(13)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Certifications..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Java Full Stack Development — QSpiders W..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(15)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: (not set — unmodified path)
+PythonRenderer.jsx:1284 ── wordStyles count: 0 | (empty — line never focused)
+PythonRenderer.jsx:172 [PythonRenderer] Initializing MeasureWorker for Page 1
+PythonRenderer.jsx:599 [PythonRenderer] PDF Fonts Rendered & Injected into DOM
+2PythonRenderer.jsx:156 [PythonRenderer] Mounting for Page 1
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=4c15bba6-38ba-48b5-90ec-bef0d6ca51b2, fontSize=20.837pt, measuredWidth=177.268px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=e6842060-2ad6-4ed1-b4cd-c603ad7af6a8, fontSize=12.592pt, measuredWidth=112.597px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=fced8529-de4f-4dc9-a90b-8be4c2f20c13, fontSize=11.065pt, measuredWidth=53.140px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=026b3b38-0c94-4f47-a63a-c18c7bde405d, fontSize=11.065pt, measuredWidth=119.835px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=4ae0c3fe-9892-4f77-a856-f7fbb5d31ed8, fontSize=11.065pt, measuredWidth=80.892px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=a9cf06fe-4994-45ba-973a-1ae63abbdd3e, fontSize=11.065pt, measuredWidth=99.848px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=ba86dc97-39c2-4661-ad79-42ebf8a073a3, fontSize=11.065pt, measuredWidth=2.765px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=ae804066-c660-466f-aeb8-c1787aa86573, fontSize=11.065pt, measuredWidth=150.201px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=d4a4b598-9c5b-4526-8479-bceb075e2e0a, fontSize=17.173pt, measuredWidth=126.050px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=df693ee0-6085-425a-984a-00d337049e95, fontSize=14.119pt, measuredWidth=693.180px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=4bbf23cf-3547-4c71-afe3-7dcd33cce7e0, fontSize=14.119pt, measuredWidth=674.799px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=f686d151-548a-4aff-8e3f-5633f14649de, fontSize=14.119pt, measuredWidth=590.724px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=f4403b8b-cc21-45c0-9795-b2861b814609, fontSize=17.173pt, measuredWidth=114.346px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=24958c03-f65b-48bf-b772-b1e77d927a7c, fontSize=14.119pt, measuredWidth=291.218px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=d46fa0d7-bab0-4baa-a611-883fd6c14a31, fontSize=14.119pt, measuredWidth=586.446px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=64857982-2976-49d3-ade3-1fdafb04a5fc, fontSize=14.119pt, measuredWidth=315.656px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=52b4231a-b5b7-4dc2-8ff3-7b2d492914ed, fontSize=14.119pt, measuredWidth=298.246px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=50884b93-3f62-4608-8fbf-1feab6a9ba43, fontSize=14.119pt, measuredWidth=674.330px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=dc2be467-8668-461f-83ba-fbf3947a38b6, fontSize=14.119pt, measuredWidth=509.751px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=b1df0576-96e9-4b7c-a639-649e44787968, fontSize=14.119pt, measuredWidth=303.082px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=6f0e6c28-3a38-40a0-af3e-77781ca03623, fontSize=17.173pt, measuredWidth=82.010px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=34542d86-3bf7-4a8e-80db-6c47cc1c157f, fontSize=14.119pt, measuredWidth=553.038px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=397642df-5fbf-4875-b756-61248d3d71af, fontSize=6.485pt, measuredWidth=679.830px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=db111e98-1103-4d1f-b700-808a7362da0e, fontSize=14.119pt, measuredWidth=157.917px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=6822b98a-cb41-47a5-9734-6cbe7af5c65e, fontSize=6.485pt, measuredWidth=646.870px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=ad0e7dd1-573d-4d06-bf8f-9e99096be08c, fontSize=6.485pt, measuredWidth=675.813px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=ad931fb1-9b19-426b-ba24-4bdf71ae71ea, fontSize=14.119pt, measuredWidth=117.537px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=e8ed2a6b-4797-4317-b8a3-0281575caff2, fontSize=6.485pt, measuredWidth=569.713px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=32fa5789-cbec-44c4-8763-7566582b85ba, fontSize=6.485pt, measuredWidth=695.828px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=d172820f-e19b-4dbc-95ad-5abdefb28623, fontSize=6.485pt, measuredWidth=649.654px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=2e8673a7-e558-490e-b7ff-5b97e7a0e0b1, fontSize=17.173pt, measuredWidth=59.743px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=def5b988-2f3f-48ce-826e-9cd915e305b3, fontSize=14.119pt, measuredWidth=337.110px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=6f9cd86d-14d0-4948-b0b5-6b189396ca2a, fontSize=13.226pt, measuredWidth=33.773px, workerFullFont="Multi-Span Scale: 1.077"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=a40a8234-acf0-4f61-983f-18a3f2902b10, fontSize=14.119pt, measuredWidth=120.693px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=17fdd975-e5a0-4961-81ad-aaa8c3e70818, fontSize=12.592pt, measuredWidth=256.712px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=b864ead0-0119-46d5-996c-e98cd4d66feb, fontSize=6.485pt, measuredWidth=613.655px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=1c13405b-b825-40bf-98ce-358befa97349, fontSize=6.485pt, measuredWidth=696.152px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=d1ad7805-2a22-4630-9007-a3470d7c2573, fontSize=6.485pt, measuredWidth=518.351px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=69dd5f17-7b51-47bb-adf5-80b1e539ac93, fontSize=6.485pt, measuredWidth=563.499px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=eabe57fe-0098-4709-a50c-7ae1347ec040, fontSize=14.119pt, measuredWidth=326.101px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c26f3d89-1d77-4002-a059-a85c849c9fae, fontSize=13.226pt, measuredWidth=33.773px, workerFullFont="Multi-Span Scale: 1.077"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c8bff41d-f7da-4956-b71c-e9658d95e9c6, fontSize=14.119pt, measuredWidth=111.151px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=d2353563-2131-444f-9db3-fcf48a688383, fontSize=12.592pt, measuredWidth=177.372px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=ba99be58-749a-423b-8e3d-573d7373e341, fontSize=6.485pt, measuredWidth=662.248px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=8fc6e6d1-bd04-461a-a2e9-9f93e5594ca5, fontSize=14.119pt, measuredWidth=64.659px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=b367355a-a743-4995-ae87-9acd2b53a79d, fontSize=6.485pt, measuredWidth=578.966px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=26c439d9-0891-4fe8-87d8-c6b3b9b1ae59, fontSize=6.485pt, measuredWidth=567.536px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=2d50cd21-ed15-45be-9c38-bc49308a18a6, fontSize=6.485pt, measuredWidth=586.103px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=81d148f0-e6d8-43e1-bfc4-b992f1762070, fontSize=17.173pt, measuredWidth=75.379px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=50cb02ec-f131-42b7-9ab2-8046b48ad46c, fontSize=14.119pt, measuredWidth=266.884px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=666817b4-1d5c-4e8d-a676-736043c342f0, fontSize=14.119pt, measuredWidth=135.175px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c0f9f266-b22c-4414-b18a-c6319b85bcad, fontSize=14.119pt, measuredWidth=338.612px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=2ac2e52e-3f0d-439a-ad3a-2594fdcd5e01, fontSize=14.119pt, measuredWidth=199.855px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c92b29ea-e103-4b56-9c4f-f0d4c27c02cf, fontSize=14.119pt, measuredWidth=70.550px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=dd6805d5-b2ba-4557-bc5a-f10a714bdef8, fontSize=14.119pt, measuredWidth=150.105px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c7c6a1e0-2e84-4c73-b06e-fc00c191b127, fontSize=14.119pt, measuredWidth=177.105px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=4d9c85b5-2096-46cf-b129-dd7adfe2af6f, fontSize=14.119pt, measuredWidth=70.550px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=913525fc-845a-4bd0-9059-c841da8072e3, fontSize=14.119pt, measuredWidth=321.450px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=9ad1a516-488a-4b03-95fd-ec8ceca80a16, fontSize=14.119pt, measuredWidth=174.769px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=7366d72c-6080-4c7f-99fc-3929620177bd, fontSize=14.119pt, measuredWidth=70.550px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c0968833-d43b-4187-8eca-df5a324b7cd6, fontSize=14.119pt, measuredWidth=269.220px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=c63b11d3-d10b-466e-8e11-d18614cd3aec, fontSize=17.173pt, measuredWidth=100.127px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+PythonRenderer.jsx:1338 [FitV3-AUDIT] Worker Result: id=862b1d48-6283-4096-bf43-63e288708043, fontSize=14.119pt, measuredWidth=322.938px, workerFullFont="Multi-Span Scale: 1.149"
+EditorPage.jsx:839 [FitV3] Batch Process Started: 1 lines to optimize.
+EditorPage.jsx:852 [FitV3] Adjusting Batch starting at line index: 0
+2PythonRenderer.jsx:156 [PythonRenderer] Mounting for Page 1
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "SUMIT HATEKAR..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Full Stack Developer..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Pune, India ·..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(4)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "sumithatekar9@gmail.com..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "· +91 7387155502 ·..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "github.com/sumit1456..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "·..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "linkedin.com/in/sumit-hatekar123..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Profile Summary..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Full Stack Developer experienced in buil..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(31)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Spring Boot, and React with hands-on exp..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(33)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "testing. Focused on performance optimiza..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(21)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Technical Skills..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] 🟡 MIXED-BOLD 📏 OVER "Languages: Java, JavaScript, SQL, HTML5,..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(11)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] 🟡 MIXED-BOLD 📏 OVER "Backend: Spring Boot, Spring Security (J..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] 🟡 MIXED-BOLD 📏 OVER "Frontend: React, Redux, PixiJS (WebGL), ..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(13)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] 🟡 MIXED-BOLD 📏 OVER "Testing: JUnit, Vitest, Cypress (End-to-..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(11)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Databases & Caching: PostgreSQL, Oracle ..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(29)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] 🟡 MIXED-BOLD 📏 OVER "DevOps: Docker, Docker Hub, CI/CD with G..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] 🟡 MIXED-BOLD 📏 OVER "Tools: Git, GitHub, Maven, Postman, Netl..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(13)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Experience..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Full Stack Developer — Freelance / Clien..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(26)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Developed an end-to-end Exam Managemen..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(29)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "ation, and result processing...."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Designed REST APIs using Spring Boot e..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(29)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented database indexing and Redi..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(31)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "system performance...."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Wrote backend unit tests using JUnit a..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(31)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented Cypress end-to-end testing..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Configured CI/CD pipelines using GitHu..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(31)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Projects..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "ResumeMaker Pro — GPU Accelerated Resume..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(14)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "[Link]..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Sep 2025 – Dec 2025..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(9)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "React, PixiJS (WebGL), Spring Boot, Apac..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(13)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Built a browser-based resume editor us..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(33)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented a hybrid rendering system ..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(3)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Developed backend PDF generation servi..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Ensured exported resumes remain search..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "PDF Editor App — JSON Based PDF Reconstr..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(16)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "[Link]..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "Dec 2025 – Present..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Python, FastAPI, PyMuPDF, React..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Built a PDF processing backend using F..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(33)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "documents...."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Reconstructed PDFs from extracted JSON..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(23)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Replaced embedded fonts with Google Fo..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(25)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ ✅ FIT "• Implemented coordinate mapping logic t..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(23)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Education..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Master of Science in Computer Applicatio..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(11)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "2025 – 2027 (Expected)..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Savitribai Phule Pune University — First..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(15)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Bachelor of Science in Chemistry..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(9)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "2021 – 2024..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Shivaji University — 65%..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(7)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Higher Secondary Certificate..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "2019 – 2021..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Yashwantrao Chavan Institute of Science,..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(15)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Secondary School Certificate..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "2018 – 2019..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(5)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "The Modern English School, Koregaon — 87..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(13)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Certifications..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(1)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=true
+PythonRenderer.jsx:1246 [DIAG] ⚪ 📏 OVER "Java Full Stack Development — QSpiders W..."
+PythonRenderer.jsx:1247 ── Span breakdown: Array(15)
+PythonRenderer.jsx:1257 ── styleItem chosen: Object
+PythonRenderer.jsx:1264 ── Font size pipeline: Object
+PythonRenderer.jsx:1273 ── BBox fit: Object
+PythonRenderer.jsx:1280 ── safetyStyle: Object
+PythonRenderer.jsx:1284 ── wordStyles count: 1 | [0]:bold=false
+WebEngine.jsx:113 [GPU Live Status] Textures: 0/40 | keys: [] | Render: 3.4ms
+4PythonRenderer.jsx:156 [PythonRenderer] Mounting for Page 1
+WebEngine.jsx:113 [GPU Live Status] Textures: 0/40 | keys: [] | Render: 0.5ms
+PythonRenderer.jsx:156 [PythonRenderer] Mounting for Page 1
+PythonRenderer.jsx:156 [PythonRenderer] Mounting for Page 1
+react-dom_client.js?v=c64e2e48:13527 [Violation] 'resize' handler took 191ms
+WebEngine.jsx:113 [GPU Live Status] Textures: 0/40 | keys: [] | Render: 0.6ms

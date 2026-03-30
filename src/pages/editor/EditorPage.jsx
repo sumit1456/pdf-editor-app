@@ -12,10 +12,17 @@ import './EditorPage.css';
 const mapSpansToWordStyles = (items) => {
     const wordStyles = {};
     let wordIdx = 0;
-    (items || []).forEach(item => {
+    // [DIAG-WS] Log each span's contribution to help trace wordStyles count=1 issue
+    console.group('[DIAG-WS] mapSpansToWordStyles — span inputs:');
+    (items || []).forEach((item, i) => {
         const content = item.content || '';
-        if (!content.trim()) return;
-        const words = content.trim().split(/\s+/);
+        const trimmed = content.trim();
+        if (!trimmed) {
+            console.log(`  span[${i}] SKIPPED (whitespace) content=${JSON.stringify(content).substring(0, 30)} font=${item.font}`);
+            return;
+        }
+        const words = trimmed.split(/\s+/);
+        console.log(`  span[${i}] bold=${item.is_bold} words=${words.length} content=${JSON.stringify(trimmed).substring(0, 30)} font=${item.font}`);
         words.forEach(() => {
             wordStyles[wordIdx] = {
                 font: item.font,
@@ -29,6 +36,8 @@ const mapSpansToWordStyles = (items) => {
             wordIdx++;
         });
     });
+    console.log(`  → total wordStyles entries: ${wordIdx}`);
+    console.groupEnd();
     return wordStyles;
 };
 
@@ -77,7 +86,6 @@ const hexToRgb = (hex) => {
 const MemoizedSidebarCard = React.memo(({ line, edit, isActive, isSelected, displayContent, onFocus, onChangeText, onChangeLink, onClick, i, isLineMultiSelect }) => {
     const [localText, setLocalText] = React.useState(displayContent);
     const [localLink, setLocalLink] = React.useState(edit.uri !== undefined ? edit.uri : line.uri);
-    const timeoutRef = React.useRef(null);
 
     // Sync to upstream changes
     React.useEffect(() => {
@@ -94,21 +102,15 @@ const MemoizedSidebarCard = React.memo(({ line, edit, isActive, isSelected, disp
         const val = e.target.value;
         const selStart = e.target.selectionStart;
         setLocalText(val);
-        
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-            onChangeText(val, selStart);
-        }, 3000);
+        // [FitV3 Stabilization] Debounce removed for instant feedback
+        onChangeText(val, selStart);
     };
 
     const handleLinkChange = (e) => {
         const val = e.target.value;
         setLocalLink(val);
-
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        timeoutRef.current = setTimeout(() => {
-            onChangeLink(val);
-        }, 3000);
+        // [FitV3 Stabilization] Debounce removed for instant feedback
+        onChangeLink(val);
     };
 
     return (
@@ -230,7 +232,8 @@ export default function EditorPage() {
     const [smartStyling, setSmartStyling] = useState(true);
     const [selectedWordIndices, setSelectedWordIndices] = useState([]);
     const [isMultiSelect, setIsMultiSelect] = useState(false);
-    const [isFitMode, setIsFitMode] = useState(false); // Exact legacy fit mode
+    // [FitV3] Automatic high-fidelity fitting is now default, isFitMode state removed.
+    const [fittingQueue, setFittingQueue] = useState(new Set()); 
     const [showAllBboxes, setShowAllBboxes] = useState(false);
     const [isReflowEnabled, setIsReflowEnabled] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -729,17 +732,23 @@ export default function EditorPage() {
 
             // --- SMART STYLE INHERITANCE (Node Tree Logic) ---
             if (cursorIndex !== null && oldText !== newText) {
-                const oldWordCount = oldText.trim().split(/\s+/).length || 0;
-                const newWordCount = newText.trim().split(/\s+/).length || 0;
+                // Better word counting: split by whitespace but preserve leading whitespace intent
+                const getWordCount = (str) => str.split(/\s+/).filter(w => w.length > 0).length;
+                
+                const oldWordCount = getWordCount(oldText);
+                const newWordCount = getWordCount(newText);
                 const diff = newWordCount - oldWordCount;
 
                 if (diff !== 0) {
                     const textBeforeCursor = newText.substring(0, cursorIndex);
-                    const currentWordIdx = Math.max(0, textBeforeCursor.trim().split(/\s+/).length - 1);
+                    // More precise word index: count words before cursor
+                    const currentWordIdx = getWordCount(textBeforeCursor);
 
-                    const lastWordIdx = Object.keys(wordStyles).length - 1;
-                    const styleSource = lastWordIdx >= 0 ? wordStyles[lastWordIdx] : sStyle;
                     const newWordStylesMap = {};
+                    
+                    // Style Source: Inherit from the word at the cursor index, or the global style
+                    // [Fix] Default to wordStyles[currentWordIdx] if it exists, else use the last word or sStyle
+                    const styleSource = wordStyles[currentWordIdx] || wordStyles[currentWordIdx - 1] || Object.values(wordStyles).pop() || sStyle;
 
                     if (diff > 0) {
                         // ADDITION: Shift subsequent words forward
@@ -814,14 +823,58 @@ export default function EditorPage() {
         });
     };
 
-    // Handle batch font size updates from worker fitting
+    // [FitV3] Handle batch font size updates from worker fitting with staggered (batched) application
     const handleFitUpdateBatch = (resultsMap) => {
-        Object.entries(resultsMap).forEach(([lineId, result]) => {
-            if (result.fontSize !== undefined) handleStyleUpdate(lineId, 'size', result.fontSize);
-            if (result.font !== undefined) handleStyleUpdate(lineId, 'font', result.font);
-            if (result.is_bold !== undefined) handleStyleUpdate(lineId, 'is_bold', result.is_bold);
-            if (result.is_italic !== undefined) handleStyleUpdate(lineId, 'is_italic', result.is_italic);
+        const entries = Object.entries(resultsMap);
+        if (entries.length === 0) return;
+
+        // Track which lines are in the fitting process for UI animations
+        setFittingQueue(prev => {
+            const next = new Set(prev);
+            entries.forEach(([id]) => next.add(id));
+            return next;
         });
+
+        // [Debug] Log when batching begins
+        console.log("[FitV3] Batch Process Started:", entries.length, "lines to optimize.");
+
+        // ⚡ BATCHED OPTIMIZATION: Process in chunks to avoid UI freezing
+        const CHUNK_SIZE = 12;
+        const DELAY_MS = 180;
+
+        const processChunk = (startIndex) => {
+            const chunk = entries.slice(startIndex, startIndex + CHUNK_SIZE);
+            if (chunk.length === 0) return;
+
+            // Apply style updates for this chunk
+            // [Debug] Log for the first line of each batch to show adjustment progress
+            if (startIndex % CHUNK_SIZE === 0) {
+                console.log("[FitV3] Adjusting Batch starting at line index:", startIndex);
+            }
+
+            chunk.forEach(([lineId, result]) => {
+                // Nuclear Style Update: Sync font size and other metrics discovered by worker
+                if (result.fontSize !== undefined) handleStyleUpdate(lineId, 'size', result.fontSize);
+                if (result.font !== undefined) handleStyleUpdate(lineId, 'font', result.font);
+                if (result.is_bold !== undefined) handleStyleUpdate(lineId, 'is_bold', result.is_bold);
+                if (result.is_italic !== undefined) handleStyleUpdate(lineId, 'is_italic', result.is_italic);
+
+                // Remove from fitting queue once applied (to stop shimmer)
+                setFittingQueue(prev => {
+                    const next = new Set(prev);
+                    next.delete(lineId);
+                    return next;
+                });
+            });
+
+            // Schedule next chunk
+            if (startIndex + CHUNK_SIZE < entries.length) {
+                setTimeout(() => processChunk(startIndex + CHUNK_SIZE), DELAY_MS);
+            }
+        };
+
+        // Start processing the first chunk
+        processChunk(0);
     };
 
     const handleStyleUpdate = (lineId, field, value, wordIndices = null) => {
@@ -1229,14 +1282,7 @@ export default function EditorPage() {
                                     <span className="icon">🛡️</span> Preserve Styles
                                 </button>
 
-                                <button
-                                    className={`caps-toggle-btn ${isFitMode ? 'active' : ''}`}
-                                    onClick={() => setIsFitMode(!isFitMode)}
-                                    title="Aggressive auto-scaling: Shrinks font size if text overflows by 3-4 characters"
-                                >
-                                    <span className="icon">🎯</span> Fit Mode
-                                    {isFitMode && <span className="dev-tag">In Dev</span>}
-                                </button>
+                                {/* [FitV3] Fit Mode toggle removed — now automatic and animated by default */}
 
                                 <button
                                     className={`caps-toggle-btn ${showAllBboxes ? 'active' : ''}`}
@@ -1534,7 +1580,8 @@ export default function EditorPage() {
                             onDoubleClick={handleDoubleClick}
                             onMove={handleNodeMove}
                             scale={zoom}
-                            isFitMode={isFitMode}
+                            isFitMode={true} // [FitV3] High-fidelity engine re-enabled with strict PDF bounds
+                            fittingQueue={fittingQueue} // Track lines currently optimizing
                             isReflowEnabled={isReflowEnabled}
                             isDragEnabled={isDragEnabled}
                             showAllBboxes={showAllBboxes}
