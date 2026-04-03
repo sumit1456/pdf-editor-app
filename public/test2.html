@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FontFitWorker Test 2</title>
+    <style>
+        :root {
+            --brand-primary: #3b82f6;
+            --brand-danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 50px;
+            color: #1e293b;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 20px;
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        label {
+            font-weight: 600;
+            min-width: 100px;
+        }
+
+        input[type="text"] {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            flex-grow: 1;
+            font-size: 16px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+        }
+
+        .preview-area {
+            position: relative;
+            padding: 20px 0;
+            min-height: 150px;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            background: #f1f5f9;
+        }
+
+        #target-line {
+            height: 4px;
+            background-color: var(--brand-danger);
+            position: absolute;
+            top: 100px;
+            left: 20px;
+            width: 100px;
+            transition: width 0.1s ease;
+        }
+
+        #text-display {
+            position: absolute;
+            top: 50px;
+            left: 20px;
+            white-space: nowrap;
+            overflow: visible;
+            transform-origin: left bottom;
+        }
+
+        .stats {
+            font-size: 14px;
+            color: #64748b;
+            display: flex;
+            gap: 20px;
+        }
+
+        .stats b {
+            color: #0f172a;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h2 style="margin-top: 0;">FontFitWorker Dynamic Scaling Test (test2)</h2>
+
+        <div class="controls">
+            <div class="control-row">
+                <label>Text Content:</label>
+                <input type="text" id="text-input" value="The quick brown fox jumps over the lazy dog"
+                    placeholder="Type something...">
+            </div>
+            <div class="control-row">
+                <label>Target Width:</label>
+                <input type="range" id="width-slider" min="50" max="750" value="100">
+                <span id="width-value" style="font-family: monospace; font-weight: bold; width: 50px;">100px</span>
+            </div>
+        </div>
+
+        <div class="preview-area">
+            <div id="text-display">The quick brown fox jumps over the lazy dog</div>
+            <div id="target-line"></div>
+        </div>
+
+        <div class="stats">
+            <span>Font Size: <b id="font-size-stat">--</b></span>
+            <span>Actual Width: <b id="actual-width-stat">--</b></span>
+            <span>Iterations: <b id="iterations-stat">--</b></span>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('text-input');
+        const widthSlider = document.getElementById('width-slider');
+        const widthValue = document.getElementById('width-value');
+        const targetLine = document.getElementById('target-line');
+        const textDisplay = document.getElementById('text-display');
+
+        const fontSizeStat = document.getElementById('font-size-stat');
+        const actualWidthStat = document.getElementById('actual-width-stat');
+        const iterationsStat = document.getElementById('iterations-stat');
+
+        // Initialize Worker
+        const worker = new Worker('/workers/FontFitWorker.js');
+        let isWorkerReady = false;
+
+        worker.onmessage = (e) => {
+            const { type, data } = e.data;
+            if (type === 'ready') {
+                isWorkerReady = true;
+                console.log('Worker Ready');
+                updateFitting();
+            } else if (type === 'complete') {
+                const { results, summary } = data;
+                const optimalSize = results[0].optimalSize;
+
+                // Apply result
+                textDisplay.style.fontSize = `${optimalSize}px`;
+                textDisplay.style.fontFamily = "Arial, sans-serif";
+
+                // Update stats
+                fontSizeStat.textContent = `${optimalSize}px`;
+                actualWidthStat.textContent = `${summary.totalFittedWidth}px`;
+                iterationsStat.textContent = summary.totalIterations;
+            }
+        };
+
+        worker.postMessage({ type: 'init' });
+
+        function updateFitting() {
+            const text = textInput.value;
+            const targetWidth = parseInt(widthSlider.value);
+            
+            // HIGH-FIDELITY PAYLOAD: Explicitly separate words and spaces
+            const words = text.split(' ');
+            const wordList = [];
+            
+            words.forEach((w, idx) => {
+                wordList.push({
+                    id: `p-${idx}-w`,
+                    content: w,
+                    font: 'Arial, sans-serif',
+                    size: 16,
+                    weight: '400',
+                    is_italic: false
+                });
+                
+                if (idx < words.length - 1) {
+                    wordList.push({
+                        id: `p-${idx}-s`,
+                        content: ' ',
+                        font: 'Arial, sans-serif',
+                        size: 16,
+                        weight: '400',
+                        is_italic: false
+                    });
+                }
+            });
+
+            // Update UI visuals
+            widthValue.textContent = `${targetWidth}px`;
+            targetLine.style.width = `${targetWidth}px`;
+            textDisplay.textContent = text;
+
+            if (!isWorkerReady) return;
+
+            // Message FontFitWorker
+            worker.postMessage({
+                type: 'fitWords',
+                data: {
+                    words: wordList,
+                    targetWidth: targetWidth
+                },
+                jobId: Date.now()
+            });
+        }
+
+        widthSlider.addEventListener('input', updateFitting);
+        textInput.addEventListener('input', updateFitting);
+
+    </script>
+</body>
+
+</html>

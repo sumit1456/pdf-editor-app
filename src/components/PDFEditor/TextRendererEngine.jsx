@@ -79,7 +79,11 @@ export function TextLine({
     onSelect,
     isModified = false,
     editData = {},
-    showBbox = false
+    showBbox = false,
+    onPointerDown,
+    onPointerMove,
+    onPointerUp,
+    itemRef
 }) {
     if (!line || !line.fragments || line.fragments.length === 0) return null;
 
@@ -136,9 +140,10 @@ export function TextLine({
         <g 
             className={`text-engine-line ${line.lineType} ${isActive ? 'active' : ''}`}
             id={`engine-line-${line.id}`}
+            ref={itemRef}
             onDoubleClick={(e) => onDoubleClick && onDoubleClick(e, line)}
             onClick={(e) => onSelect && onSelect(e, line)}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: 'move' }}
         >
             {/* Interaction Rect */}
             {(showBbox || isActive) && line.bbox && (
@@ -164,6 +169,10 @@ export function TextLine({
                     height={(line.bbox[3] - line.bbox[1]) + 4}
                     fill="transparent"
                     pointerEvents="all"
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    style={{ cursor: 'move' }}
                 />
             )}
 

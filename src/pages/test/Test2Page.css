@@ -1,0 +1,220 @@
+/* Test2Page.css - Premium Font-Fit Analytics Styling */
+:root {
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --accent-color: #3b82f6;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --success: #10b981;
+    --error: #ef4444;
+    --border: #e2e8f0;
+}
+
+.test2-container {
+    background-color: var(--bg-color);
+    padding: 40px;
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+}
+
+.analytics-card {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    border: 1px solid var(--border);
+}
+
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 15px;
+}
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+}
+
+.stat-item {
+    background: #f1f5f9;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--accent-color);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+/* Preview Area */
+.preview-container {
+    background: #0f172a;
+    border-radius: 12px;
+    padding: 40px 20px;
+    position: relative;
+    overflow: hidden;
+    min-height: 140px;
+    display: flex;
+    align-items: center;
+}
+
+.text-line-preview {
+    display: flex;
+    white-space: nowrap;
+    position: relative;
+    z-index: 2;
+    color: white;
+}
+
+.word-span {
+    display: inline-block;
+    transition: all 0.2s ease;
+}
+
+.target-ruler {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 20px;
+    border-right: 2px solid var(--error);
+    z-index: 1;
+    pointer-events: none;
+    transition: width 0.1s ease;
+}
+
+.ruler-label {
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    background: var(--error);
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* Word Editor */
+.word-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 15px;
+}
+
+.word-control-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: shadow 0.2s;
+}
+
+.word-control-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+.word-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 14px;
+}
+
+.style-toggles {
+    display: flex;
+    gap: 5px;
+}
+
+.toggle-btn {
+    flex: 1;
+    padding: 6px;
+    border: 1px solid var(--border);
+    background: #f8fafc;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.toggle-btn.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+}
+
+.font-select {
+    width: 100%;
+    padding: 6px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+}
+
+/* Word Inspector */
+.inspector-section h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+}
+
+.inspector-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.inspector-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    background: #f8fafc;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.btn-add {
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-add:hover {
+    opacity: 0.9;
+}

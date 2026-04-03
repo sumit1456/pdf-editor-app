@@ -9,7 +9,8 @@ export const MEASURE_CTX = MEASURE_CANVAS ? MEASURE_CANVAS.getContext('2d') : nu
 /**
  * Normalizes font names to CSS-safe families, prioritizing Google Fonts.
  */
-export const normalizeFont = (fontName, googleFont) => {
+export const normalizeFont = (fontName, googleFont, forceOriginal = false) => {
+    if (forceOriginal && fontName) return fontName;
     if (googleFont) {
         const gf = googleFont.toLowerCase();
         if (gf.includes('inter')) return "'Inter', sans-serif";
@@ -82,11 +83,13 @@ export const normalizeFont = (fontName, googleFont) => {
     return 'var(--sans-modern)';
 };
 
+export const GLOBAL_FONT_SCALE = 1.15;
+
 /**
  * Returns a CSS font string for canvas measurements, resolving design tokens.
  */
-export function getRealFontString(fontName, googleFont, weight, size, style) {
-    let family = normalizeFont(fontName, googleFont);
+export function getRealFontString(fontName, googleFont, weight, size, style, forceOriginal = false) {
+    let family = normalizeFont(fontName, googleFont, forceOriginal);
     if (family.includes('var(--serif-latex)')) family = "'Source Serif 4', serif";
     else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
     else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
@@ -94,7 +97,10 @@ export function getRealFontString(fontName, googleFont, weight, size, style) {
     else if (family.includes('var(--serif-high-contrast)')) family = "'Playfair Display', serif";
     else if (family.includes('var(--sans-geometric)')) family = "'Poppins', sans-serif";
     else if (family.includes('var(--sans-readable)')) family = "'Open Sans', sans-serif";
-    return `${style} ${weight} ${size}px ${family}`;
+    
+    // Apply Global Reduction
+    const adjustedSize = size / GLOBAL_FONT_SCALE;
+    return `${style} ${weight} ${adjustedSize}px ${family}`;
 }
 
 export const getWeightFromFont = (font, isBold) => {

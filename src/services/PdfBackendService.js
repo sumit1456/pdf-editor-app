@@ -74,3 +74,21 @@ export const createPdfFromText = async (text) => {
         throw error;
     }
 };
+
+/**
+ * Diagnostic Logging for Font Matching
+ * Sends original vs frontend-refined mapping to diagnostic_render.log
+ */
+export const logFontMapping = async (diagData) => {
+    try {
+        await fetch(`${BASE_URL}${ENDPOINTS.LOG}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(diagData),
+        });
+    } catch (error) {
+        console.warn('[BackendService] Failed to log font mapping:', error);
+    }
+};

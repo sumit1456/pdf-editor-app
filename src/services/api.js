@@ -12,5 +12,6 @@ export const BASE_URL23 = "https://my-images-python-backend.onrender.com"
 export const ENDPOINTS = {
     EXTRACT: "/pdf-extraction-config",
     SAVE: "/save-pdf",
-    CREATE_FROM_TEXT: "/create-pdf-from-text"
+    CREATE_FROM_TEXT: "/create-pdf-from-text",
+    LOG: "/api/log"
 };

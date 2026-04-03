@@ -1,11 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setActiveLine } from '../../store/slices/fontFitSlice';
+import { buildWorkerPayload } from '../../components/PDFEditor/workerUtils';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
 import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
-import { savePdfToBackend } from '../../services/PdfBackendService';
+import { fontFitManager } from '../../utils/FontFitManager';
+import { savePdfToBackend, logFontMapping } from '../../services/PdfBackendService';
 import './EditorPage.css';
 
 // Helper to decouple bullets from content (Global for use in initializers)
@@ -233,12 +237,13 @@ export default function EditorPage() {
     const [selectedWordIndices, setSelectedWordIndices] = useState([]);
     const [isMultiSelect, setIsMultiSelect] = useState(false);
     // [FitV3] Automatic high-fidelity fitting is now default, isFitMode state removed.
-    const [fittingQueue, setFittingQueue] = useState(new Set()); 
     const [showAllBboxes, setShowAllBboxes] = useState(false);
+    const [useOriginalFonts, setUseOriginalFonts] = useState(false);
     const [isReflowEnabled, setIsReflowEnabled] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [isCalibrated, setIsCalibrated] = useState(false); // Tracks if fonts are calibrated
-    const [metricRatio, setMetricRatio] = useState(1.333333); // Default PT to PX ratio
+    // const [metricRatio, setMetricRatio] = useState(1.333333); // Default PT to PX ratio
+
     const [selectedNodeIds, setSelectedNodeIds] = useState([]);
     const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
     const [mobileActivePanel, setMobileActivePanel] = useState(null); // 'edit', 'pages', 'words' or null
@@ -246,46 +251,150 @@ export default function EditorPage() {
     const [pageOffset, setPageOffset] = useState(0);
     const VISIBLE_PAGE_COUNT = 3;
 
-    // Auto-open tools panel on mobile when a node is selected
-    React.useEffect(() => {
-        if (activeNodeId && window.innerWidth < 1024 && !mobileActivePanel) {
-            setMobileActivePanel('edit');
-        }
-    }, [activeNodeId]);
-
     const [activeScale, setActiveScale] = useState(1.0);
 
+    const reduxDispatch = useDispatch();
 
+    const activePageData = pages[activePageIndex];
 
-    /* --- MASTER HUD: Log Node Tree on change ---
-    React.useEffect(() => {
-        if (!activeNodeId) return;
-        const edit = nodeEdits[activeNodeId];
-        if (!edit) return;
+    // Semantic Text items for Side Panels (Blocks for Python, Lines for Java)
+    const textLines = useMemo(() => {
+        if (!activePageData) return [];
 
-        const content = edit.content || "";
-        const wordStyles = edit.wordStyles || {};
-        const sStyle = edit.safetyStyle || {};
-        const finalWordsList = content.split(/\s+/).filter(Boolean);
+        const flattenedLines = [];
 
-        if (finalWordsList.length > 0) {
-            // console.group(`[CURRENT NODE TREE] Node: ${activeNodeId}`);
-            // console.log(`Text: "${content}"`);
-            // console.table(finalWordsList.map((word, idx) => {
-            //     const wStyle = wordStyles[idx];
-            //     const resolved = { ...sStyle, ...wStyle };
-            //     return {
-            //         index: idx,
-            //         word: word,
-            //         status: wStyle ? 'EXPLICIT (Override)' : 'INHERITED (Baseline)',
-            //         font: resolved.font || 'Default',
-            //         size: resolved.size,
-            //         bold: resolved.is_bold ? 'Yes' : 'No'
-            //     };
-            // }));
-            // console.groupEnd();
+        if (activePageData.blocks) {
+            // Flatten all lines from all blocks for granular editing
+            activePageData.blocks.forEach(block => {
+                if (isReflowEnabled && block.type === 'paragraph' && block.lines.length > 0) {
+                    // Unified Block TextArea for Reflow Engine
+                    const fullContent = block.lines.map(l => {
+                        return nodeEdits[l.id]?.isModified ? nodeEdits[l.id].content : l.content;
+                    }).join(' ').replace(/\s{2,}/g, ' ');
+
+                    const firstLine = block.lines[0];
+                    const contentItem = firstLine.items[0] || {};
+
+                    flattenedLines.push({
+                        id: `block-reflow-${block.id}`,
+                        content: fullContent,
+                        type: 'text',
+                        dataIndex: block.id,
+                        isBlock: true,
+                        level: block.level || 0,
+                        blockId: block.id,
+                        originalStyle: {
+                            size: contentItem.size || firstLine.size,
+                            font: contentItem.font,
+                            color: contentItem.color,
+                            is_bold: contentItem.is_bold,
+                            is_italic: contentItem.is_italic
+                        }
+                    });
+                } else {
+                    block.lines.forEach(line => {
+                        // Style Safety: Use the first item for the default text style
+                        const contentItem = line.items[0] || {};
+
+                        flattenedLines.push({
+                            id: line.id,
+                            content: nodeEdits[line.id]?.isModified ? nodeEdits[line.id].content : line.content,
+                            type: 'text',
+                            dataIndex: line.id,
+                            isBlock: false,
+                            level: block.level || 0,
+                            blockId: block.id,
+                            uri: line.uri,
+                            originalStyle: {
+                                size: contentItem.size || line.size,
+                                font: contentItem.font,
+                                color: contentItem.color,
+                                is_bold: contentItem.is_bold, // No longer line scanning
+                                is_italic: contentItem.is_italic
+                            }
+                        });
+                    });
+                }
+            });
+        } else {
+            // Legacy Path (Java)
+            (activePageData.items || [])
+                .filter(it => it.type === 'text')
+                .forEach((item, index) => {
+                    flattenedLines.push({
+                        ...item,
+                        content: item.content,
+                        dataIndex: index,
+                        originalStyle: {
+                            size: item.size,
+                            font: item.font,
+                            color: item.color,
+                            is_bold: item.is_bold,
+                            is_italic: item.is_italic,
+                            font_variant: item.font_variant || 'normal'
+                        }
+                    });
+                });
         }
-    }, [activeNodeId, nodeEdits]); */
+
+        return flattenedLines
+            .filter(line => activeTab === 'links' ? !!line.uri : !line.uri)
+            .reverse();
+    }, [activePageData, activeTab]);
+
+    const scrollToNode = React.useCallback((idOrIndex) => {
+        setActiveNodeId(idOrIndex);
+        if (!isLineMultiSelect) setSelectedNodeIds([idOrIndex]);
+        else if (!selectedNodeIds.includes(idOrIndex)) setSelectedNodeIds(prev => [...prev, idOrIndex]);
+
+        // Ensure wordStyles are initialized on navigation
+        if (!nodeEdits[idOrIndex]?.wordStyles) {
+            const line = textLines.find(l => l.id === idOrIndex);
+            // Search in fragments too if line mapping is missing items
+            let items = line?.items;
+            if (!items) {
+                const p = pages[activePageIndex];
+                const rawLine = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === idOrIndex);
+                items = rawLine?.items;
+            }
+
+            if (items) {
+                const initialWordStyles = mapSpansToWordStyles(items);
+                setNodeEdits(prev => ({
+                    ...prev,
+                    [idOrIndex]: {
+                        ...(prev[idOrIndex] || {}),
+                        wordStyles: initialWordStyles,
+                        isModified: false
+                    }
+                }));
+            }
+        }
+
+
+        const element = document.getElementById(`input-card-${idOrIndex}`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            element.classList.add('highlight-flash');
+            setTimeout(() => {
+                element.classList.remove('highlight-flash');
+            }, 2000);
+        }
+    }, [isLineMultiSelect, nodeEdits, textLines, pages, activePageIndex]);
+
+    const handleZoom = React.useCallback((delta) => {
+        setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
+    }, []);
+
+    const handlePageUpdate = React.useCallback((newItems) => {
+        setPages(prev => {
+            const next = [...prev];
+            const p = { ...next[activePageIndex] };
+            p.items = newItems;
+            next[activePageIndex] = p;
+            return next;
+        });
+    }, [activePageIndex]);
 
     const getActiveNodeStyle = () => {
         if (!activeNodeId) return null;
@@ -402,6 +511,64 @@ export default function EditorPage() {
     }, [activeNodeId, activeNodeData, nodeEdits, selectedWordIndices]);
 
 
+
+    // [DIAG-BRIDGE] Sync Active Line to Global Redux for Analytics (/test2)
+    React.useEffect(() => {
+        if (!activeNodeId) return;
+
+        // Find the line data for the current active node
+        let lineData = null;
+        for (const page of pages) {
+            const flattened = (page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || []));
+            lineData = flattened.find(l => l.id === activeNodeId);
+            if (lineData) break;
+        }
+
+        if (lineData) {
+            const payload = buildWorkerPayload(lineData, nodeEdits[activeNodeId] || {}, useOriginalFonts);
+            if (payload) {
+                console.log("[DIAG-BRIDGE] Dispatching Snapshot to Redux for Analytics (useOriginalFonts=" + useOriginalFonts + "):", payload);
+                reduxDispatch(setActiveLine(payload));
+            }
+        }
+    }, [activeNodeId, nodeEdits, pages, reduxDispatch, useOriginalFonts]);
+
+
+
+    /* --- MASTER HUD: Log Node Tree on change ---
+    React.useEffect(() => {
+        if (!activeNodeId) return;
+        const edit = nodeEdits[activeNodeId];
+        if (!edit) return;
+
+        const content = edit.content || "";
+        const wordStyles = edit.wordStyles || {};
+        const sStyle = edit.safetyStyle || {};
+        const finalWordsList = content.split(/\s+/).filter(Boolean);
+
+        if (finalWordsList.length > 0) {
+            // console.group(`[CURRENT NODE TREE] Node: ${activeNodeId}`);
+            // console.log(`Text: "${content}"`);
+            // console.table(finalWordsList.map((word, idx) => {
+            //     const wStyle = wordStyles[idx];
+            //     const resolved = { ...sStyle, ...wStyle };
+            //     return {
+            //         index: idx,
+            //         word: word,
+            //         status: wStyle ? 'EXPLICIT (Override)' : 'INHERITED (Baseline)',
+            //         font: resolved.font || 'Default',
+            //         size: resolved.size,
+            //         bold: resolved.is_bold ? 'Yes' : 'No'
+            //     };
+            // }));
+            // console.groupEnd();
+        }
+    }, [activeNodeId, nodeEdits]); */
+
+
+
+
+
     // AUTO-SELECT FIRST NODE ON LOAD
     // This ensures the sidebar is "active" immediately for a better first impression
     React.useEffect(() => {
@@ -426,7 +593,7 @@ export default function EditorPage() {
         }
     }, [pages, isInitialLoad, activeNodeId]);
 
-    const handleDownload = async () => {
+    const handleDownload = React.useCallback(async () => {
         // Gather all original lines across all pages with their indices
         const allOriginalLines = pages.flatMap((p, pIdx) =>
             (p.blocks || []).flatMap(b =>
@@ -557,120 +724,15 @@ export default function EditorPage() {
             window.showLoading(false);
             window.showMessage("Error", "Error during PDF export: " + err.message, "error");
         }
-    };
+    }, [pages, nodeEdits, pdfName, originalPdfBase64, smartStyling]);
 
-    const handleZoom = (delta) => {
-        setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
-    };
 
     // Handle updates from Renderers (e.g. Text Edit)
-    const handlePageUpdate = (newItems) => {
-        setPages(prev => {
-            const next = [...prev];
-            const p = { ...next[activePageIndex] };
-            p.items = newItems;
-            next[activePageIndex] = p;
-            return next;
-        });
-    };
-
-    const handleDoubleClick = (pIdx, lineId, item, rect, extraData) => {
-        let targetLineId = lineId;
-
-        // MAPPING FIX: If Reflow is enabled, select the unified block instead of the isolated line
-        if (isReflowEnabled && pages[activePageIndex]?.blocks) {
-            const block = pages[activePageIndex].blocks.find(b => b.lines.some(l => l.id === lineId));
-            if (block && block.type === 'paragraph') targetLineId = `block-reflow-${block.id}`;
-        }
-
-        // --- AUTO-TAB SWITCHING ---
-        // If the clicked line isn't in the current tab, flip tabs
-        const nodeInCurrentTab = textLines.find(l => l.id === targetLineId);
-        if (!nodeInCurrentTab) {
-            setActiveTab(prev => prev === 'text' ? 'links' : 'text');
-        }
-
-        // --- STYLE SAFETY MECHANIC ---
-        // Capture and store original styles if not already set or not yet modified
-        setNodeEdits(prev => {
-            const currentEdit = prev[targetLineId] || {};
-            // If already modified, we don't want to revert the user's manual style choices
-            if (currentEdit.isModified) return prev;
-
-            const line = (activePageData.blocks ? activePageData.blocks.flatMap(b => b.lines) : (activePageData.items || [])).find(l => l.id === lineId);
-            const initialWordStyles = mapSpansToWordStyles(line?.items);
-
-            return {
-                ...prev,
-                [targetLineId]: {
-                    ...currentEdit,
-                    wordStyles: initialWordStyles,
-                    safetyStyle: extraData?.safetyStyle || {
-                        size: item.size,
-                        font: item.font,
-                        googleFont: item.google_font,
-                        color: item.color,
-                        is_bold: item.is_bold,
-                        is_italic: item.is_italic,
-                        font_variant: item.font_variant || 'normal'
-                    },
-                    isModified: false
-                }
-            };
-        });
-
-        // Trigger existing scroll logic with a slight delay to allow tab render
-        setTimeout(() => scrollToNode(targetLineId), 100);
-    };
-
-    const scrollToNode = (idOrIndex) => {
-        setActiveNodeId(idOrIndex);
-        if (!isLineMultiSelect) setSelectedNodeIds([idOrIndex]);
-        else if (!selectedNodeIds.includes(idOrIndex)) setSelectedNodeIds(prev => [...prev, idOrIndex]);
-
-        // LOGGING REFINEMENT: Compare controller size vs actual data size
-        const line = textLines.find(l => l.id === idOrIndex);
-        if (line) {
-            // Logic removed for brevity
-        }
-        // Ensure wordStyles are initialized on navigation
-        if (!nodeEdits[idOrIndex]?.wordStyles) {
-            const line = textLines.find(l => l.id === idOrIndex);
-            // Search in fragments too if line mapping is missing items
-            let items = line?.items;
-            if (!items) {
-                const p = pages[activePageIndex];
-                const rawLine = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === idOrIndex);
-                items = rawLine?.items;
-            }
-
-            if (items) {
-                const initialWordStyles = mapSpansToWordStyles(items);
-                setNodeEdits(prev => ({
-                    ...prev,
-                    [idOrIndex]: {
-                        ...(prev[idOrIndex] || {}),
-                        wordStyles: initialWordStyles,
-                        isModified: false
-                    }
-                }));
-            }
-        }
 
 
-        const element = document.getElementById(`input-card-${idOrIndex}`);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            element.classList.add('highlight-flash');
-            setTimeout(() => {
-                element.classList.remove('highlight-flash');
-            }, 2000);
-        }
-    };
 
-    const handleSidebarEdit = (lineId, newText, originalStyle, cursorIndex = null) => {
+    const handleSidebarEdit = React.useCallback((lineId, newText, originalStyle, cursorIndex = null) => {
         if (!lineId) {
-            // console.warn('[EditorPage] Cannot edit node without stable ID');
             return;
         }
 
@@ -726,43 +788,32 @@ export default function EditorPage() {
             }
 
             const oldText = current.content || "";
-            const oldWords = oldText.split(/(\s+)/);
-            const newWords = newText.split(/(\s+)/);
             const wordStyles = { ...(current.wordStyles || {}) };
 
             // --- SMART STYLE INHERITANCE (Node Tree Logic) ---
             if (cursorIndex !== null && oldText !== newText) {
-                // Better word counting: split by whitespace but preserve leading whitespace intent
                 const getWordCount = (str) => str.split(/\s+/).filter(w => w.length > 0).length;
-                
+
                 const oldWordCount = getWordCount(oldText);
                 const newWordCount = getWordCount(newText);
                 const diff = newWordCount - oldWordCount;
 
                 if (diff !== 0) {
                     const textBeforeCursor = newText.substring(0, cursorIndex);
-                    // More precise word index: count words before cursor
                     const currentWordIdx = getWordCount(textBeforeCursor);
-
                     const newWordStylesMap = {};
-                    
-                    // Style Source: Inherit from the word at the cursor index, or the global style
-                    // [Fix] Default to wordStyles[currentWordIdx] if it exists, else use the last word or sStyle
                     const styleSource = wordStyles[currentWordIdx] || wordStyles[currentWordIdx - 1] || Object.values(wordStyles).pop() || sStyle;
 
                     if (diff > 0) {
-                        // ADDITION: Shift subsequent words forward
                         Object.entries(wordStyles).forEach(([idx, sty]) => {
                             const i = parseInt(idx);
                             if (i >= currentWordIdx) newWordStylesMap[i + diff] = sty;
                             else newWordStylesMap[i] = sty;
                         });
-                        // Inherit style for the new words from the styleSource
                         for (let k = 0; k < diff; k++) {
                             newWordStylesMap[currentWordIdx + k] = { ...styleSource };
                         }
                     } else {
-                        // DELETION: Shift subsequent words backward
                         Object.entries(wordStyles).forEach(([idx, sty]) => {
                             const i = parseInt(idx);
                             if (i < currentWordIdx) {
@@ -772,11 +823,9 @@ export default function EditorPage() {
                             }
                         });
                     }
-                    // Atomic update of wordStyles
                     Object.keys(wordStyles).forEach(k => delete wordStyles[k]);
                     Object.assign(wordStyles, newWordStylesMap);
                 } else if (Object.keys(wordStyles).length === 0 && Object.keys(sStyle).length > 0) {
-                    // diff === 0 but wordStyles is empty (initial edit of a word)
                     wordStyles[0] = { ...sStyle };
                 }
             }
@@ -792,7 +841,6 @@ export default function EditorPage() {
                     }
                 }
             }
-            // bbox[2] is NOT touched — width is frozen at its original value
 
             // Sync content to base pages state (no bbox change)
             setPages(prevPages => {
@@ -803,7 +851,6 @@ export default function EditorPage() {
                     const item = block ? block.lines.find(l => l.id === lineId) : (page.items || []).find(l => l.id === lineId);
                     if (item) {
                         item.content = newText;
-                        // bbox unchanged — only content is updated
                     }
                 }
                 return nextPages;
@@ -821,63 +868,10 @@ export default function EditorPage() {
                 }
             };
         });
-    };
+    }, [isReflowEnabled, pages, activePageIndex]);
 
-    // [FitV3] Handle batch font size updates from worker fitting with staggered (batched) application
-    const handleFitUpdateBatch = (resultsMap) => {
-        const entries = Object.entries(resultsMap);
-        if (entries.length === 0) return;
 
-        // Track which lines are in the fitting process for UI animations
-        setFittingQueue(prev => {
-            const next = new Set(prev);
-            entries.forEach(([id]) => next.add(id));
-            return next;
-        });
-
-        // [Debug] Log when batching begins
-        console.log("[FitV3] Batch Process Started:", entries.length, "lines to optimize.");
-
-        // ⚡ BATCHED OPTIMIZATION: Process in chunks to avoid UI freezing
-        const CHUNK_SIZE = 12;
-        const DELAY_MS = 180;
-
-        const processChunk = (startIndex) => {
-            const chunk = entries.slice(startIndex, startIndex + CHUNK_SIZE);
-            if (chunk.length === 0) return;
-
-            // Apply style updates for this chunk
-            // [Debug] Log for the first line of each batch to show adjustment progress
-            if (startIndex % CHUNK_SIZE === 0) {
-                console.log("[FitV3] Adjusting Batch starting at line index:", startIndex);
-            }
-
-            chunk.forEach(([lineId, result]) => {
-                // Nuclear Style Update: Sync font size and other metrics discovered by worker
-                if (result.fontSize !== undefined) handleStyleUpdate(lineId, 'size', result.fontSize);
-                if (result.font !== undefined) handleStyleUpdate(lineId, 'font', result.font);
-                if (result.is_bold !== undefined) handleStyleUpdate(lineId, 'is_bold', result.is_bold);
-                if (result.is_italic !== undefined) handleStyleUpdate(lineId, 'is_italic', result.is_italic);
-
-                // Remove from fitting queue once applied (to stop shimmer)
-                setFittingQueue(prev => {
-                    const next = new Set(prev);
-                    next.delete(lineId);
-                    return next;
-                });
-            });
-
-            // Schedule next chunk
-            if (startIndex + CHUNK_SIZE < entries.length) {
-                setTimeout(() => processChunk(startIndex + CHUNK_SIZE), DELAY_MS);
-            }
-        };
-
-        // Start processing the first chunk
-        processChunk(0);
-    };
-
-    const handleStyleUpdate = (lineId, field, value, wordIndices = null) => {
+    const handleStyleUpdate = React.useCallback((lineId, field, value, wordIndices = null) => {
         const targetIds = (isLineMultiSelect && selectedNodeIds.length > 0) ? selectedNodeIds : [lineId];
 
         setNodeEdits(prev => {
@@ -895,14 +889,11 @@ export default function EditorPage() {
                         wordStyles[idx] = { ...wordStyles[idx], [field]: value };
                     });
 
-                    // FIX: Also update base safetyStyle if in Multi-Line Batch mode
-                    // This ensures trailing words in other lines also get the update.
                     if (isLineMultiSelect) {
                         sStyle[field] = value;
                         if (field === 'font') sStyle.googleFont = value;
                     }
                 } else if (isLineMultiSelect) {
-                    // TARGET ALL WORDS in Multi-Line batch mode
                     const contentStr = current.content || "";
                     const wordsList = contentStr.split(/\s+/).filter(Boolean);
                     wordsList.forEach((_, k) => {
@@ -924,13 +915,11 @@ export default function EditorPage() {
                 }
 
 
-                // bbox is read-only — only resolve it for nodeEdits cache, never mutate width
                 let newBBox = current.bbox || null;
                 if (!newBBox) {
                     const found = (pages[activePageIndex].blocks ? pages[activePageIndex].blocks.flatMap(b => b.lines) : (pages[activePageIndex].items || [])).find(l => l.id === id);
                     if (found && found.bbox) newBBox = [...found.bbox];
                 }
-                // bbox[2] (width) is NOT touched — frozen at original value
 
                 next[id] = {
                     ...current,
@@ -942,25 +931,11 @@ export default function EditorPage() {
             });
             return next;
         });
-    };
+    }, [isLineMultiSelect, selectedNodeIds, pages, activePageIndex]);
 
 
-    const rgbToHex = (c) => {
-        if (!c || !Array.isArray(c)) return '#000000';
-        const r = Math.round(c[0] * 255).toString(16).padStart(2, '0');
-        const g = Math.round(c[1] * 255).toString(16).padStart(2, '0');
-        const b = Math.round(c[2] * 255).toString(16).padStart(2, '0');
-        return `#${r}${g}${b}`;
-    };
 
-    const hexToRgb = (hex) => {
-        const r = parseInt(hex.slice(1, 3), 16) / 255;
-        const g = parseInt(hex.slice(3, 5), 16) / 255;
-        const b = parseInt(hex.slice(5, 7), 16) / 255;
-        return [r, g, b];
-    };
-
-    const handleNodeMove = (id, newX, newY) => {
+    const handleNodeMove = React.useCallback((id, newX, newY) => {
         setNodeEdits(prev => {
             const current = prev[id] || {};
             let newBBox = current.bbox ? [...current.bbox] : null;
@@ -969,7 +944,6 @@ export default function EditorPage() {
             let wordStyles = current.wordStyles || null;
 
             if (!newBBox || !newOrigin || !safetyStyle) {
-                // Find original node data to capture styles and initial coordinates
                 for (const p of pages) {
                     const found = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === id);
                     if (found) {
@@ -977,9 +951,7 @@ export default function EditorPage() {
                         if (!newOrigin && found.origin) newOrigin = [...found.origin];
                         if (!newOrigin && newBBox) newOrigin = [newBBox[0], newBBox[1]];
 
-                        // CAPTURE STYLES: This is the fix for losing styles on move
                         if (!safetyStyle) {
-                            // Use the same logic as handleDoubleClick or sidePanel items
                             const contentItem = (found.is_bullet_start && found.items?.length > 1) ? found.items[1] : (found.items?.[0] || found);
                             safetyStyle = {
                                 size: contentItem.size || found.size || 10,
@@ -1002,7 +974,6 @@ export default function EditorPage() {
             if (newBBox && newOrigin) {
                 const dx = newX - newOrigin[0];
                 const dy = newY - newOrigin[1];
-                // Lock original dimensions so repeated moves never drift
                 const originalWidth = newBBox[2] - newBBox[0];
                 const originalHeight = newBBox[3] - newBBox[1];
                 const newX0 = newBBox[0] + dx;
@@ -1023,9 +994,9 @@ export default function EditorPage() {
                 }
             };
         });
-    };
+    }, [pages]);
 
-    const handleLinkEdit = (lineId, newUri, originalStyle) => {
+    const handleLinkEdit = React.useCallback((lineId, newUri, originalStyle) => {
         if (!lineId) return;
         setNodeEdits(prev => ({
             ...prev,
@@ -1036,7 +1007,7 @@ export default function EditorPage() {
                 isModified: true
             }
         }));
-    };
+    }, []);
 
     if (pages.length === 0) {
         return (
@@ -1048,92 +1019,113 @@ export default function EditorPage() {
         );
     }
 
-    const activePageData = pages[activePageIndex];
 
     // Semantic Text items for Side Panels (Blocks for Python, Lines for Java)
-    const textLines = useMemo(() => {
-        if (!activePageData) return [];
 
-        const flattenedLines = [];
 
-        if (activePageData.blocks) {
-            // Flatten all lines from all blocks for granular editing
-            activePageData.blocks.forEach(block => {
-                if (isReflowEnabled && block.type === 'paragraph' && block.lines.length > 0) {
-                    // Unified Block TextArea for Reflow Engine
-                    const fullContent = block.lines.map(l => {
-                        return nodeEdits[l.id]?.isModified ? nodeEdits[l.id].content : l.content;
-                    }).join(' ').replace(/\s{2,}/g, ' ');
+    const handleDoubleClick = React.useCallback((pIdx, lineId, item, rect, extraData) => {
+        let targetLineId = lineId;
 
-                    const firstLine = block.lines[0];
-                    const contentItem = firstLine.items[0] || {};
-
-                    flattenedLines.push({
-                        id: `block-reflow-${block.id}`,
-                        content: fullContent,
-                        type: 'text',
-                        dataIndex: block.id,
-                        isBlock: true,
-                        level: block.level || 0,
-                        blockId: block.id,
-                        originalStyle: {
-                            size: contentItem.size || firstLine.size,
-                            font: contentItem.font,
-                            color: contentItem.color,
-                            is_bold: contentItem.is_bold,
-                            is_italic: contentItem.is_italic
-                        }
-                    });
-                } else {
-                    block.lines.forEach(line => {
-                        // Style Safety: Use the first item for the default text style
-                        const contentItem = line.items[0] || {};
-
-                        flattenedLines.push({
-                            id: line.id,
-                            content: nodeEdits[line.id]?.isModified ? nodeEdits[line.id].content : line.content,
-                            type: 'text',
-                            dataIndex: line.id,
-                            isBlock: false,
-                            level: block.level || 0,
-                            blockId: block.id,
-                            uri: line.uri,
-                            originalStyle: {
-                                size: contentItem.size || line.size,
-                                font: contentItem.font,
-                                color: contentItem.color,
-                                is_bold: contentItem.is_bold, // No longer line scanning
-                                is_italic: contentItem.is_italic
-                            }
-                        });
-                    });
-                }
-            });
-        } else {
-            // Legacy Path (Java)
-            (activePageData.items || [])
-                .filter(it => it.type === 'text')
-                .forEach((item, index) => {
-                    flattenedLines.push({
-                        ...item,
-                        content: item.content,
-                        dataIndex: index,
-                        originalStyle: {
-                            size: item.size,
-                            font: item.font,
-                            color: item.color,
-                            is_bold: item.is_bold,
-                            is_italic: item.is_italic,
-                            font_variant: item.font_variant || 'normal'
-                        }
-                    });
-                });
+        // MAPPING FIX: If Reflow is enabled, select the unified block instead of the isolated line
+        if (isReflowEnabled && pages[pIdx]?.blocks) {
+            const block = pages[pIdx].blocks.find(b => b.lines.some(l => l.id === lineId));
+            if (block && block.type === 'paragraph') targetLineId = `block-reflow-${block.id}`;
         }
 
-        return flattenedLines
-            .filter(line => activeTab === 'links' ? !!line.uri : !line.uri)
-            .reverse();
-    }, [activePageData, activeTab]);
+        // --- AUTO-TAB SWITCHING ---
+        // If the clicked line isn't in the current tab, flip tabs
+        const nodeInCurrentTab = textLines.find(l => l.id === targetLineId);
+        if (!nodeInCurrentTab) {
+            setActiveTab(prev => prev === 'text' ? 'links' : 'text');
+        }
+
+        // --- STYLE SAFETY MECHANIC ---
+        // Capture and store original styles if not already set or not yet modified
+        setNodeEdits(prev => {
+            const currentEdit = prev[targetLineId] || {};
+            // If already modified, we don't want to revert the user's manual style choices
+            if (currentEdit.isModified) return prev;
+
+            const page = pages[pIdx];
+            const line = (page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || [])).find(l => l.id === lineId);
+            const initialWordStyles = mapSpansToWordStyles(line?.items);
+
+            return {
+                ...prev,
+                [targetLineId]: {
+                    ...currentEdit,
+                    wordStyles: initialWordStyles,
+                    safetyStyle: extraData?.safetyStyle || {
+                        size: item.size,
+                        font: item.font,
+                        googleFont: item.google_font,
+                        color: item.color,
+                        is_bold: item.is_bold,
+                        is_italic: item.is_italic,
+                        font_variant: item.font_variant || 'normal'
+                    },
+                    isModified: false
+                }
+            };
+        });
+
+        const triggerFontMatch = async (nodeId, originalItem) => {
+            if (!originalItem || !originalItem.font) return;
+
+            const candidates = FONT_OPTIONS.map(opt => opt.value);
+            const textToMeasure = "The quick brown fox jumps over the lazy dog"; // Standard reference string
+
+            try {
+                console.log(`[Font Matcher] Metric-testing original font: ${originalItem.font}...`);
+                
+                const result = await fontFitManager.findBestFontMatch(
+                    originalItem.font,
+                    textToMeasure,
+                    candidates,
+                    {
+                        size: originalItem.size || 12,
+                        is_bold: originalItem.is_bold,
+                        is_italic: originalItem.is_italic
+                    }
+                );
+
+                if (result && result.bestMatch) {
+                    console.log(`[Font Matcher] Match Found: ${result.bestMatch} (Error: ${result.errorRatio.toFixed(4)})`);
+                    
+                    // 1. Update nodeEdits state
+                    setNodeEdits(prev => ({
+                        ...prev,
+                        [nodeId]: {
+                            ...(prev[nodeId] || {}),
+                            googleFont: result.bestMatch,
+                            matchDiagnostic: result
+                        }
+                    }));
+
+                    // 2. Log to Backend Diagnostic
+                    logFontMapping({
+                        id: nodeId,
+                        originalFont: originalItem.font,
+                        backendFont: originalItem.google_font || "unknown",
+                        frontendFont: result.bestMatch,
+                        text: originalItem.content || "",
+                        errorRatio: result.errorRatio
+                    });
+                }
+            } catch (err) {
+                console.error("[Font Matcher] Error identifying best match:", err);
+            }
+        };
+
+        // Trigger matching when node is selected
+        const originalPage = pages[pIdx];
+        const originalItem = (originalPage.blocks ? originalPage.blocks.flatMap(b => b.lines) : (originalPage.items || [])).find(l => l.id === lineId);
+        triggerFontMatch(targetLineId, originalItem);
+
+        // Trigger existing scroll logic with a slight delay to allow tab render
+        setTimeout(() => scrollToNode(targetLineId), 100);
+    }, [isReflowEnabled, pages, textLines, scrollToNode]);
+
 
     return (
         <div className="editor-page">
@@ -1290,6 +1282,14 @@ export default function EditorPage() {
                                     title="Show/Hide bounding boxes for all lines"
                                 >
                                     <span className="icon">📦</span> BBox
+                                </button>
+
+                                <button
+                                    className={`caps-toggle-btn ${useOriginalFonts ? 'active' : ''}`}
+                                    onClick={() => setUseOriginalFonts(!useOriginalFonts)}
+                                    title="Toggle between Original PDF fonts and Google Font mappings"
+                                >
+                                    <span className="icon">🔤</span> Original Fonts
                                 </button>
 
                                 <button
@@ -1580,12 +1580,10 @@ export default function EditorPage() {
                             onDoubleClick={handleDoubleClick}
                             onMove={handleNodeMove}
                             scale={zoom}
-                            isFitMode={true} // [FitV3] High-fidelity engine re-enabled with strict PDF bounds
-                            fittingQueue={fittingQueue} // Track lines currently optimizing
                             isReflowEnabled={isReflowEnabled}
                             isDragEnabled={isDragEnabled}
                             showAllBboxes={showAllBboxes}
-                            onFitUpdateBatch={handleFitUpdateBatch}
+                            useOriginalFonts={useOriginalFonts}
                             onScaleUpdate={setActiveScale}
                             onCalibrated={(ratio) => {
                                 setMetricRatio(ratio);

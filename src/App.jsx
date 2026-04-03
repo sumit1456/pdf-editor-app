@@ -3,6 +3,7 @@ import NavBar from './components/NavBar/NavBar'
 import HomePage from './pages/home/HomePage'
 import EditorPage from './pages/editor/EditorPage'
 import AboutPage from './pages/about/AboutPage'
+import Test2Page from './pages/test/Test2Page'
 import MessageContainer from './components/PopUp/ToastMessages'
 import LoadingContainer from './components/PopUp/LoadingAnimation'
 import { ThemeProvider } from './context/ThemeContext'
@@ -18,6 +19,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/editor" element={<EditorPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/test2" element={<Test2Page />} />
           </Routes>
         </main>
         <MessageContainer />

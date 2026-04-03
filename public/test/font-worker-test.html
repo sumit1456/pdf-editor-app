@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FontFit Analytics | Premium Worker Test</title>
+    <!-- Modern Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --card-bg: rgba(23, 28, 41, 0.7);
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.3);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+            --border: rgba(255, 255, 255, 0.08);
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Animated Background Gradients */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: -10%;
+            width: 140%;
+            height: 140%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        header {
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            background: rgba(11, 14, 20, 0.8);
+            backdrop-filter: var(--glass-blur);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-area h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-pill {
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        main {
+            padding: 2rem 4rem;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 2rem;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Control Panel */
+        .panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: var(--glass-blur);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        textarea, input[type="text"], input[type="number"] {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        textarea:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+        }
+
+        .slider-control {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        input[type="range"] {
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        /* Visualization Area */
+        .viz-area {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .canvas-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .ruler {
+            width: 100%;
+            height: 30px;
+            margin-bottom: 10px;
+            position: relative;
+            background: repeating-linear-gradient(90deg, var(--border), var(--border) 1px, transparent 1px, transparent 50px);
+        }
+
+        .ruler::after {
+            content: 'TARGET WIDTH';
+            position: absolute;
+            top: -20px;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--accent-color);
+            letter-spacing: 1px;
+        }
+
+        .ruler-marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: var(--accent-color);
+            box-shadow: 0 0 15px var(--accent-color);
+            transition: left 0.1s ease-out;
+        }
+
+        .ruler-marker::before {
+            content: attr(data-width) 'px';
+            position: absolute;
+            top: 35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent-color);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Word Inspector */
+        .inspector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .word-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .word-card:hover {
+            border-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .word-card.overflow {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .word-card.fits {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .word-card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .word-text {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .word-size {
+            background: var(--accent-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: white;
+        }
+
+        .word-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        /* Search Log */
+        .log-panel {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            height: 250px;
+            overflow-y: auto;
+            color: #d1d5db;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            border-left: 2px solid transparent;
+            padding-left: 8px;
+        }
+
+        .log-entry.search { color: #a5b4fc; }
+        .log-entry.success { color: var(--success); border-color: var(--success); }
+        .log-entry.info { color: var(--text-secondary); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.15); }
+
+        /* Animations */
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .viz-area > * {
+            animation: fadeInScale 0.4s ease-out forwards;
+        }
+
+        .control-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-toggle {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .btn-toggle.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-area">
+            <h1>FONT FIT <span style="font-weight: 300;">LAB V4</span></h1>
+        </div>
+        <div class="status-pill">
+            <div id="worker-dot" class="status-dot"></div>
+            <span id="worker-status">INITIALIZING WORKER</span>
+        </div>
+    </header>
+
+    <main>
+        <!-- Left Panel: Controls -->
+        <aside class="panel">
+            <div class="input-group">
+                <h2>Content Editor</h2>
+                <textarea id="live-text" placeholder="Type something to see it fit live..." rows="4">Fast. Precise. Built for text.</textarea>
+            </div>
+
+            <div class="slider-control">
+                <h2>Target Width Ruler</h2>
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                    <span id="width-display" style="font-size: 1.5rem; font-weight: 800; color: var(--accent-color);">100px</span>
+                    <input type="number" id="width-input" value="100" style="width: 80px; padding: 4px 8px; font-size: 12px;">
+                </div>
+                <input type="range" id="width-slider" min="50" max="1000" value="100">
+            </div>
+
+            <div class="input-group">
+                <h2>Typography</h2>
+                <div class="control-group">
+                    <label style="flex: 1;">Base Font Family</label>
+                    <select id="font-family" style="background: rgba(0,0,0,0.3); color: white; border: 1px solid var(--border); padding: 4px; border-radius: 6px;">
+                        <option value="Inter">Inter (Sans)</option>
+                        <option value="JetBrains Mono">JetBrains Mono</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="serif">Times (Serif)</option>
+                    </select>
+                </div>
+                <div class="control-group" style="margin-top: 10px;">
+                    <label style="flex: 1;">Base Size (px)</label>
+                    <input type="number" id="base-size" value="30" style="width: 80px; padding: 4px 8px;">
+                    <button id="btn-sync-size" class="btn-toggle" style="margin-left: 5px;" title="Update base size from result">SYNC</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <h2>Real-time Trace</h2>
+                <div id="search-log" class="log-panel">
+                    <div class="log-entry info">System ready. Waiting for input...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Side: Visualization & Dashboard -->
+        <section class="viz-area">
+            <!-- Main Preview -->
+            <div class="canvas-container">
+                <div class="ruler">
+                    <div id="ruler-marker" class="ruler-marker" data-width="100"></div>
+                </div>
+                <canvas id="main-canvas" width="2000" height="200"></canvas>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div id="stat-total-width" class="stat-value">0px</div>
+                    <div class="stat-label">Total Line Width</div>
+                </div>
+                <div class="stat-card">
+                    <div id="stat-avg-iter" class="stat-value">0</div>
+                    <div class="stat-label">Avg Iterations</div>
+                </div>
+                <div class="stat-card">
+                    <div id="stat-fitted-size" class="stat-value">30.0px</div>
+                    <div class="stat-label">Resulting Size</div>
+                </div>
+                <div class="stat-card">
+                    <div id="stat-status" class="stat-value" style="color: var(--success);">FITS</div>
+                    <div class="stat-label">Line Status</div>
+                </div>
+            </div>
+
+            <!-- Individual Word Cards -->
+            <h2>Word-by-Word Analysis</h2>
+            <div id="inspector-grid" class="inspector">
+                <!-- Word cards will appear here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const workerPath = '/workers/FontFitWorker.js';
+        let worker = null;
+        let dpr = window.devicePixelRatio || 1;
+        
+        // Dom Elements
+        const liveText = document.getElementById('live-text');
+        const widthSlider = document.getElementById('width-slider');
+        const widthInput = document.getElementById('width-input');
+        const widthDisplay = document.getElementById('width-display');
+        const baseSizeInput = document.getElementById('base-size');
+        const fontFamilySelect = document.getElementById('font-family');
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        const rulerMarker = document.getElementById('ruler-marker');
+        const inspectorGrid = document.getElementById('inspector-grid');
+        const searchLog = document.getElementById('search-log');
+
+        // State
+        let lastResults = [];
+        let isProcessing = false;
+        let pendingUpdate = false;
+
+        function log(message, type = 'search') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            searchLog.appendChild(entry);
+            searchLog.scrollTop = searchLog.scrollHeight;
+            
+            if (searchLog.children.length > 50) {
+                searchLog.removeChild(searchLog.firstChild);
+            }
+        }
+
+        function initWorker() {
+            worker = new Worker(workerPath);
+            worker.onmessage = (e) => {
+                const { type, data } = e.data;
+                const payload = data || e.data; // Backwards compatibility or direct access
+                
+                if (type === 'ready') {
+                    document.getElementById('worker-dot').classList.add('active');
+                    document.getElementById('worker-status').textContent = 'ENGINE ACTIVE';
+                    log('Worker Engine Synchronized', 'success');
+                    triggerUpdate();
+                } else if (type === 'debugLog') {
+                    // Optimized: only log every few iterations to keep it readable
+                    if (payload.iteration % 2 === 0) {
+                        log(`SEARCH: Word ${payload.wordId} | Size ${payload.size.toFixed(2)}px | Width ${payload.width.toFixed(1)}px`, 'search');
+                    }
+                } else if (type === 'complete') {
+                    lastResults = payload.results;
+                    renderResults(payload);
+                    isProcessing = false;
+                    if (pendingUpdate) {
+                        pendingUpdate = false;
+                        triggerUpdate();
+                    }
+                } else if (type === 'error') {
+                    log('ERROR: ' + payload.message, 'error');
+                }
+            };
+            worker.postMessage({ type: 'init' });
+        }
+
+        function triggerUpdate() {
+            if (!worker) return;
+            if (isProcessing) {
+                pendingUpdate = true;
+                return;
+            }
+
+            const text = liveText.value;
+            const targetWidth = parseFloat(widthSlider.value);
+            const baseSize = parseFloat(baseSizeInput.value);
+            const font = fontFamilySelect.value;
+
+            // Split text into word objects
+            const words = text.split(/\s+/).filter(w => w.length > 0).map((word, i) => ({
+                id: `w-${i}`,
+                content: word,
+                size: baseSize,
+                font: font,
+                google_font: font,
+                is_bold: false,
+                is_italic: false
+            }));
+
+            if (words.length === 0) return;
+
+            isProcessing = true;
+            worker.postMessage({
+                type: 'fitWords',
+                data: {
+                    words: words,
+                    targetWidth: targetWidth
+                }
+            });
+        }
+
+        function renderResults(data) {
+            const { results, summary } = data;
+            
+            // 1. Update Stats
+            document.getElementById('stat-total-width').textContent = `${summary.totalFittedWidth.toFixed(1)}px`;
+            document.getElementById('stat-avg-iter').textContent = summary.totalIterations;
+            
+            const fittedSize = results[0]?.optimalSize || 0;
+            document.getElementById('stat-fitted-size').textContent = `${fittedSize.toFixed(1)}px`;
+            
+            const statusEl = document.getElementById('stat-status');
+            statusEl.textContent = summary.overallFits ? 'FITS' : 'OVERFLOW';
+            statusEl.style.color = summary.overallFits ? 'var(--success)' : 'var(--error)';
+
+            // 2. Update Canvas
+            drawCanvas(results, summary.targetWidth);
+
+            // 3. Update Detail Inspector
+            inspectorGrid.innerHTML = '';
+            results.forEach(word => {
+                const card = document.createElement('div');
+                card.className = `word-card ${word.fits ? 'fits' : 'overflow'}`;
+                card.innerHTML = `
+                    <div class="word-card-header">
+                        <span class="word-text">${word.content}</span>
+                        <span class="word-size">${word.optimalSize.toFixed(1)}px</span>
+                    </div>
+                    <div class="word-details">
+                        <span>Width: ${word.fittedWidth.toFixed(1)}px</span>
+                        <span>Scale: ${(word.scale * 100).toFixed(0)}%</span>
+                        <span>Iter: ${word.iterations}</span>
+                    </div>
+                `;
+                inspectorGrid.appendChild(card);
+            });
+        }
+
+        function drawCanvas(words, targetWidth) {
+            const containerWidth = canvas.parentNode.clientWidth - 64; // padding
+            canvas.width = containerWidth * dpr;
+            canvas.height = 160 * dpr;
+            ctx.scale(dpr, dpr);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            let x = 10;
+            const y = 80;
+
+            words.forEach(word => {
+                ctx.font = `${word.is_italic ? 'italic' : ''} ${word.is_bold ? '700' : '400'} ${word.optimalSize}px ${word.usedFont}`;
+                ctx.fillStyle = word.fits ? '#fff' : 'var(--error)';
+                ctx.textBaseline = 'middle';
+                
+                // Draw word
+                ctx.fillText(word.content, x, y);
+                
+                // Draw bounding box (subtle)
+                const w = ctx.measureText(word.content).width;
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x - 2, y - word.optimalSize/2, w + 4, word.optimalSize);
+                
+                x += w + (word.optimalSize * 0.2); // Gap based on font size
+            });
+
+            // Target width visualization is handled by ruler-marker outside canvas for better clarity
+        }
+
+        // Sync inputs
+        widthSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            widthInput.value = val;
+            widthDisplay.textContent = val + 'px';
+            rulerMarker.style.left = `calc(${(val/1000) * 100}%)`;
+            rulerMarker.setAttribute('data-width', val);
+            triggerUpdate();
+        });
+
+        widthInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            widthSlider.value = val;
+            widthDisplay.textContent = val + 'px';
+            rulerMarker.style.left = `calc(${(val/1000) * 100}%)`;
+            rulerMarker.setAttribute('data-width', val);
+            triggerUpdate();
+        });
+
+        liveText.addEventListener('input', triggerUpdate);
+        baseSizeInput.addEventListener('input', triggerUpdate);
+        fontFamilySelect.addEventListener('change', triggerUpdate);
+
+        document.getElementById('btn-sync-size').addEventListener('click', () => {
+            if (lastResults.length > 0) {
+                const minSize = Math.min(...lastResults.map(r => r.optimalSize));
+                baseSizeInput.value = minSize.toFixed(1);
+                triggerUpdate();
+                log(`Base size updated to ${minSize.toFixed(1)}px`, 'success');
+            }
+        });
+
+        // Resize Observer for Canvas
+        const resizeObserver = new ResizeObserver(() => {
+            if (lastResults.length > 0) {
+                const targetWidth = parseFloat(widthSlider.value);
+                drawCanvas(lastResults, targetWidth);
+            }
+        });
+        resizeObserver.observe(canvas.parentNode);
+
+        // Init
+        window.onload = () => {
+            initWorker();
+            // Initial ruler position
+            const initialVal = widthSlider.value;
+            rulerMarker.style.left = `calc(${(initialVal/1000) * 100}%)`;
+            rulerMarker.setAttribute('data-width', initialVal);
+        };
+    </script>
+</body>
+</html>

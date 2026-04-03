@@ -12,12 +12,14 @@
     "test:run": "cypress run"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
     "lucide-react": "^0.563.0",
     "opentype.js": "^1.3.4",
     "pdfjs-dist": "^5.4.530",
     "pixi.js": "^8.14.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^7.11.0"
   },
   "devDependencies": {
