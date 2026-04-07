@@ -16,17 +16,11 @@ import './EditorPage.css';
 const mapSpansToWordStyles = (items) => {
     const wordStyles = {};
     let wordIdx = 0;
-    // [DIAG-WS] Log each span's contribution to help trace wordStyles count=1 issue
-    console.group('[DIAG-WS] mapSpansToWordStyles — span inputs:');
     (items || []).forEach((item, i) => {
         const content = item.content || '';
         const trimmed = content.trim();
-        if (!trimmed) {
-            console.log(`  span[${i}] SKIPPED (whitespace) content=${JSON.stringify(content).substring(0, 30)} font=${item.font}`);
-            return;
-        }
+        if (!trimmed) return;
         const words = trimmed.split(/\s+/);
-        console.log(`  span[${i}] bold=${item.is_bold} words=${words.length} content=${JSON.stringify(trimmed).substring(0, 30)} font=${item.font}`);
         words.forEach(() => {
             wordStyles[wordIdx] = {
                 font: item.font,
@@ -40,8 +34,6 @@ const mapSpansToWordStyles = (items) => {
             wordIdx++;
         });
     });
-    console.log(`  → total wordStyles entries: ${wordIdx}`);
-    console.groupEnd();
     return wordStyles;
 };
 
@@ -248,6 +240,12 @@ export default function EditorPage() {
     const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
     const [mobileActivePanel, setMobileActivePanel] = useState(null); // 'edit', 'pages', 'words' or null
     const [isDragEnabled, setIsDragEnabled] = useState(false); // Default dragging OFF as requested
+    const [isFittingConfirmed, setIsFittingConfirmed] = useState(false); // [FitV4] Manual confirmation state
+
+    // Reset fitting confirmation on page change
+    React.useEffect(() => {
+        setIsFittingConfirmed(false);
+    }, [activePageIndex]);
     const [pageOffset, setPageOffset] = useState(0);
     const VISIBLE_PAGE_COUNT = 3;
 
@@ -933,6 +931,51 @@ export default function EditorPage() {
         });
     }, [isLineMultiSelect, selectedNodeIds, pages, activePageIndex]);
 
+    const handleBatchStyleUpdate = React.useCallback((updates) => {
+        if (!updates || updates.length === 0) return;
+        console.log(`[BatchUpdate] Applying ${updates.length} direct font size fits.`);
+
+        setNodeEdits(prev => {
+            const next = { ...prev };
+            updates.forEach(({ lineId, results, scale }) => {
+                const current = next[lineId] || {};
+                const sStyle = { ...(current.safetyStyle || {}) };
+                const wordStyles = { ...(current.wordStyles || {}) };
+                
+                // [FitV4 Pivot] Bake the fit directly into the font size of each segment
+                // This ensures bullets and text maintain their relative proportions.
+                if (results && results.length > 0) {
+                    // Update safety/base size
+                    sStyle.size = results[0].optimalSize;
+
+                    // Update individual words
+                    results.forEach((res, i) => {
+                        if (!wordStyles[i]) wordStyles[i] = { ...sStyle };
+                        wordStyles[i].size = res.optimalSize;
+                    });
+                }
+
+                let newBBox = current.bbox || null;
+                if (!newBBox) {
+                    const page = pages[activePageIndex];
+                    const found = (page && page.blocks ? page.blocks.flatMap(b => b.lines) : (page?.items || [])).find(l => l.id === lineId);
+                    if (found && found.bbox) newBBox = [...found.bbox];
+                }
+
+                next[lineId] = {
+                    ...current,
+                    safetyStyle: sStyle,
+                    wordStyles: wordStyles,
+                    // scale: 1.0, // Scale is now baked into size
+                    bbox: newBBox,
+                    isModified: true,
+                    isFitted: true
+                };
+            });
+            return next;
+        });
+    }, [pages, activePageIndex]);
+
 
 
     const handleNodeMove = React.useCallback((id, newX, newY) => {
@@ -1354,6 +1397,33 @@ export default function EditorPage() {
                                 >
                                     <span className="icon">⚓</span> Move Mode
                                 </button>
+
+                                <div className="hud-divider"></div>
+
+                                <button
+                                    className={`premium-optimize-btn ${isFittingConfirmed ? 'active' : ''}`}
+                                    onClick={() => setIsFittingConfirmed(true)}
+                                    title="Fit all text lines perfectly into their PDF bounding boxes"
+                                    style={{
+                                        background: isFittingConfirmed ? 'var(--brand-primary)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        padding: '8px 16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                        boxShadow: isFittingConfirmed ? 'none' : '0 4px 15px rgba(168, 85, 247, 0.3)',
+                                        cursor: isFittingConfirmed ? 'default' : 'pointer',
+                                        transform: isFittingConfirmed ? 'scale(0.98)' : 'scale(1)'
+                                    }}
+                                    disabled={isFittingConfirmed}
+                                >
+                                    <span className="icon" style={{ fontSize: '1.1rem' }}>{isFittingConfirmed ? '✓' : '✨'}</span> 
+                                    {isFittingConfirmed ? 'Layout Optimized' : 'Optimize Text Fit'}
+                                </button>
                             </div>
                         </div>
                     );
@@ -1585,6 +1655,8 @@ export default function EditorPage() {
                             showAllBboxes={showAllBboxes}
                             useOriginalFonts={useOriginalFonts}
                             onScaleUpdate={setActiveScale}
+                            onBatchUpdate={handleBatchStyleUpdate}
+                            isFittingConfirmed={isFittingConfirmed}
                             onCalibrated={(ratio) => {
                                 setMetricRatio(ratio);
                                 setIsCalibrated(true);

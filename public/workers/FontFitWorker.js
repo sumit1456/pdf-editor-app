@@ -1,5 +1,5 @@
 // FontFitWorker.js - Unified Line-level font fitting with binary search
-// Calculates a single optimal font size for a collection of words
+// Calculates a single optimal scale factor for a collection of words
 const GLOBAL_FONT_SCALE = 1.15;
 
 let canvas, ctx;
@@ -21,37 +21,52 @@ function buildFontString(weight, style, size, family) {
     return `${normalizedStyle} ${normalizedWeight} ${adjustedSize}px ${normalizedFamily}`;
 }
 
-// Measure total line width with given font size
-function measureLine(words, fontSize) {
+// Measure total line width with given scale factor
+function measureLine(words, scaleFactor) {
     let totalLineGridWidth = 0;
 
-    words.forEach((word, index) => {
+    words.forEach((word) => {
+        const currentSize = (word.size || 12) * scaleFactor;
         const fontString = buildFontString(
-            word.weight || '400',
+            word.weight || (word.is_bold ? '700' : '400'),
             word.is_italic ? 'italic' : 'normal',
-            fontSize,
+            currentSize,
             word.google_font || word.font || 'serif'
         );
 
         ctx.font = fontString;
         const w = ctx.measureText(word.content || '').width;
         totalLineGridWidth += w;
-
-        // Gap logic removed: Payload is now responsible for explicit space parts if needed.
     });
 
     return totalLineGridWidth;
 }
 
-// Binary search for optimal line-wide font size
-function findOptimalLineSize(words, targetWidth) {
-    // Range for search: allow growing significantly or shrinking
-    let low = 1;
-    let high = 100; // Max cap to prevent 1000px line from becoming huge
-    let optimalSize = 12;
+// Binary search for optimal line-wide scale factor
+function findOptimalScale(words, targetWidth) {
+    // Determine the safe range for the scale factor based on +/- 5pt constraint
+    // The most restrictive word determines the global range.
+    let minScale = 0.1;
+    let maxScale = 1.0; // [FitV4] Cap at 100% - we only want to fix overflows, never expand beyond original
+
+    words.forEach(word => {
+        const size = word.size || 12;
+        // Limit: |size * scale - size| <= 5
+        // scale_min = (size - 5) / size
+        // scale_max = (size + 5) / size
+        const sMin = Math.max(0.1, (size - 5) / size);
+        const sMax = Math.min(1.0, (size + 5) / size);
+        
+        if (sMin > minScale) minScale = sMin;
+        if (sMax < maxScale) maxScale = sMax;
+    });
+
+    let low = minScale;
+    let high = maxScale;
+    let optimalScale = 1.0;
     let iterations = 0;
-    const maxIterations = 30;
-    const tolerance = 0.05; // High precision for smoothness
+    const maxIterations = 25;
+    const tolerance = 0.005; // 0.5% precision for scale
 
     while (low <= high && iterations < maxIterations) {
         const mid = (low + high) / 2;
@@ -59,25 +74,11 @@ function findOptimalLineSize(words, targetWidth) {
 
         iterations++;
 
-        // Debug first word's progress as a proxy
-        self.postMessage({
-            type: 'debugLog',
-            data: {
-                jobId: self.currentJobId,
-                wordId: 'LINE',
-                iteration: iterations,
-                size: mid,
-                width: midWidth,
-                target: targetWidth,
-                fits: midWidth <= targetWidth
-            }
-        });
-
         if (midWidth <= targetWidth) {
-            optimalSize = mid;
-            low = mid + tolerance; // Try larger size to fill gap
+            optimalScale = mid;
+            low = mid + tolerance; // Try growing more to fill width
         } else {
-            high = mid - tolerance; // Too big, try smaller
+            high = mid - tolerance; // Too big, must shrink
         }
 
         if (Math.abs(high - low) < tolerance) {
@@ -85,12 +86,14 @@ function findOptimalLineSize(words, targetWidth) {
         }
     }
 
-    const finalWidth = measureLine(words, optimalSize);
+    const finalWidth = measureLine(words, optimalScale);
 
     return {
-        optimalSize: parseFloat(optimalSize.toFixed(3)),
+        optimalScale: parseFloat(optimalScale.toFixed(4)),
         actualWidth: parseFloat(finalWidth.toFixed(3)),
-        iterations: iterations
+        iterations: iterations,
+        minScaleUsed: minScale,
+        maxScaleUsed: maxScale
     };
 }
 
@@ -106,34 +109,25 @@ self.onmessage = function (e) {
         return;
     }
 
-    if (type === 'fitWords') { // Using the same type name but with new Line-Level logic
+    if (type === 'fitWords') {
         initCanvas();
 
         const { words, targetWidth } = data;
 
-        self.postMessage({
-            type: 'progress',
-            message: `Line Fitting Mode: Scaling ${words.length} words to ${targetWidth}px...`
-        });
+        // Find single scale factor for the whole line
+        const lineResult = findOptimalScale(words, targetWidth);
 
-        // Find single size for the whole line
-        const lineResult = findOptimalLineSize(words, targetWidth);
-
-        // Map result back to word objects for the test page consistent structure
-        const results = words.map((word, index) => {
-            const wordWidth = measureLine([word], lineResult.optimalSize);
+        // Map result back to word objects
+        const results = words.map((word) => {
+            const wordFittedSize = (word.size || 12) * lineResult.optimalScale;
             return {
                 id: word.id,
                 content: word.content,
                 originalSize: word.size || 12,
-                optimalSize: lineResult.optimalSize,
-                usedFont: word.google_font || word.font,
-                originalWidth: measureLine([word], word.size || 12),
-                fittedWidth: wordWidth,
-                scale: lineResult.optimalSize / (word.size || 12),
-                iterations: lineResult.iterations,
-                targetWidth: targetWidth,
-                fits: true // Line as whole fits
+                optimalSize: wordFittedSize,
+                scale: lineResult.optimalScale,
+                fittedWidth: measureLine([word], lineResult.optimalScale),
+                fits: true
             };
         });
 
@@ -148,8 +142,8 @@ self.onmessage = function (e) {
                     totalFittedWidth: lineResult.actualWidth,
                     targetWidth: targetWidth,
                     totalIterations: lineResult.iterations,
-                    overallFits: lineResult.actualWidth <= targetWidth + 1, // Tolerance
-                    fontScale: lineResult.optimalSize / (words[0]?.size || 12)
+                    overallFits: lineResult.actualWidth <= targetWidth + 1.5, // 1.5px tolerance
+                    optimalScale: lineResult.optimalScale
                 }
             }
         });
@@ -173,7 +167,7 @@ self.onmessage = function (e) {
         let minDiff = Infinity;
         let bestWidth = 0;
         
-        // 2. Compara against candidates
+        // 2. Compare against candidates
         candidates.forEach(candidate => {
             ctx.font = `${style} ${weight} ${fontSize}px "${candidate}", sans-serif`;
             const candidateWidth = ctx.measureText(text).width;

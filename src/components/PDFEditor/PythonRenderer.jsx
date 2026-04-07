@@ -4,6 +4,8 @@ import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { MEASURE_CTX, getRealFontString, normalizeFont, getWeightFromFont, GLOBAL_FONT_SCALE } from './reflowUtils';
+import { fontFitManager } from '../../utils/FontFitManager';
+import { buildWorkerPayload } from './workerUtils';
 
 // Now purely a Single Page Renderer for Python Backend
 
@@ -115,7 +117,7 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
         
         const spanStyle = { ...safetyStyle, ...style };
         const spanIsSmallCaps = spanStyle.font_variant === 'small-caps' || isSmallCaps;
-        const spanSize = Math.abs(spanStyle.size || baseSize);
+        const spanSize = (Math.abs(spanStyle.size || baseSize) / GLOBAL_FONT_SCALE);
         const spanColor = getSVGColor(spanStyle.color, 'inherit');
         const spanWeight = getWeightFromFont(spanStyle.font, spanStyle.is_bold);
         const spanItalic = spanStyle.is_italic ? 'italic' : 'normal';
@@ -151,9 +153,8 @@ const mapContent = (text) => {
         .replace(/\u00ef/g, '\uf08c').replace(/\u00d0/g, '\uf121');
 };
 
-const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, onMove, isDragEnabled, onCalibrated, showAllBboxes, useOriginalFonts, onScaleUpdate }) => {
-    // [Debug] Verify Mount
-    console.log("[PythonRenderer] Mounting for Page", pageIndex + 1, "useOriginalFonts:", useOriginalFonts);
+const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, onMove, isDragEnabled, onCalibrated, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
+    // console.log("[PythonRenderer] Mounting for Page", pageIndex + 1, "useOriginalFonts:", useOriginalFonts);
 
     const containerRef = useRef(null);
     const engineRef = useRef(null);
@@ -628,7 +629,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                             selectedWordIndices={selectedWordIndices} fontsKey={fontsKey} fontStyles={fontStyles} metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick} onSelect={onSelect}
                             itemRefs={itemRefs} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} isDragEnabled={isDragEnabled}
-                            showAllBboxes={showAllBboxes} useOriginalFonts={useOriginalFonts} onScaleUpdate={onScaleUpdate}
+                            showAllBboxes={showAllBboxes} useOriginalFonts={useOriginalFonts} onScaleUpdate={onScaleUpdate} onBatchUpdate={onBatchUpdate}
+                            isFittingConfirmed={isFittingConfirmed}
                         />
                     ) : null)}
                 </svg>
@@ -646,7 +648,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         prev.fontsKey === next.fontsKey &&
         prev.isDragEnabled === next.isDragEnabled &&
         prev.showAllBboxes === next.showAllBboxes &&
-        prev.useOriginalFonts === next.useOriginalFonts
+        prev.useOriginalFonts === next.useOriginalFonts &&
+        prev.isFittingConfirmed === next.isFittingConfirmed
 });
 
 export default PythonRenderer;
@@ -750,7 +753,7 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
     );
 }
 
-const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate }) => {
+const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     // console.log("[BlockLayer] Rendering blocks:", blocks?.length, "useOriginalFonts:", useOriginalFonts);
     return (
         <g className="block-layer" key={fontsKey}>
@@ -771,6 +774,8 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
                     isDragEnabled={isDragEnabled} showAllBboxes={showAllBboxes}
                     useOriginalFonts={useOriginalFonts}
                     onScaleUpdate={onScaleUpdate}
+                    onBatchUpdate={onBatchUpdate}
+                    isFittingConfirmed={isFittingConfirmed}
                 />
             ))}
         </g>
@@ -783,12 +788,13 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
            prev.fontStyles === next.fontStyles &&
            prev.metricRatio === next.metricRatio &&
            prev.useOriginalFonts === next.useOriginalFonts &&
-           prev.showAllBboxes === next.showAllBboxes;
+           prev.showAllBboxes === next.showAllBboxes &&
+           prev.isFittingConfirmed === next.isFittingConfirmed;
 });
 
 
 
-const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate }) => {
+const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     // console.log("[SemanticBlock] block:", block.id, "useOriginalFonts:", useOriginalFonts);
     const lines = useMemo(() => {
         return block.lines || [];
@@ -815,6 +821,8 @@ const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIn
                             isDragEnabled={isDragEnabled}
                             showAllBboxes={showAllBboxes}
                             useOriginalFonts={useOriginalFonts}
+                            onBatchUpdate={onBatchUpdate}
+                            isFittingConfirmed={isFittingConfirmed}
                         />
                     )}
                 </g>
@@ -823,7 +831,7 @@ const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIn
     );
 });
 
-const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate }) => {
+const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     const isActive = activeNodeId === line.id;
     const targetId = line.id;
 
@@ -903,7 +911,8 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
         }
 
         const dynamicPdfW = (currentTextWidth / (metricRatio || 1.0)) * baselineRatio;
-        const finalPdfW = isModified ? Math.max(targetWidth, dynamicPdfW) : targetWidth;
+        // [FitV4] Red boxes should show the TARGET bounding box from the PDF
+        const finalPdfW = targetWidth; // Always show the target container
 
         return {
             calibratedFontSize: baseSize,
@@ -917,8 +926,58 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
         if (isActive && onScaleUpdate) onScaleUpdate(legacyFittingRatio);
     }, [isActive, legacyFittingRatio, onScaleUpdate]);
 
-    const finalFontSize = baseFontSize / GLOBAL_FONT_SCALE; // Apply Reduction
-    const finalScale = 1.0;
+    const fittingInFlight = useRef(false);
+
+    // [FitV4] High-Fidelity Binary Font Fitting
+    useEffect(() => {
+        if (!isFittingConfirmed) return;
+        
+        if (edit?.isFitted) {
+            // console.log(`[FitV4] Line ${line.id} already fitted, skipping.`);
+            return;
+        }
+        
+        if (fittingInFlight.current) {
+            // console.log(`[FitV4] Line ${line.id} fit in flight, skipping.`);
+            return;
+        }
+
+        console.log(`[FitV4] Triggering fit for line: ${line.id} (Confirmed: ${isFittingConfirmed})`);
+
+        const targetWidth = line.width || (line.bbox ? line.bbox[2] - line.bbox[0] : 0);
+        if (targetWidth <= 0) return;
+
+        fittingInFlight.current = true;
+        const payload = buildWorkerPayload(line, edit || {}, useOriginalFonts);
+        if (!payload || !payload.words) {
+            fittingInFlight.current = false;
+            return;
+        }
+        
+        // Use a small delay to avoid overwhelming the worker during rapid page loads
+        const timer = setTimeout(() => {
+            console.log(`[FitV4] Sending ${line.id} to worker...`);
+            fontFitManager.fitTextToBbox(payload.words, targetWidth, (results, summary) => {
+                console.log(`[FitV4] Worker results for ${line.id}:`, { results: results?.length, scale: summary?.optimalScale });
+                if (results && results.length > 0 && summary && onBatchUpdate) {
+                    onBatchUpdate([{
+                        lineId: line.id,
+                        results: results, // Pass full per-word results
+                        size: results[0].optimalSize,
+                        scale: summary.optimalScale
+                    }]);
+                }
+                fittingInFlight.current = false;
+            }, (err) => {
+                console.error(`[FitV4] Worker error for ${line.id}:`, err);
+                fittingInFlight.current = false;
+            });
+        }, 50);
+
+        return () => clearTimeout(timer);
+    }, [line.id, line.content, useOriginalFonts, onBatchUpdate, edit?.isFitted, isFittingConfirmed]);
+
+    const finalFontSize = (baseFontSize / GLOBAL_FONT_SCALE); // Apply Reduction
 
     return (
         <g className="line-group" ref={itemRef} style={{ cursor: isDragEnabled ? 'move' : 'default' }}
@@ -991,7 +1050,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                         fontFamily={bulletFontFamily}
                                         fontWeight={bulletFontWeight}
                                         fontStyle={firstSpan.is_italic ? 'italic' : 'normal'}
-                                        fontSize={Math.max(1, Math.abs((firstSpan.size || safeSize) * finalScale))}
+                                        fontSize={Math.max(1, Math.abs(((firstSpan.size || safeSize) / GLOBAL_FONT_SCALE)))}
                                         fill={getSVGColor(firstSpan.color, 'black')}
                                     >
                                         {renderVisualText(bulletTextTrimmed, false, firstSpan.size)}
@@ -1025,14 +1084,14 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                 key={si}
                                 x={forceX}
                                 y={span.origin ? span.origin[1] : baselineY}
-                                fontSize={Math.max(1, Math.abs(span.size * finalScale))}
+                                fontSize={Math.max(1, Math.abs((span.size / GLOBAL_FONT_SCALE)))}
                                 fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
                                 fontStyle={span.is_italic ? 'italic' : 'normal'}
                                 fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font, useOriginalFonts)}
                                 fill={getSVGColor(span.color, 'black')}
                                 xmlSpace="preserve"
                                 style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>
-                                {renderVisualText(mapped, isOriginalSmallCaps, span.size)}
+                                {renderVisualText(mapped, isOriginalSmallCaps, (span.size / GLOBAL_FONT_SCALE))}
                             </tspan>
                         );
                     })

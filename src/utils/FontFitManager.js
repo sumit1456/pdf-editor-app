@@ -7,6 +7,7 @@ class FontFitManager {
     constructor() {
         this.worker = null;
         this.isReady = false;
+        this.initPromise = null;
         this.pendingJobs = new Map();
         this.jobIdCounter = 0;
         this.debugMode = false;
@@ -16,21 +17,16 @@ class FontFitManager {
      * Initialize the FontFitWorker
      */
     async init() {
-        if (this.worker) return this.isReady;
+        if (this.isReady) return true;
+        if (this.initPromise) return this.initPromise;
 
-        return new Promise((resolve, reject) => {
+        this.initPromise = new Promise((resolve, reject) => {
             try {
+                // Ensure absolute path from public root
                 this.worker = new Worker('/workers/FontFitWorker.js');
                 
                 this.worker.onmessage = (e) => {
                     try {
-                        // Check if we received HTML instead of JSON (404 error page)
-                        if (typeof e.data === 'string' && e.data.includes('<')) {
-                            console.error('[FontFitManager] Worker returned HTML - check if FontFitWorker.js exists at /workers/FontFitWorker.js');
-                            reject(new Error('FontFitWorker.js not found or returned HTML error page'));
-                            return;
-                        }
-                        
                         const { type, data } = e.data;
                         
                         switch (type) {
@@ -99,7 +95,6 @@ class FontFitManager {
      */
     fitTextToBbox(words, targetWidth, onComplete, onError) {
         if (!this.isReady) {
-            console.warn('[FontFitManager] Worker not ready, initializing...');
             this.init().then(() => {
                 this.fitTextToBbox(words, targetWidth, onComplete, onError);
             });

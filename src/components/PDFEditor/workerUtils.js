@@ -29,7 +29,7 @@ export const buildWorkerPayload = (line, edit, useOriginalFonts = false) => {
             id: `p-${i}`,
             content: part,
             font: normalizeFont(activeStyle.font || line.font, activeStyle.googleFont || line.google_font, useOriginalFonts),
-            size: Math.abs(activeStyle.size || baseSize),
+            size: Math.abs(activeStyle.size || baseSize), // This is the original size for this segment
             weight: getWeightFromFont(activeStyle.font || line.font, activeStyle.is_bold ?? line.is_bold),
             is_italic: activeStyle.is_italic ?? line.is_italic
         };
