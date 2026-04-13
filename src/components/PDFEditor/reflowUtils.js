@@ -77,13 +77,13 @@ export const normalizeFont = (fontName, googleFont, forceOriginal = false) => {
     ) {
         if (name.includes('poppins')) return 'var(--sans-geometric)';
         if (name.includes('open') && name.includes('sans')) return 'var(--sans-readable)';
-        return 'var(--sans-modern)'; 
+        return 'var(--sans-modern)';
     }
 
     return 'var(--sans-modern)';
 };
 
-export const GLOBAL_FONT_SCALE = 1.15;
+export const GLOBAL_FONT_SCALE = 1;
 
 /**
  * Returns a CSS font string for canvas measurements, resolving design tokens.
@@ -97,7 +97,7 @@ export function getRealFontString(fontName, googleFont, weight, size, style, for
     else if (family.includes('var(--serif-high-contrast)')) family = "'Playfair Display', serif";
     else if (family.includes('var(--sans-geometric)')) family = "'Poppins', sans-serif";
     else if (family.includes('var(--sans-readable)')) family = "'Open Sans', sans-serif";
-    
+
     // Apply Global Reduction
     const adjustedSize = size / GLOBAL_FONT_SCALE;
     return `${style} ${weight} ${adjustedSize}px ${family}`;
