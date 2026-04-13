@@ -47,7 +47,7 @@ function findOptimalScale(words, targetWidth) {
     // Determine the safe range for the scale factor based on +/- 5pt constraint
     // The most restrictive word determines the global range.
     let minScale = 0.1;
-    let maxScale = 1.0; // [FitV4] Cap at 100% - we only want to fix overflows, never expand beyond original
+    let maxScale = 5.0; // Default limit for expansion search
 
     words.forEach(word => {
         const size = word.size || 12;
@@ -55,7 +55,7 @@ function findOptimalScale(words, targetWidth) {
         // scale_min = (size - 5) / size
         // scale_max = (size + 5) / size
         const sMin = Math.max(0.1, (size - 5) / size);
-        const sMax = Math.min(1.0, (size + 5) / size);
+        const sMax = (size + 5) / size; // [FitV4] Allow expansion within 5pt constraint
         
         if (sMin > minScale) minScale = sMin;
         if (sMax < maxScale) maxScale = sMax;

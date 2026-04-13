@@ -942,10 +942,10 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
             return;
         }
 
-        console.log(`[FitV4] Triggering fit for line: ${line.id} (Confirmed: ${isFittingConfirmed})`);
-
         const targetWidth = line.width || (line.bbox ? line.bbox[2] - line.bbox[0] : 0);
         if (targetWidth <= 0) return;
+
+        console.log(`[FitV4] Triggering fit for line: ${line.id} (Confirmed: ${isFittingConfirmed})`);
 
         fittingInFlight.current = true;
         const payload = buildWorkerPayload(line, edit || {}, useOriginalFonts);
@@ -975,7 +975,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
         }, 50);
 
         return () => clearTimeout(timer);
-    }, [line.id, line.content, useOriginalFonts, onBatchUpdate, edit?.isFitted, isFittingConfirmed]);
+    }, [line.id, line.content, useOriginalFonts, onBatchUpdate, edit?.isFitted, isFittingConfirmed, targetBrowserWidth, finalPdfWidth]);
 
     const finalFontSize = (baseFontSize / GLOBAL_FONT_SCALE); // Apply Reduction
 

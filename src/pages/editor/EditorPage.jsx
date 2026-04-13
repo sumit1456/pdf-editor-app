@@ -250,6 +250,7 @@ export default function EditorPage() {
     const VISIBLE_PAGE_COUNT = 3;
 
     const [activeScale, setActiveScale] = useState(1.0);
+    const [layoutMode, setLayoutMode] = useState('default'); // 'default', 'studio', 'preview'
 
     const reduxDispatch = useDispatch();
 
@@ -941,7 +942,7 @@ export default function EditorPage() {
                 const current = next[lineId] || {};
                 const sStyle = { ...(current.safetyStyle || {}) };
                 const wordStyles = { ...(current.wordStyles || {}) };
-                
+
                 // [FitV4 Pivot] Bake the fit directly into the font size of each segment
                 // This ensures bullets and text maintain their relative proportions.
                 if (results && results.length > 0) {
@@ -1120,7 +1121,7 @@ export default function EditorPage() {
 
             try {
                 console.log(`[Font Matcher] Metric-testing original font: ${originalItem.font}...`);
-                
+
                 const result = await fontFitManager.findBestFontMatch(
                     originalItem.font,
                     textToMeasure,
@@ -1134,7 +1135,7 @@ export default function EditorPage() {
 
                 if (result && result.bestMatch) {
                     console.log(`[Font Matcher] Match Found: ${result.bestMatch} (Error: ${result.errorRatio.toFixed(4)})`);
-                    
+
                     // 1. Update nodeEdits state
                     setNodeEdits(prev => ({
                         ...prev,
@@ -1171,7 +1172,7 @@ export default function EditorPage() {
 
 
     return (
-        <div className="editor-page">
+        <div className={`editor-page layout-${layoutMode}`}>
             {/* Studio Background Layer */}
             <div className="bg-decoration">
                 <div className="floating-shape shape-1"></div>
@@ -1421,7 +1422,7 @@ export default function EditorPage() {
                                     }}
                                     disabled={isFittingConfirmed}
                                 >
-                                    <span className="icon" style={{ fontSize: '1.1rem' }}>{isFittingConfirmed ? '✓' : '✨'}</span> 
+                                    <span className="icon" style={{ fontSize: '1.1rem' }}>{isFittingConfirmed ? '✓' : '✨'}</span>
                                     {isFittingConfirmed ? 'Layout Optimized' : 'Optimize Text Fit'}
                                 </button>
                             </div>
@@ -1592,6 +1593,30 @@ export default function EditorPage() {
                     </div>
 
                     <div style={{ flex: 1 }}></div>
+
+                    <div className="layout-switcher">
+                        <button 
+                            className={`layout-btn ${layoutMode === 'default' ? 'active' : ''}`}
+                            onClick={() => setLayoutMode('default')}
+                            title="Default Layout (All Panels)"
+                        >
+                            <i className="fa-solid fa-table-columns"></i>
+                        </button>
+                        <button 
+                            className={`layout-btn ${layoutMode === 'studio' ? 'active' : ''}`}
+                            onClick={() => setLayoutMode('studio')}
+                            title="Split Studio (50/50)"
+                        >
+                            <i className="fa-solid fa-columns"></i>
+                        </button>
+                        <button 
+                            className={`layout-btn ${layoutMode === 'preview' ? 'active' : ''}`}
+                            onClick={() => setLayoutMode('preview')}
+                            title="Full Preview"
+                        >
+                            <i className="fa-solid fa-expand"></i>
+                        </button>
+                    </div>
 
                     <button className="download-btn-premium" onClick={handleDownload}>
                         <span style={{ fontSize: '1rem' }}>📥</span> Download PDF

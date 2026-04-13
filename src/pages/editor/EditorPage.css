@@ -1402,3 +1402,115 @@ text {
                 fill 0.3s var(--ease), 
                 opacity 0.4s var(--ease);
 }
+
+/* ════════════════════════════════
+   LAYOUT MODES
+   ════════════════════════════════ */
+
+.layout-switcher {
+    display: flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    padding: 3px;
+    gap: 2px;
+    margin-right: 12px;
+}
+
+.layout-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink-4);
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--t-mid) var(--ease);
+    font-size: 0.85rem;
+}
+
+.layout-btn:hover {
+    background: var(--bg-surface-alt);
+    color: var(--ink-2);
+}
+
+.layout-btn.active {
+    background: var(--ink);
+    color: var(--white);
+    box-shadow: var(--sh-xs);
+}
+
+/* Layout State Transitions */
+.navigator-sidebar,
+.editing-panel,
+.workspace-container {
+    transition: transform 0.4s var(--ease), 
+                width 0.4s var(--ease), 
+                flex 0.4s var(--ease),
+                opacity 0.3s var(--ease),
+                padding 0.4s var(--ease);
+}
+
+/* --- STUDIO MODE: Focused 50/50 Split --- */
+.layout-studio .navigator-sidebar {
+    width: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.layout-studio .workspace-container {
+    flex: 1.1; 
+    padding: 0 20px;
+}
+
+.layout-studio .editing-panel {
+    flex: 1;
+    width: auto !important;
+    background: var(--white);
+    border-left: 1px solid var(--border);
+    padding: 0 30px 20px 30px !important;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.02);
+}
+
+.layout-studio .editing-panel .premium-input-card {
+    background: var(--surface);
+    padding: 16px;
+    border-radius: var(--r-md);
+    margin-bottom: 8px;
+    border: 1px solid transparent;
+}
+
+.layout-studio .editing-panel .premium-input-card:hover {
+    border-color: var(--border);
+    background: var(--white);
+    transform: translateY(-2px);
+    box-shadow: var(--sh-sm);
+}
+
+/* --- PREVIEW MODE: Immersive PDF View --- */
+.layout-preview .navigator-sidebar,
+.layout-preview .editing-panel {
+    width: 0 !important;
+    padding: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.layout-preview .workspace-container {
+    flex: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* HUD Adjustments */
+.layout-preview .property-hud,
+.layout-studio .property-hud {
+    transform: scale(0.9);
+    margin-bottom: 12px;
+}
