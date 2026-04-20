@@ -149,15 +149,21 @@ const MemoizedSidebarCard = React.memo(({ line, edit, isActive, isSelected, disp
     );
 }, (prev, next) => {
     return prev.isActive === next.isActive &&
-        prev.isSelected === next.isSelected &&
-        prev.displayContent === next.displayContent &&
-        prev.isLineMultiSelect === next.isLineMultiSelect &&
         prev.edit === next.edit;
 });
 
+const FontWarmer = () => (
+    <div style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', visibility: 'hidden', height: 0, width: 0, overflow: 'hidden' }}>
+        <span style={{ fontFamily: "'Noto Sans Symbols'" }}>.</span>
+        <span style={{ fontFamily: "'Noto Sans Symbols 2'" }}>.</span>
+        <span style={{ fontFamily: "'Noto Sans Arabic'" }}>.</span>
+        <span style={{ fontFamily: "'Noto Sans Hebrew'" }}>.</span>
+        <span style={{ fontFamily: "'Noto Sans'" }}>.</span>
+    </div>
+);
+
 export default function EditorPage() {
     const location = useLocation();
-
 
     // MASTER STATE: All pages and the current active index
     // We merge fragments into lines ONCE at the start to create a persistent "Node Tree"
@@ -1173,6 +1179,7 @@ export default function EditorPage() {
 
     return (
         <div className={`editor-page layout-${layoutMode}`}>
+            <FontWarmer />
             {/* Studio Background Layer */}
             <div className="bg-decoration">
                 <div className="floating-shape shape-1"></div>

@@ -112,6 +112,7 @@ function PageRenderer({ page, pageIndex, fonts, nodeEdits }) {
                         height={renderHeight}
                         fontStyles={fontStyles}
                         pageIndex={pageIndex}
+                        nodeEdits={nodeEdits}
                     />
                 )}
             </svg>
@@ -268,6 +269,15 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
     };
 
     const renderLine = () => {
+        const baseStyle = edit.safetyStyle || contentItem;
+        const safeFontSize = Math.abs(baseStyle.size || contentItem.size || 10);
+        const safeFont = baseStyle.googleFont || baseStyle.font || contentItem.font;
+        const safeBold = baseStyle.is_bold !== undefined ? baseStyle.is_bold : contentItem.is_bold;
+        const safeItalic = baseStyle.is_italic !== undefined ? baseStyle.is_italic : contentItem.is_italic;
+        const safeColor = baseStyle.color || contentItem.color || [0, 0, 0];
+        const safeFontVariant = baseStyle.font_variant || contentItem.font_variant || 'normal';
+        const isSafeSmallCaps = safeFontVariant === 'small-caps' || (safeFont || '').toLowerCase().includes('cmcsc');
+
         if (isMarkerLine) {
             // Dual-lane split for proper marker-size control
             const markerPart = line.bullet || '';
@@ -276,8 +286,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
             const bMetrics = block.bullet_metrics || {};
             // Bullet size correction: if extraction says 6 but it's a primary bullet, ensure it's at least 70% of text size
             const rawBSize = Math.abs(bMetrics.size || firstItem.size);
-            const contentSize = Math.abs(contentItem.size);
-            const safeBSize = (rawBSize < contentSize * 0.7) ? contentSize * 0.8 : rawBSize;
+            const safeBSize = (rawBSize < safeFontSize * 0.7) ? safeFontSize * 0.8 : rawBSize;
 
             return (
                 <g className="decoupled-line">
@@ -294,14 +303,14 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
                     <text
                         x={textAnchorX}
                         y={baselineY}
-                        fontFamily={normalizeFont(contentItem.font)}
-                        fontSize={contentSize}
-                        fontWeight={contentItem.is_bold ? 'bold' : 'normal'}
-                        fontStyle={contentItem.is_italic ? 'italic' : 'normal'}
-                        fill={contentItem.color ? `rgb(${contentItem.color[0] * 255},${contentItem.color[1] * 255},${contentItem.color[2] * 255})` : 'black'}
+                        fontFamily={normalizeFont(safeFont)}
+                        fontSize={safeFontSize}
+                        fontWeight={safeBold ? 'bold' : 'normal'}
+                        fontStyle={safeItalic ? 'italic' : 'normal'}
+                        fill={`rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})`}
                         dominantBaseline="alphabetic"
                         xmlSpace="preserve"
-                        style={{ pointerEvents: 'all', cursor: 'text', whiteSpace: 'pre', fontVariant: isSmallCaps ? 'small-caps' : 'normal' }}
+                        style={{ pointerEvents: 'all', cursor: 'text', whiteSpace: 'pre', fontVariant: isSafeSmallCaps ? 'small-caps' : 'normal' }}
                     >
                         {restPart}
                     </text>
@@ -309,42 +318,91 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
             );
         }
 
-        // Multi-span flow for complex lines (mixed fonts/icons)
+        const renderSpans = () => {
+            if (!edit.isModified && items.length > 0) {
+                return items.map((span, si) => {
+                    const isSpanSmallCaps = (span.font || '').toLowerCase().includes('cmcsc');
+                    const mappedContent = mapContentToIcons(span.content, span.font);
+                    const isIconFont = (span.font || '').toLowerCase().includes('fontawesome');
+                    
+                    const spanFont = edit.safetyStyle?.googleFont || edit.safetyStyle?.font || span.font;
+                    const spanSize = edit.safetyStyle?.size || span.size;
+                    const spanColor = edit.safetyStyle?.color || span.color;
+                    const spanBold = edit.safetyStyle?.is_bold !== undefined ? edit.safetyStyle?.is_bold : span.is_bold;
+                    const spanItalic = edit.safetyStyle?.is_italic !== undefined ? edit.safetyStyle?.is_italic : span.is_italic;
+
+                    return (
+                        <tspan
+                            key={si}
+                            x={(si === 0 || Math.abs(span.origin?.[0] - items[si - 1]?.bbox?.[2]) > 0.5) ? (span.origin?.[0] || span.bbox[0]) : undefined}
+                            fontSize={Math.abs(spanSize)}
+                            fontFamily={isIconFont ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(spanFont)}
+                            fill={spanColor ? `rgb(${spanColor[0] * 255},${spanColor[1] * 255},${spanColor[2] * 255})` : 'black'}
+                            fontWeight={spanBold ? 'bold' : 'normal'}
+                            fontStyle={spanItalic ? 'italic' : 'normal'}
+                            style={{ fontVariant: isSpanSmallCaps ? 'small-caps' : 'normal' }}
+                        >
+                            {mappedContent}
+                        </tspan>
+                    );
+                });
+            }
+
+            if (edit.wordStyles && Object.keys(edit.wordStyles).length > 0) {
+                const words = content.split(/(\s+)/);
+                let wordCounter = 0;
+                
+                return words.map((chunk, si) => {
+                    const isSpace = /^\s+$/.test(chunk);
+                    const style = (!isSpace && edit.wordStyles[wordCounter]) ? edit.wordStyles[wordCounter] : baseStyle;
+                    if (!isSpace) wordCounter++;
+                    
+                    const chunkFont = style.googleFont || style.font || safeFont;
+                    const chunkFontSize = style.size || safeFontSize;
+                    const chunkColor = style.color || safeColor;
+                    const chunkBold = style.is_bold !== undefined ? style.is_bold : safeBold;
+                    const chunkItalic = style.is_italic !== undefined ? style.is_italic : safeItalic;
+                    const chunkVariant = style.font_variant || safeFontVariant;
+
+                    return (
+                        <tspan
+                            key={si}
+                            fontSize={Math.abs(chunkFontSize)}
+                            fontFamily={normalizeFont(chunkFont)}
+                            fill={chunkColor ? `rgb(${chunkColor[0] * 255},${chunkColor[1] * 255},${chunkColor[2] * 255})` : `rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})`}
+                            fontWeight={chunkBold ? 'bold' : 'normal'}
+                            fontStyle={chunkItalic ? 'italic' : 'normal'}
+                            style={{ fontVariant: chunkVariant === 'small-caps' ? 'small-caps' : 'normal' }}
+                        >
+                            {chunk}
+                        </tspan>
+                    );
+                });
+            }
+            
+            return content;
+        };
+
         return (
             <text
                 x={bulletX}
                 y={baselineY}
+                fontSize={safeFontSize}
+                fontFamily={normalizeFont(safeFont)}
+                fontWeight={safeBold ? 'bold' : 'normal'}
+                fontStyle={safeItalic ? 'italic' : 'normal'}
+                fill={`rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})`}
                 dominantBaseline="alphabetic"
                 xmlSpace="preserve"
                 style={{
                     pointerEvents: 'all',
                     cursor: 'text',
                     whiteSpace: 'pre',
-                    userSelect: 'none'
+                    userSelect: 'none',
+                    fontVariant: isSafeSmallCaps ? 'small-caps' : 'normal'
                 }}
             >
-                {items.length > 0 ? (
-                    items.map((span, si) => {
-                        const isSpanSmallCaps = (span.font || '').toLowerCase().includes('cmcsc');
-                        const mappedContent = mapContentToIcons(span.content, span.font);
-                        const isIconFont = (span.font || '').toLowerCase().includes('fontawesome');
-
-                        return (
-                            <tspan
-                                key={si}
-                                x={(si === 0 || Math.abs(span.origin?.[0] - items[si - 1]?.bbox?.[2]) > 0.5) ? (span.origin?.[0] || span.bbox[0]) : undefined}
-                                fontSize={Math.abs(span.size)}
-                                fontFamily={isIconFont ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(span.font)}
-                                fill={span.color ? `rgb(${span.color[0] * 255},${span.color[1] * 255},${span.color[2] * 255})` : 'black'}
-                                fontWeight={span.is_bold ? 'bold' : 'normal'}
-                                fontStyle={span.is_italic ? 'italic' : 'normal'}
-                                style={{ fontVariant: isSpanSmallCaps ? 'small-caps' : 'normal' }}
-                            >
-                                {mappedContent}
-                            </tspan>
-                        );
-                    })
-                ) : content}
+                {renderSpans()}
             </text>
         );
     };
@@ -356,24 +414,39 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
     );
 }
 
-function LegacyTextLayer({ items, height, fontStyles, pageIndex }) {
+function LegacyTextLayer({ items, height, fontStyles, pageIndex, nodeEdits = {} }) {
     const textItems = items.filter(it => it.type === 'text');
     return (
         <g className="legacy-text-layer">
             <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
-            {textItems.map((item, i) => (
-                <text
-                    key={i}
-                    x={item.origin ? item.origin[0] : item.bbox[0]}
-                    y={item.origin ? item.origin[1] : height - item.bbox[1]}
-                    fontSize={Math.abs(item.size)}
-                    fontFamily={item.font}
-                    fill="black"
-                    dominantBaseline="alphabetic"
-                >
-                    {item.content}
-                </text>
-            ))}
+            {textItems.map((item, i) => {
+                const edit = nodeEdits[item.id] || {};
+                const content = edit.content !== undefined ? edit.content : item.content;
+                const baseStyle = edit.safetyStyle || item;
+                const safeFontSize = Math.abs(baseStyle.size || item.size || 10);
+                const safeFont = baseStyle.googleFont || baseStyle.font || item.font;
+                const safeBold = baseStyle.is_bold !== undefined ? baseStyle.is_bold : item.is_bold;
+                const safeItalic = baseStyle.is_italic !== undefined ? baseStyle.is_italic : item.is_italic;
+                const safeColor = baseStyle.color || item.color || [0, 0, 0];
+                const safeFontVariant = baseStyle.font_variant || item.font_variant || 'normal';
+
+                return (
+                    <text
+                        key={i}
+                        x={item.origin ? item.origin[0] : item.bbox[0]}
+                        y={item.origin ? item.origin[1] : height - item.bbox[1]}
+                        fontSize={safeFontSize}
+                        fontFamily={safeFont ? `"${safeFont.replace(/^[A-Z]{6}\+/, '')}", "Latin Modern Roman", serif` : '"Latin Modern Roman", serif'}
+                        fontWeight={safeBold ? 'bold' : 'normal'}
+                        fontStyle={safeItalic ? 'italic' : 'normal'}
+                        fill={`rgb(${safeColor[0] * 255},${safeColor[1] * 255},${safeColor[2] * 255})`}
+                        dominantBaseline="alphabetic"
+                        style={{ fontVariant: safeFontVariant === 'small-caps' ? 'small-caps' : 'normal' }}
+                    >
+                        {content}
+                    </text>
+                );
+            })}
         </g>
     );
 }

@@ -130,7 +130,7 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
                 fill={spanColor}
                 fontWeight={spanWeight}
                 fontStyle={spanItalic}
-                fontFamily={spanFamily.replace(/'/g, "")}
+                fontFamily={spanFamily}
                 style={{
                     fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal',
                     letterSpacing: 'normal'
@@ -306,7 +306,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
 
             try {
                 const ratios = await Promise.all(textItems.map(async (item) => {
-                    const font = normalizeFont(item.font, item.google_font, useOriginalFonts).replace(/'/g, "");
+                    const font = normalizeFont(item.font, item.google_font, useOriginalFonts);
                     const weight = getWeightFromFont(item.font, item.is_bold);
                     const fontStyle = item.is_italic ? 'italic' : 'normal';
                     const fontStr = `${fontStyle} ${weight} ${item.size}px "${font}", sans-serif`;
@@ -719,9 +719,10 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
                 onDoubleClick={(e) => { e.preventDefault(); e.stopPropagation(); onDoubleClick(pageIndex, index, item, e.target.getBoundingClientRect(), { safetyStyle: sStyle }); }}
             />
             <text
-                fontSize={Math.max(1, Math.abs((sStyle.size || item.size) * OPTICAL_HEIGHT_FACTOR))} fontFamily={measureFamily.replace(/'/g, "")}
+                fontSize={Math.max(1, Math.abs((sStyle.size || item.size) * OPTICAL_HEIGHT_FACTOR))} fontFamily={measureFamily}
                 fontWeight={renderWeight} fontStyle={style} fill={getSVGColor(sStyle.color, color)}
                 dominantBaseline="alphabetic"
+                direction={item.direction || 'ltr'}
                 style={{
                     userSelect: 'none',
                     pointerEvents: 'none',
@@ -1006,6 +1007,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                 fill={getSVGColor(currentEdit.safetyStyle?.color || styleItem.color, 'black')}
                 fontStyle={(currentEdit.safetyStyle?.is_italic !== undefined ? currentEdit.safetyStyle.is_italic : styleItem.is_italic) ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic" xmlSpace="preserve"
+                direction={line.direction || 'ltr'}
                 style={{
                     userSelect: 'none',
                     pointerEvents: 'none',
@@ -1079,6 +1081,10 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                         const mapped = mapContent(span.content);
                         const isIcon = /[\uf000-\uf999]/.test(mapped);
 
+                        if (span.path_data) {
+                            return null; // Rendered as <path> sibling below
+                        }
+
                         return (
                             <tspan
                                 key={si}
@@ -1097,6 +1103,23 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                     })
                 )}
             </text>
+            {/* Render any paths that were skipped inside the <text> block because they aren't valid children */}
+            {line.items.map((span, si) => {
+                if (!span.path_data || isModified) return null;
+                const spanX = span.origin ? span.origin[0] : span.bbox[0];
+                const spanY = span.origin ? span.origin[1] : baselineY;
+                const spanSize = span.size / GLOBAL_FONT_SCALE;
+                const pathScale = spanSize / 1000;
+                return (
+                    <path
+                        key={`vector-${si}`}
+                        d={span.path_data}
+                        fill={getSVGColor(span.color, 'black')}
+                        transform={`translate(${spanX}, ${spanY}) scale(${pathScale}, ${-pathScale})`}
+                        pointerEvents="none"
+                    />
+                );
+            })}
             {isActive && <line x1={currentEdit.bbox ? currentEdit.bbox[0] : line.x0} y1={currentEdit.bbox ? currentEdit.bbox[3] : (line.bbox ? line.bbox[3] : line.y)} x2={(currentEdit.bbox ? currentEdit.bbox[0] : line.x0) + (currentEdit.bbox ? (currentEdit.bbox[2] - currentEdit.bbox[0]) : (line.width || line.x1 - line.x0 || 50))} y2={currentEdit.bbox ? currentEdit.bbox[3] : (line.bbox ? line.bbox[3] : line.y)} stroke="#f6763bff" strokeWidth="1.5" opacity="0.8" pointerEvents="none" />}
         </g>
     );
