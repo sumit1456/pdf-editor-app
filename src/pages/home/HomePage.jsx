@@ -23,7 +23,14 @@ export default function HomePage() {
           reader.readAsDataURL(file);
         });
 
-        const jsonOutput = await uploadPdfToBackend(file);
+        // Generate or retrieve Session ID
+        let sessionId = sessionStorage.getItem('pdf_session_id');
+        if (!sessionId) {
+            sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+            sessionStorage.setItem('pdf_session_id', sessionId);
+        }
+
+        const jsonOutput = await uploadPdfToBackend(file, sessionId);
         window.showLoading(false);
         window.showMessage("Success", "Extraction complete. Document is ready.", "success");
 

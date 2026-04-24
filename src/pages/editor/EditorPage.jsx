@@ -6,6 +6,7 @@ import { buildWorkerPayload } from '../../components/PDFEditor/workerUtils';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
 import WebGLRenderer from '../../components/PDFEditor/WebGLRenderer';
 import PythonRenderer from '../../components/PDFEditor/PythonRenderer';
+import ChatPanel from '../../components/PDFEditor/ChatPanel';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { fontFitManager } from '../../utils/FontFitManager';
@@ -257,6 +258,24 @@ export default function EditorPage() {
 
     const [activeScale, setActiveScale] = useState(1.0);
     const [layoutMode, setLayoutMode] = useState('default'); // 'default', 'studio', 'preview'
+    const [sidebarMode, setSidebarMode] = useState('studio'); // 'studio' or 'chat'
+    
+    // --- SMART SESSION CLEANUP ---
+    React.useEffect(() => {
+        const handleUnload = () => {
+            const sessionId = sessionStorage.getItem('pdf_session_id');
+            if (!sessionId) return;
+
+            // On tab close: delete all OTHER non-protected sessions, keep the current one.
+            // navigator.sendBeacon is the only reliable way to fire a request on tab close.
+            const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/cleanup-others/${sessionId}`;
+            navigator.sendBeacon(url); // sendBeacon works with DELETE-like calls via blob
+            console.log(`[EditorPage] Tab closing. Sent cleanup-others for session: ${sessionId}`);
+        };
+
+        window.addEventListener('beforeunload', handleUnload);
+        return () => window.removeEventListener('beforeunload', handleUnload);
+    }, []);
 
     const reduxDispatch = useDispatch();
 
@@ -876,8 +895,10 @@ export default function EditorPage() {
     }, [isReflowEnabled, pages, activePageIndex]);
 
 
-    const handleStyleUpdate = React.useCallback((lineId, field, value, wordIndices = null) => {
-        const targetIds = (isLineMultiSelect && selectedNodeIds.length > 0) ? selectedNodeIds : [lineId];
+
+    const handleStyleUpdate = React.useCallback((lineId, field, rawValue, wordIndices = null, ignoreSelection = false) => {
+        const targetIds = (!ignoreSelection && isLineMultiSelect && selectedNodeIds.length > 0) ? selectedNodeIds : [lineId];
+        const value = field === 'size' ? Number(rawValue) : rawValue;
 
         setNodeEdits(prev => {
             const next = { ...prev };
@@ -937,6 +958,47 @@ export default function EditorPage() {
             return next;
         });
     }, [isLineMultiSelect, selectedNodeIds, pages, activePageIndex]);
+
+    // --- AI MODIFICATION BRIDGE ---
+    const handleAIModification = React.useCallback((modifications) => {
+        console.log('[EditorPage] handleAIModification called with:', modifications);
+
+        if (!modifications || !Array.isArray(modifications) || modifications.length === 0) {
+            console.warn('[EditorPage] No valid modifications — aborting.');
+            return;
+        }
+
+        modifications.forEach((mod, idx) => {
+            if (!mod.id) {
+                console.warn(`[EditorPage] Mod ${idx + 1} has no id — skipping.`);
+                return;
+            }
+
+            console.log(`[EditorPage] Applying mod ${idx + 1}/${modifications.length} to node ${mod.id}:`, mod);
+
+            const hasContent = mod.content !== null && mod.content !== undefined;
+            const hasStyle   = mod.style   !== null && mod.style   !== undefined && Object.keys(mod.style).length > 0;
+
+            if (hasStyle) {
+                // Delegate to handleStyleUpdate for each style property
+                Object.entries(mod.style).forEach(([key, value]) => {
+                    // pass `true` for ignoreSelection so AI edits only affect the target mod.id
+                    handleStyleUpdate(mod.id, key, value, null, true);
+                });
+                console.log(`[EditorPage] Styles delegated for ${mod.id}:`, mod.style);
+            }
+
+            if (hasContent) {
+                // Pass null as originalStyle so handleSidebarEdit reads from current safetyStyle
+                handleSidebarEdit(mod.id, mod.content, null);
+                console.log(`[EditorPage] Content updated for ${mod.id}: "${mod.content.slice(0, 40)}..."`);
+            }
+
+            console.log(`[EditorPage] ✅ Done: ${mod.id}`);
+        });
+
+        window.showMessage("AI Edit Applied", `Applied ${modifications.length} modification(s).`, "success");
+    }, [handleSidebarEdit, handleStyleUpdate]);
 
     const handleBatchStyleUpdate = React.useCallback((updates) => {
         if (!updates || updates.length === 0) return;
@@ -1572,7 +1634,7 @@ export default function EditorPage() {
                                 <i className="fa-solid fa-chevron-left" style={{ fontSize: '0.7rem' }}></i>
                             </button>
                         )}
-                        <div className="navigator-grid" style={{ display: 'flex', gap: '8px' }}>
+                        <div className="navigator-grid" style={{ display: 'flex', flexDirection: 'row', gap: '8px', flexWrap: 'nowrap' }}>
                             {pages.slice(pageOffset, pageOffset + VISIBLE_PAGE_COUNT).map((_, i) => {
                                 const realIdx = pageOffset + i;
                                 return (
@@ -1631,42 +1693,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="preview-stage">
-                    {/* PROPERTY HUD BAR */}
-                    {activeNodeProps && (
-                        <div className="property-hud">
-
-
-                            <div className="hud-group">
-                                <span className="hud-label">Font</span>
-                                <span className="hud-value">{activeNodeProps.font.split(',')[0].replace(/'/g, "")}</span>
-                            </div>
-                            <div className="hud-divider"></div>
-                            <div className="hud-group">
-                                <span className="hud-label">Size</span>
-                                <span className="hud-value">
-                                    {activeNodeProps.size.toFixed(1)} pt
-                                </span>
-                            </div>
-                            <div className="hud-divider"></div>
-                            <div className="hud-group">
-                                <span className="hud-label">Scale</span>
-                                <span className="hud-value monospace" style={{ color: activeScale !== 1.0 ? 'var(--brand-primary, #2563eb)' : 'inherit' }}>
-                                    {activeScale.toFixed(2)}x
-                                </span>
-                            </div>
-                            <div className="hud-divider"></div>
-                            <div className="hud-group">
-                                <span className="hud-label">Color</span>
-                                <div className="hud-color-swatch" style={{ background: rgbToHex(activeNodeProps.color) }}></div>
-                                <span className="hud-value monospace">{rgbToHex(activeNodeProps.color).toUpperCase()}</span>
-                            </div>
-                            <div className="hud-divider"></div>
-                            <div className="hud-group">
-                                <span className="hud-label">Pos</span>
-                                <span className="hud-value monospace">X:{activeNodeProps.x.toFixed(0)} Y:{activeNodeProps.y.toFixed(0)}</span>
-                            </div>
-                        </div>
-                    )}
+                    {/* PROPERTY HUD BAR REMOVED */}
 
                     <div className="preview-content-wrapper">
                         <PythonRenderer
@@ -1706,60 +1733,157 @@ export default function EditorPage() {
                 <div className="panel-header" style={{ flexDirection: 'column', gap: '15px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
                         <h3 className="studio-header">
-                            Content <span>Studio</span>
+                            {sidebarMode === 'studio' ? (
+                                <>Content <span>Studio</span></>
+                            ) : (
+                                <>AI <span>Assistant</span></>
+                            )}
                         </h3>
-                        <span className="page-count-mini">Page {activePageIndex + 1} · {textLines.length} {activeTab === 'text' ? 'Nodes' : 'Links'}</span>
+                        {sidebarMode === 'studio' && (
+                            <span className="page-count-mini">Page {activePageIndex + 1} · {textLines.length} {activeTab === 'text' ? 'Nodes' : 'Links'}</span>
+                        )}
                     </div>
-                    <div className="tab-pill-selector">
-                        <button className={`tab-pill ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>
-                            <span className="icon">Aa</span> Text Content
+
+                    <div className="tab-pill-selector mode-toggle" style={{ marginBottom: '5px' }}>
+                        <button 
+                            className={`tab-pill ${sidebarMode === 'studio' ? 'active' : ''}`} 
+                            onClick={() => setSidebarMode('studio')}
+                        >
+                            <i className="fa-solid fa-pen-to-square" style={{fontSize: '0.8rem'}}></i> Studio
                         </button>
-                        <button className={`tab-pill ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>
-                            <span className="icon">🔗</span> Links
+                        <button 
+                            className={`tab-pill ${sidebarMode === 'chat' ? 'active' : ''}`} 
+                            onClick={() => setSidebarMode('chat')}
+                        >
+                            <i className="fa-solid fa-sparkles" style={{fontSize: '0.8rem', color: sidebarMode === 'chat' ? '#fff' : '#8b5cf6'}}></i> AI Chat
+                        </button>
+                        <button 
+                            className={`tab-pill ${sidebarMode === 'debug' ? 'active' : ''}`} 
+                            onClick={() => setSidebarMode('debug')}
+                            title="Manual JSON testing"
+                        >
+                            <i className="fa-solid fa-bug" style={{fontSize: '0.8rem'}}></i> Debug
                         </button>
                     </div>
+
+                    {sidebarMode === 'studio' && (
+                        <div className="tab-pill-selector">
+                            <button className={`tab-pill ${activeTab === 'text' ? 'active' : ''}`} onClick={() => setActiveTab('text')}>
+                                <span className="icon">Aa</span> Text Content
+                            </button>
+                            <button className={`tab-pill ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>
+                                <span className="icon">🔗</span> Links
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="structure-list">
-                    {textLines.slice().reverse().map((line, i) => {
-                        const edit = nodeEdits[line.id] || {};
-                        const displayContent = edit.content !== undefined ? edit.content : line.content;
-                        const isActive = activeNodeId === (line.id || line.dataIndex);
-                        const isSelected = selectedNodeIds.includes(line.id);
+                    {sidebarMode === 'studio' ? (
+                        textLines.slice().reverse().map((line, i) => {
+                            const edit = nodeEdits[line.id] || {};
+                            const displayContent = edit.content !== undefined ? edit.content : line.content;
+                            const isActive = activeNodeId === (line.id || line.dataIndex);
+                            const isSelected = selectedNodeIds.includes(line.id);
 
-                        return (
-                            <MemoizedSidebarCard
-                                key={line.id || i}
-                                line={line}
-                                edit={edit}
-                                i={i}
-                                isActive={isActive}
-                                isSelected={isSelected}
-                                isLineMultiSelect={isLineMultiSelect}
-                                displayContent={displayContent}
-                                onClick={() => {
-                                    if (isLineMultiSelect) {
-                                        setSelectedNodeIds(prev => {
-                                            const currentlySelected = prev.includes(line.id);
-                                            const next = currentlySelected ? prev.filter(id => id !== line.id) : [...prev, line.id];
-                                            if (!currentlySelected) setActiveNodeId(line.id);
-                                            return next;
-                                        });
-                                    } else {
+                            return (
+                                <MemoizedSidebarCard
+                                    key={line.id || i}
+                                    line={line}
+                                    edit={edit}
+                                    i={i}
+                                    isActive={isActive}
+                                    isSelected={isSelected}
+                                    isLineMultiSelect={isLineMultiSelect}
+                                    displayContent={displayContent}
+                                    onClick={() => {
+                                        if (isLineMultiSelect) {
+                                            setSelectedNodeIds(prev => {
+                                                const currentlySelected = prev.includes(line.id);
+                                                const next = currentlySelected ? prev.filter(id => id !== line.id) : [...prev, line.id];
+                                                if (!currentlySelected) setActiveNodeId(line.id);
+                                                return next;
+                                            });
+                                        } else {
+                                            setActiveNodeId(line.id);
+                                            setSelectedNodeIds([line.id]);
+                                        }
+                                    }}
+                                    onFocus={() => {
                                         setActiveNodeId(line.id);
-                                        setSelectedNodeIds([line.id]);
+                                        if (!isLineMultiSelect) setSelectedNodeIds([line.id]);
+                                        else if (!selectedNodeIds.includes(line.id)) setSelectedNodeIds(prev => [...prev, line.id]);
+                                    }}
+                                    onChangeText={(val, selectionStart) => handleSidebarEdit(line.id, val, line.originalStyle, selectionStart)}
+                                    onChangeLink={(val) => handleSidebarEdit(line.id, displayContent, line.originalStyle, undefined, val)}
+                                />
+                            );
+                        })
+                    ) : sidebarMode === 'chat' ? (
+                        <ChatPanel 
+                            pdfName={pdfName} 
+                            onAIModification={handleAIModification} 
+                        />
+                    ) : (
+                        <div style={{ padding: '15px', color: 'var(--ink)' }}>
+                            <h4 style={{ marginBottom: '10px' }}>Manual AI JSON Test</h4>
+                            <p style={{ fontSize: '0.8rem', color: 'var(--ink-4)', marginBottom: '10px' }}>
+                                Paste the exact JSON array the AI returns to test layout reflow manually.
+                            </p>
+                            <textarea 
+                                id="debug-json-input"
+                                rows="15" 
+                                style={{ 
+                                    width: '100%', 
+                                    background: 'var(--surface)', 
+                                    color: 'var(--ink)', 
+                                    border: '1px solid var(--border)', 
+                                    padding: '10px', 
+                                    fontFamily: 'monospace',
+                                    borderRadius: '8px',
+                                    resize: 'vertical'
+                                }}
+                                defaultValue={`[
+  {
+    "id": "REPLACE_WITH_NODE_ID",
+    "content": "Updated content goes here",
+    "style": {
+      "color": [1, 0, 0],
+      "size": 14,
+      "font": "Inter",
+      "is_bold": true,
+      "is_italic": false
+    }
+  }
+]`}
+                            ></textarea>
+                            <button 
+                                onClick={() => {
+                                    try {
+                                        const val = document.getElementById('debug-json-input').value;
+                                        if (!val.trim()) return;
+                                        const json = JSON.parse(val);
+                                        handleAIModification(json);
+                                    } catch(e) {
+                                        window.showMessage("Invalid JSON", e.message, "error");
                                     }
                                 }}
-                                onFocus={() => {
-                                    setActiveNodeId(line.id);
-                                    if (!isLineMultiSelect) setSelectedNodeIds([line.id]);
-                                    else if (!selectedNodeIds.includes(line.id)) setSelectedNodeIds(prev => [...prev, line.id]);
+                                style={{ 
+                                    marginTop: '15px', 
+                                    padding: '10px 16px', 
+                                    background: 'var(--ink)', 
+                                    color: 'var(--white)', 
+                                    border: 'none', 
+                                    borderRadius: '20px', 
+                                    cursor: 'pointer',
+                                    width: '100%',
+                                    fontWeight: 'bold'
                                 }}
-                                onChangeText={(val, selectionStart) => handleSidebarEdit(line.id, val, line.originalStyle, selectionStart)}
-                                onChangeLink={(val) => handleSidebarEdit(line.id, displayContent, line.originalStyle, undefined, val)}
-                            />
-                        );
-                    })}
+                            >
+                                Apply JSON
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
 

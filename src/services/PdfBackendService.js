@@ -3,9 +3,10 @@ import { BASE_URL, ENDPOINTS } from "./api";
 /**
  * Service to handle communication with the PDF Extraction Backend.
  */
-export const uploadPdfToBackend = async (file) => {
+export const uploadPdfToBackend = async (file, sessionId) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (sessionId) formData.append('session_id', sessionId);
 
     try {
         const response = await fetch(`${BASE_URL}${ENDPOINTS.EXTRACT}`, {
@@ -90,5 +91,71 @@ export const logFontMapping = async (diagData) => {
         });
     } catch (error) {
         console.warn('[BackendService] Failed to log font mapping:', error);
+    }
+};
+
+/**
+ * Service to chat with the AI Assistant about the PDF.
+ */
+export const sendChatMessage = async (message, sessionId, history = []) => {
+    try {
+        const response = await fetch(`${BASE_URL}/chat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message, session_id: sessionId, history }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Chat Error ${response.status}: ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("AI Chat Failed:", error);
+        throw error;
+    }
+};
+
+/**
+ * Service to send a dedicated edit request to the AI.
+ */
+export const sendEditMessage = async (message, sessionId, history = []) => {
+    try {
+        const response = await fetch(`${BASE_URL}/chat-edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message, session_id: sessionId, history }),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Edit Error ${response.status}: ${errorText}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error("AI Edit Failed:", error);
+        throw error;
+    }
+};
+
+/**
+ * Service to explicitly clear a session and its vector data.
+ */
+export const deleteSession = async (sessionId) => {
+    if (!sessionId) return;
+    try {
+        await fetch(`${BASE_URL}/chat/session/${sessionId}`, {
+            method: 'DELETE',
+            // use keepalive to ensure request completes even if tab is closing
+            keepalive: true 
+        });
+    } catch (error) {
+        console.warn("[BackendService] Failed to clear session:", error);
     }
 };

@@ -598,14 +598,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
 
     return (
         <div className="webgl-single-page" style={{ width: 'auto', height: 'auto', position: 'relative', background: 'transparent', padding: '0px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: scaledStyleWidth + 'px', margin: '0 auto 15px auto', padding: '0 10px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    {/* Capture DOM debug button removed */}
-                </div>
-                <div style={{ background: '#f8f9fa', padding: '4px 10px', borderRadius: '6px', color: '#666', fontSize: '0.75rem', border: '1px solid #dee2e6', fontWeight: '600' }}>
-                    Page {pageIndex + 1}
-                </div>
-            </div>
+            {/* PAGE BADGE REMOVED */}
             <div
                 className="page-paper-wrapper"
                 style={{
