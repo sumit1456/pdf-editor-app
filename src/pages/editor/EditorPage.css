@@ -127,7 +127,7 @@
    No background, no border, no shadow
    ════════════════════════════════ */
 .editing-panel {
-    width: 340px;
+    width: 350px;
     height: 100%;
     background: transparent;
     /* ← BLENDS IN */
@@ -1381,6 +1381,7 @@
     cursor: pointer;
     box-shadow: var(--sh-sm);
 }
+
 /* --------------------------------
    FitV3 ANIMATIONS
    -------------------------------- */
@@ -1391,16 +1392,28 @@
 }
 
 @keyframes fitting-shimmer {
-    0% { opacity: 0.6; filter: blur(0px); }
-    50% { opacity: 0.3; filter: blur(0.5px); fill: var(--brand-primary, #3b82f6); }
-    100% { opacity: 0.6; filter: blur(0px); }
+    0% {
+        opacity: 0.6;
+        filter: blur(0px);
+    }
+
+    50% {
+        opacity: 0.3;
+        filter: blur(0.5px);
+        fill: var(--brand-primary, #3b82f6);
+    }
+
+    100% {
+        opacity: 0.6;
+        filter: blur(0px);
+    }
 }
 
 /* Smooth font-size sink */
 text {
-    transition: font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-                fill 0.3s var(--ease), 
-                opacity 0.4s var(--ease);
+    transition: font-size 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        fill 0.3s var(--ease),
+        opacity 0.4s var(--ease);
 }
 
 /* ════════════════════════════════
@@ -1447,11 +1460,11 @@ text {
 .navigator-sidebar,
 .editing-panel,
 .workspace-container {
-    transition: transform 0.4s var(--ease), 
-                width 0.4s var(--ease), 
-                flex 0.4s var(--ease),
-                opacity 0.3s var(--ease),
-                padding 0.4s var(--ease);
+    transition: transform 0.4s var(--ease),
+        width 0.4s var(--ease),
+        flex 0.4s var(--ease),
+        opacity 0.3s var(--ease),
+        padding 0.4s var(--ease);
 }
 
 /* --- STUDIO MODE: Focused 50/50 Split --- */
@@ -1464,7 +1477,7 @@ text {
 }
 
 .layout-studio .workspace-container {
-    flex: 1.1; 
+    flex: 1.1;
     padding: 0 20px;
 }
 
@@ -1474,7 +1487,7 @@ text {
     background: var(--white);
     border-left: 1px solid var(--border);
     padding: 0 30px 20px 30px !important;
-    box-shadow: -10px 0 30px rgba(0,0,0,0.02);
+    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.02);
 }
 
 .layout-studio .editing-panel .premium-input-card {

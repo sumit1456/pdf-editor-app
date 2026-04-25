@@ -30,6 +30,12 @@ export const uploadPdfToBackend = async (file, sessionId) => {
  * Service to save/export the reconstructed PDF.
  */
 export const savePdfToBackend = async (payload) => {
+    console.log("===============================================");
+    console.log(payload);
+    console.log("===============================================");
+
+
+
     try {
         const response = await fetch(`${BASE_URL}${ENDPOINTS.SAVE}`, {
             method: 'POST',
@@ -120,6 +126,27 @@ export const sendChatMessage = async (message, sessionId, history = []) => {
 };
 
 /**
+ * Streaming version of chat message sending.
+ * Returns a readable stream reader.
+ */
+export const sendChatMessageV2 = async (message, sessionId, history = []) => {
+    const response = await fetch(`${BASE_URL}/chat-v2`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message, session_id: sessionId, history }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Chat Streaming Error ${response.status}: ${errorText}`);
+    }
+
+    return response.body.getReader();
+};
+
+/**
  * Service to send a dedicated edit request to the AI.
  */
 export const sendEditMessage = async (message, sessionId, history = []) => {
@@ -145,6 +172,26 @@ export const sendEditMessage = async (message, sessionId, history = []) => {
 };
 
 /**
+ * Streaming version of AI edit requests.
+ */
+export const sendEditMessageV2 = async (message, sessionId, history = []) => {
+    const response = await fetch(`${BASE_URL}/chat-edit-v2`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message, session_id: sessionId, history }),
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edit Streaming Error ${response.status}: ${errorText}`);
+    }
+
+    return response.body.getReader();
+};
+
+/**
  * Service to explicitly clear a session and its vector data.
  */
 export const deleteSession = async (sessionId) => {
@@ -153,9 +200,22 @@ export const deleteSession = async (sessionId) => {
         await fetch(`${BASE_URL}/chat/session/${sessionId}`, {
             method: 'DELETE',
             // use keepalive to ensure request completes even if tab is closing
-            keepalive: true 
+            keepalive: true
         });
     } catch (error) {
         console.warn("[BackendService] Failed to clear session:", error);
+    }
+};
+/**
+ * Service to check the indexing status of a document for AI chat.
+ */
+export const checkIndexingStatus = async (sessionId) => {
+    try {
+        const response = await fetch(`${BASE_URL}${ENDPOINTS.CHAT_STATUS}/${sessionId}`);
+        if (!response.ok) return { success: false, status: 'error' };
+        return await response.json();
+    } catch (error) {
+        console.error("Status Check Failed:", error);
+        return { success: false, status: 'error' };
     }
 };

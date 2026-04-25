@@ -619,11 +619,13 @@ export default function EditorPage() {
 
     const handleDownload = React.useCallback(async () => {
         // Gather all original lines across all pages with their indices
-        const allOriginalLines = pages.flatMap((p, pIdx) =>
-            (p.blocks || []).flatMap(b =>
-                b.lines.map(l => ({ ...l, pageIndex: pIdx }))
-            )
-        );
+        const allOriginalLines = pages.flatMap((p, pIdx) => {
+            const blockLines = (p.blocks || []).flatMap(b =>
+                (b.lines || []).map(l => ({ ...l, pageIndex: pIdx }))
+            );
+            const itemLines = (p.items || []).map(l => ({ ...l, pageIndex: pIdx }));
+            return [...blockLines, ...itemLines];
+        });
 
         const modifiedNodes = Object.keys(nodeEdits)
             .filter(id => nodeEdits[id].isModified)
@@ -688,14 +690,24 @@ export default function EditorPage() {
                     return 'Inter'; // Default
                 };
 
+                // --- COORDINATE CALCULATION FIX ---
+                // If the extraction doesn't provide bbox/origin on the line, we build them from x0, y, width, height
+                const derivedOrigin = original ? [original.x0 || 0, original.y || 0] : [0, 0];
+                const derivedBbox = original ? [
+                    original.x0 || 0,
+                    (original.y || 0) - (original.height || 0),
+                    original.x1 || ((original.x0 || 0) + (original.width || 0)),
+                    original.y || 0
+                ] : [0, 0, 0, 0];
+
                 return {
                     id: id,
                     pageIndex: original?.pageIndex ?? 0,
                     text: newText,
                     originalText: original?.content,
-                    bbox: edit.bbox || original?.bbox,
-                    origin: edit.origin || original?.origin,
-                    original_origin: original?.origin,
+                    bbox: edit.bbox || original?.bbox || derivedBbox,
+                    origin: edit.origin || original?.origin || derivedOrigin,
+                    original_origin: original?.origin || derivedOrigin,
                     style: {
                         ...edit.safetyStyle,
                         font: edit.safetyStyle?.font || original?.originalStyle?.font || original?.font || '',
@@ -1059,9 +1071,30 @@ export default function EditorPage() {
                 for (const p of pages) {
                     const found = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === id);
                     if (found) {
-                        if (!newBBox && found.bbox) newBBox = [...found.bbox];
-                        if (!newOrigin && found.origin) newOrigin = [...found.origin];
-                        if (!newOrigin && newBBox) newOrigin = [newBBox[0], newBBox[1]];
+                        // --- START POSITION DERIVATION FIX ---
+                        if (!newBBox) {
+                            if (found.bbox) {
+                                newBBox = [...found.bbox];
+                            } else {
+                                // Derive bbox from x0, y, width, height
+                                newBBox = [
+                                    found.x0 || 0,
+                                    (found.y || 0) - (found.height || 0),
+                                    found.x1 || ((found.x0 || 0) + (found.width || 0)),
+                                    found.y || 0
+                                ];
+                            }
+                        }
+                        
+                        if (!newOrigin) {
+                            if (found.origin) {
+                                newOrigin = [...found.origin];
+                            } else {
+                                // Use baseline start as origin
+                                newOrigin = [found.x0 || 0, found.y || 0];
+                            }
+                        }
+                        // --- END POSITION DERIVATION FIX ---
 
                         if (!safetyStyle) {
                             const contentItem = (found.is_bullet_start && found.items?.length > 1) ? found.items[1] : (found.items?.[0] || found);
@@ -1756,13 +1789,6 @@ export default function EditorPage() {
                             onClick={() => setSidebarMode('chat')}
                         >
                             <i className="fa-solid fa-sparkles" style={{fontSize: '0.8rem', color: sidebarMode === 'chat' ? '#fff' : '#8b5cf6'}}></i> AI Chat
-                        </button>
-                        <button 
-                            className={`tab-pill ${sidebarMode === 'debug' ? 'active' : ''}`} 
-                            onClick={() => setSidebarMode('debug')}
-                            title="Manual JSON testing"
-                        >
-                            <i className="fa-solid fa-bug" style={{fontSize: '0.8rem'}}></i> Debug
                         </button>
                     </div>
 

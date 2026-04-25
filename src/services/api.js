@@ -13,5 +13,8 @@ export const ENDPOINTS = {
     EXTRACT: "/pdf-extraction-config",
     SAVE: "/save-pdf",
     CREATE_FROM_TEXT: "/create-pdf-from-text",
-    LOG: "/api/log"
+    LOG: "/api/log",
+    CHAT: "/chat",
+    CHAT_EDIT: "/chat-edit",
+    CHAT_STATUS: "/chat/status"
 };
