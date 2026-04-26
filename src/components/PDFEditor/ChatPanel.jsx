@@ -16,7 +16,16 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
     const [indexingStatus, setIndexingStatus] = useState('ready'); // 'indexing', 'ready', 'error'
     const scrollRef = useRef(null);
     const pollInterval = useRef(null);
+    const [selectedLLM, setSelectedLLM] = useState('groq'); // 'groq', 'gemini', 'gemini-pro'
     const appliedModIds = useRef(new Set()); // Track applied edits during a stream
+
+    const MODELS = {
+        'groq': { name: 'Groq (Fast)', icon: '⚡', provider: 'groq', model: 'llama-3.3-70b-versatile' },
+        'gemini': { name: 'Gemini Flash', icon: '🧠', provider: 'google', model: 'gemini-1.5-flash' },
+        'gemini-pro': { name: 'Gemini Pro', icon: '💎', provider: 'google', model: 'gemini-1.5-pro' },
+        'gpt-oss': { name: 'GPT-OSS 120B', icon: '🤖', provider: 'groq', model: 'openai/gpt-oss-120b' },
+        'llama-scout': { name: 'Llama Scout 17B', icon: '🦙', provider: 'groq', model: 'meta-llama/llama-4-scout-17b-16e-instruct' }
+    };
 
     // Initial status check and polling
     useEffect(() => {
@@ -57,9 +66,8 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
     const handleSend = async () => {
         if (!input.trim() || isTyping || indexingStatus === 'indexing') return;
 
-        // Use streaming ONLY for chat mode if enabled. 
-        // Reverting 'edit' mode to stable batch processing as requested.
-        if (useStreaming && mode === 'chat') {
+        // Route to streaming logic if enabled
+        if (useStreaming) {
             return handleSendV2();
         }
 
@@ -74,7 +82,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 sessionId = "session_" + Date.now();
                 sessionStorage.setItem('pdf_session_id', sessionId);
             }
-            
+
             const history = messages.slice(-10).map(m => ({
                 role: m.role,
                 content: typeof m.content === 'object' ? m.content.answer : m.content
@@ -82,10 +90,12 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
             console.log(`[ChatPanel] Mode: ${mode} | Using Stable Batch Logic`);
 
+            const currentModel = MODELS[selectedLLM];
+
             // Standard batch API call
-            const data = mode === 'edit' 
-                ? await sendEditMessage(userMsg, sessionId, history)
-                : await sendChatMessage(userMsg, sessionId, history);
+            const data = mode === 'edit'
+                ? await sendEditMessage(userMsg, sessionId, history, currentModel.provider, currentModel.model)
+                : await sendChatMessage(userMsg, sessionId, history, currentModel.provider, currentModel.model);
 
             if (data.success) {
                 setMessages(prev => [...prev, {
@@ -142,13 +152,15 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
             // Add placeholder for AI response
             setMessages(prev => [...prev, { role: 'assistant', content: { answer: '...' }, isStreaming: true }]);
 
+            const currentModel = MODELS[selectedLLM];
             // Switch service based on mode
             const reader = mode === 'edit'
-                ? await sendEditMessageV2(userMsg, sessionId, history)
-                : await sendChatMessageV2(userMsg, sessionId, history);
+                ? await sendEditMessageV2(userMsg, sessionId, history, currentModel.provider, currentModel.model)
+                : await sendChatMessageV2(userMsg, sessionId, history, currentModel.provider, currentModel.model);
 
             const decoder = new TextDecoder();
-            
+            let finalModifications = null;
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
@@ -164,7 +176,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
                         try {
                             const parsed = JSON.parse(dataStr);
-                            
+
                             // 1. Update UI (Chat Message)
                             setMessages(prev => {
                                 const updated = [...prev];
@@ -176,17 +188,8 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                                 return updated;
                             });
 
-                            // 2. If in EDIT mode, apply modifications as they arrive (Ghost Editing)
-                            if (mode === 'edit' && parsed.modifications && parsed.modifications.length > 0) {
-                                // Find mods we haven't applied yet in this session
-                                const newMods = parsed.modifications.filter(m => !appliedModIds.current.has(m.id));
-                                if (newMods.length > 0) {
-                                    console.log(`[ChatPanel Stream] Applying ${newMods.length} new modifications...`);
-                                    newMods.forEach(m => appliedModIds.current.add(m.id));
-                                    if (onAIModification) {
-                                        onAIModification(newMods);
-                                    }
-                                }
+                            if (parsed.modifications) {
+                                finalModifications = parsed.modifications;
                             }
                         } catch (e) {
                             // Skip partial JSON errors
@@ -202,6 +205,14 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 return updated;
             });
             setIsTyping(false);
+
+            // Apply modifications once the stream is completely finished
+            if (mode === 'edit' && finalModifications && finalModifications.length > 0) {
+                console.log(`[ChatPanel Stream] Stream finished. Applying ${finalModifications.length} fully formed modifications...`);
+                if (onAIModification) {
+                    onAIModification(finalModifications);
+                }
+            }
 
         } catch (error) {
             console.error("Streaming error:", error);
@@ -222,38 +233,54 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
     // Use effect to trigger send when input is set from suggested
     useEffect(() => {
-        if (input && messages.length > 0 && messages[messages.length-1].role === 'assistant' && messages[messages.length-1].content?.suggested_questions?.includes(input)) {
-             // This is a bit hacky, let's just make handleSend accept an optional message
+        if (input && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].content?.suggested_questions?.includes(input)) {
+            // This is a bit hacky, let's just make handleSend accept an optional message
         }
     }, [input]);
 
     return (
         <div className="chat-panel-container">
             <div className="chat-mode-header">
-                <div 
-                    className={`mode-btn ${mode === 'chat' ? 'active' : ''}`} 
-                    onClick={() => setMode('chat')}
-                >
-                    💬 Chat
+                <div className="mode-btns">
+                    <div
+                        className={`mode-btn ${mode === 'chat' ? 'active' : ''}`}
+                        onClick={() => setMode('chat')}
+                    >
+                        💬 Chat
+                    </div>
+                    <div
+                        className={`mode-btn ${mode === 'edit' ? 'active' : ''}`}
+                        onClick={() => setMode('edit')}
+                    >
+                        ✏️ Edit
+                    </div>
                 </div>
-                <div 
-                    className={`mode-btn ${mode === 'edit' ? 'active' : ''}`} 
-                    onClick={() => setMode('edit')}
-                >
-                    ✏️ Edit
+
+                <div className="llm-selector-container">
+                    <select
+                        value={selectedLLM}
+                        onChange={(e) => setSelectedLLM(e.target.value)}
+                        className="llm-selector-dropdown"
+                    >
+                        {Object.entries(MODELS).map(([id, m]) => (
+                            <option key={id} value={id}>
+                                {m.icon} {m.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
             </div>
             <div className="chat-messages" ref={scrollRef}>
                 {messages.map((msg, idx) => {
                     const isAssistant = msg.role === 'assistant';
                     let structuredData = null;
-                    
+
                     if (isAssistant && typeof msg.content === 'object') {
                         structuredData = msg.content;
                     } else if (isAssistant && typeof msg.content === 'string' && msg.content.trim().startsWith('{')) {
                         try {
                             structuredData = JSON.parse(msg.content);
-                        } catch (e) {}
+                        } catch (e) { }
                     }
 
                     return (
@@ -269,20 +296,20 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                                                 </ul>
                                             </div>
                                         )}
-                                        
-                                        <div 
-                                            className="main-answer" 
-                                            dangerouslySetInnerHTML={{ __html: (structuredData.answer || '').replace(/\n/g, '<br/>') }} 
+
+                                        <div
+                                            className="main-answer"
+                                            dangerouslySetInnerHTML={{ __html: (structuredData.answer || '').replace(/\n/g, '<br/>') }}
                                         />
-                                        
+
                                         {structuredData.suggested_questions && structuredData.suggested_questions.length > 0 && (
                                             <div className="suggested-questions">
                                                 <div className="suggested-label">Try asking:</div>
                                                 <div className="suggested-pills-container">
                                                     {structuredData.suggested_questions.map((q, i) => (
-                                                        <button 
-                                                            key={i} 
-                                                            className="suggested-q-pill" 
+                                                        <button
+                                                            key={i}
+                                                            className="suggested-q-pill"
                                                             onClick={() => {
                                                                 setInput(q);
                                                                 // Trigger send in next tick
@@ -320,7 +347,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                             <span>AI is indexing your document...</span>
                         </div>
                     )}
-                    <textarea 
+                    <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         placeholder={indexingStatus === 'indexing' ? "Waiting for AI..." : (mode === 'chat' ? "Ask a question..." : "Describe changes...")}
@@ -332,13 +359,13 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                         }}
                         disabled={indexingStatus === 'indexing'}
                     />
-                    <button 
+                    <button
                         id="chat-send-trigger"
                         className={`send-button ${(!input.trim() || isTyping || indexingStatus === 'indexing') ? '' : 'active'}`}
                         onClick={handleSend}
                         disabled={!input.trim() || isTyping || indexingStatus === 'indexing'}
                     >
-                        <i className="fa-solid fa-paper-plane" style={{fontSize: '0.9rem'}}></i>
+                        <i className="fa-solid fa-paper-plane" style={{ fontSize: '0.9rem' }}></i>
                     </button>
                 </div>
                 <div className="chat-footer-hint">Powered by Groq & Pinecone</div>

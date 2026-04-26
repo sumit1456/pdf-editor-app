@@ -1645,8 +1645,8 @@ export default function EditorPage() {
 
             {/* 2. MAIN WORKSPACE - Center */}
             <div className="workspace-container">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
-                    <h2 className="studio-header" style={{ margin: 0 }}>
+                <div className="workspace-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                    <h2 className="studio-header" style={{ margin: 0, paddingLeft: 0 }}>
                         Studio <span>Workspace</span>
                     </h2>
 
@@ -1656,18 +1656,18 @@ export default function EditorPage() {
                         <button className="zoom-btn" onClick={() => handleZoom(0.1)}>+</button>
                     </div>
 
-                    <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         {pages.length > VISIBLE_PAGE_COUNT && (
                             <button
                                 className="sidebar-thumb"
-                                style={{ width: 'auto', padding: '0 10px', minWidth: 'unset' }}
+                                style={{ width: 'auto', padding: '0 8px', minWidth: 'unset' }}
                                 onClick={() => setPageOffset(prev => Math.max(0, prev - 1))}
                                 disabled={pageOffset === 0}
                             >
                                 <i className="fa-solid fa-chevron-left" style={{ fontSize: '0.7rem' }}></i>
                             </button>
                         )}
-                        <div className="navigator-grid" style={{ display: 'flex', flexDirection: 'row', gap: '8px', flexWrap: 'nowrap' }}>
+                        <div className="navigator-grid" style={{ display: 'flex', flexDirection: 'row', gap: '4px', flexWrap: 'nowrap' }}>
                             {pages.slice(pageOffset, pageOffset + VISIBLE_PAGE_COUNT).map((_, i) => {
                                 const realIdx = pageOffset + i;
                                 return (
@@ -1721,7 +1721,7 @@ export default function EditorPage() {
                     </div>
 
                     <button className="download-btn-premium" onClick={handleDownload}>
-                        <span style={{ fontSize: '1rem' }}>📥</span> Download PDF
+                        <span style={{ fontSize: '0.85rem' }}>📥</span> Download PDF
                     </button>
                 </div>
 

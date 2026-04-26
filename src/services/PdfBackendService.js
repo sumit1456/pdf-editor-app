@@ -103,14 +103,20 @@ export const logFontMapping = async (diagData) => {
 /**
  * Service to chat with the AI Assistant about the PDF.
  */
-export const sendChatMessage = async (message, sessionId, history = []) => {
+export const sendChatMessage = async (message, sessionId, history = [], provider = null, model = null) => {
     try {
         const response = await fetch(`${BASE_URL}/chat`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message, session_id: sessionId, history }),
+            body: JSON.stringify({ 
+                message, 
+                session_id: sessionId, 
+                history,
+                llm_provider: provider,
+                llm_model: model
+            }),
         });
 
         if (!response.ok) {
@@ -129,13 +135,19 @@ export const sendChatMessage = async (message, sessionId, history = []) => {
  * Streaming version of chat message sending.
  * Returns a readable stream reader.
  */
-export const sendChatMessageV2 = async (message, sessionId, history = []) => {
+export const sendChatMessageV2 = async (message, sessionId, history = [], provider = null, model = null) => {
     const response = await fetch(`${BASE_URL}/chat-v2`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message, session_id: sessionId, history }),
+        body: JSON.stringify({ 
+            message, 
+            session_id: sessionId, 
+            history,
+            llm_provider: provider,
+            llm_model: model
+        }),
     });
 
     if (!response.ok) {
@@ -149,14 +161,20 @@ export const sendChatMessageV2 = async (message, sessionId, history = []) => {
 /**
  * Service to send a dedicated edit request to the AI.
  */
-export const sendEditMessage = async (message, sessionId, history = []) => {
+export const sendEditMessage = async (message, sessionId, history = [], provider = null, model = null) => {
     try {
         const response = await fetch(`${BASE_URL}/chat-edit`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message, session_id: sessionId, history }),
+            body: JSON.stringify({ 
+                message, 
+                session_id: sessionId, 
+                history,
+                llm_provider: provider,
+                llm_model: model
+            }),
         });
 
         if (!response.ok) {
@@ -174,13 +192,19 @@ export const sendEditMessage = async (message, sessionId, history = []) => {
 /**
  * Streaming version of AI edit requests.
  */
-export const sendEditMessageV2 = async (message, sessionId, history = []) => {
+export const sendEditMessageV2 = async (message, sessionId, history = [], provider = null, model = null) => {
     const response = await fetch(`${BASE_URL}/chat-edit-v2`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message, session_id: sessionId, history }),
+        body: JSON.stringify({ 
+            message, 
+            session_id: sessionId, 
+            history,
+            llm_provider: provider,
+            llm_model: model
+        }),
     });
 
     if (!response.ok) {
