@@ -23,12 +23,9 @@ export default function HomePage() {
           reader.readAsDataURL(file);
         });
 
-        // Generate or retrieve Session ID
-        let sessionId = sessionStorage.getItem('pdf_session_id');
-        if (!sessionId) {
-            sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-            sessionStorage.setItem('pdf_session_id', sessionId);
-        }
+        // Always generate a fresh Session ID for a new document upload
+        const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        sessionStorage.setItem('pdf_session_id', sessionId);
 
         const jsonOutput = await uploadPdfToBackend(file, sessionId);
         window.showLoading(false);
@@ -74,6 +71,11 @@ export default function HomePage() {
 
     setIsImportModalOpen(false);
     window.showLoading(true, "Generating PDF from text...");
+
+    // Always generate a fresh Session ID for imported text
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    sessionStorage.setItem('pdf_session_id', sessionId);
+
     try {
       const { createPdfFromText } = await import("../../services/PdfBackendService");
       const response = await createPdfFromText(text);
