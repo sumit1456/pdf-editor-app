@@ -5,9 +5,9 @@
 
 //url_deployed = "https://my-images-python-backend.onrender.com"
 
-export const BASE_URL = "http://localhost:8000";
+export const BASE_URL2 = "http://localhost:8000";
 export const BASE_URL1 = "http://100.53.20.30:8000";
-export const BASE_URL2 = "https://my-images-python-backend.onrender.com"
+export const BASE_URL = "https://my-images-python-backend.onrender.com"
 
 export const ENDPOINTS = {
     EXTRACT: "/pdf-extraction-config",
