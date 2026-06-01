@@ -1,19 +1,51 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sendChatMessage, sendChatMessageV2, sendEditMessage, sendEditMessageV2, checkIndexingStatus } from '../../services/PdfBackendService';
 import './ChatPanel.css';
 
 const ChatPanel = ({ pdfName, onAIModification }) => {
+    const queryClient = useQueryClient();
     const [mode, setMode] = useState('chat'); // 'chat' or 'edit'
     const [useStreaming, setUseStreaming] = useState(true); // Toggle for streaming
-    const [messages, setMessages] = useState([
+    
+    const sessionId = sessionStorage.getItem('pdf_session_id') || 'default-session';
+    const messagesKey = ['pdf-chat-messages', sessionId];
+    const statusKey = ['pdf-indexing-status', sessionId];
+
+    // Use TanStack Query to manage messages state persistently
+    const { data: messages = [
         {
             role: 'assistant',
             content: `Hello! I'm your AI assistant for **${pdfName}**. I can answer questions about the content or help you perform **AI-assisted PDF edits** directly. How can I help you today?`
         }
-    ]);
+    ] } = useQuery({
+        queryKey: messagesKey,
+        enabled: false,
+        initialData: [
+            {
+                role: 'assistant',
+                content: `Hello! I'm your AI assistant for **${pdfName}**. I can answer questions about the content or help you perform **AI-assisted PDF edits** directly. How can I help you today?`
+            }
+        ]
+    });
+
+    const setMessages = (updater) => {
+        queryClient.setQueryData(messagesKey, updater);
+    };
+
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [indexingStatus, setIndexingStatus] = useState('ready'); // 'indexing', 'ready', 'error'
+    
+    // Use TanStack Query for indexing status as well
+    const { data: indexingStatus = 'ready' } = useQuery({
+        queryKey: statusKey,
+        enabled: false,
+        initialData: 'ready'
+    });
+
+    const setIndexingStatus = (status) => {
+        queryClient.setQueryData(statusKey, status);
+    };
     const scrollRef = useRef(null);
     const pollInterval = useRef(null);
     const [selectedLLM, setSelectedLLM] = useState('groq'); // 'groq', 'gemini', 'gemini-pro'

@@ -230,6 +230,21 @@ export const deleteSession = async (sessionId) => {
         console.warn("[BackendService] Failed to clear session:", error);
     }
 };
+
+/**
+ * Cleanup session data from Pinecone.
+ */
+export const cleanupSession = async (sessionId) => {
+    if (!sessionId) return;
+    try {
+        await fetch(`${BASE_URL}/cleanup-session/${sessionId}`, {
+            method: 'POST',
+            keepalive: true
+        });
+    } catch (error) {
+        console.warn("[BackendService] Failed to cleanup session:", error);
+    }
+};
 /**
  * Service to check the indexing status of a document for AI chat.
  */

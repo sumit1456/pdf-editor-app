@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import "./css-files/AdtrioxHome.css";
-import { uploadPdfToBackend } from "../../services/PdfBackendService";
+import { uploadPdfToBackend, cleanupSession } from "../../services/PdfBackendService";
 import TextImportModal from "../../components/TextImportModal/TextImportModal";
 
 export default function HomePage() {
   const fileInputRef = React.useRef(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const handleUploadClick = () => {
@@ -17,6 +19,13 @@ export default function HomePage() {
     if (file && file.type === "application/pdf") {
       window.showLoading(true, "Extracting Scene Graph...");
       try {
+        // --- CLEANUP PREVIOUS SESSION ---
+        const oldSessionId = sessionStorage.getItem('pdf_session_id');
+        if (oldSessionId) {
+          console.log(`[HomePage] Cleaning up old session: ${oldSessionId}`);
+          cleanupSession(oldSessionId); // Fire and forget or await? Usually fire and forget is fine for UX
+        }
+
         const fileBase64 = await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -28,6 +37,14 @@ export default function HomePage() {
         sessionStorage.setItem('pdf_session_id', sessionId);
 
         const jsonOutput = await uploadPdfToBackend(file, sessionId);
+        
+        // Cache the extraction result in TanStack Query for persistence
+        queryClient.setQueryData(['pdf-scene-graph', sessionId], {
+          sceneGraph: jsonOutput,
+          originalPdfBase64: fileBase64,
+          pdfName: file.name
+        });
+
         window.showLoading(false);
         window.showMessage("Success", "Extraction complete. Document is ready.", "success");
 
@@ -35,7 +52,8 @@ export default function HomePage() {
           state: {
             sceneGraph: jsonOutput,
             originalPdfBase64: fileBase64,
-            pdfName: file.name
+            pdfName: file.name,
+            sessionId: sessionId
           }
         });
       } catch (error) {
@@ -72,6 +90,13 @@ export default function HomePage() {
     setIsImportModalOpen(false);
     window.showLoading(true, "Generating PDF from text...");
 
+    // --- CLEANUP PREVIOUS SESSION ---
+    const oldSessionId = sessionStorage.getItem('pdf_session_id');
+    if (oldSessionId) {
+      console.log(`[HomePage] Cleaning up old session: ${oldSessionId}`);
+      cleanupSession(oldSessionId);
+    }
+
     // Always generate a fresh Session ID for imported text
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     sessionStorage.setItem('pdf_session_id', sessionId);
@@ -83,6 +108,14 @@ export default function HomePage() {
       if (!response.success) throw new Error(response.error || "Failed to create PDF");
 
       const { data } = response;
+      
+      // Cache the result
+      queryClient.setQueryData(['pdf-scene-graph', sessionId], {
+        sceneGraph: data,
+        originalPdfBase64: data.pdf_base64,
+        pdfName: "Imported_Text.pdf"
+      });
+
       window.showLoading(false);
       window.showMessage("Success", "PDF created successfully.", "success");
 
@@ -90,7 +123,8 @@ export default function HomePage() {
         state: {
           sceneGraph: data,
           originalPdfBase64: data.pdf_base64,
-          pdfName: "Imported_Text.pdf"
+          pdfName: "Imported_Text.pdf",
+          sessionId: sessionId
         }
       });
     } catch (error) {

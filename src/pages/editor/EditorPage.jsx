@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
 import { setActiveLine } from '../../store/slices/fontFitSlice';
 import { buildWorkerPayload } from '../../components/PDFEditor/workerUtils';
 import PDFRenderer from '../../components/PDFEditor/PDFRenderer';
@@ -165,11 +166,18 @@ const FontWarmer = () => (
 
 export default function EditorPage() {
     const location = useLocation();
+    const queryClient = useQueryClient();
+
+    // --- CACHE RECOVERY LOGIC ---
+    // Pull from location.state if available, otherwise check TanStack Query cache
+    const sessionId = location.state?.sessionId || sessionStorage.getItem('pdf_session_id');
+    const cachedData = queryClient.getQueryData(['pdf-scene-graph', sessionId]);
+    const sourceData = location.state || cachedData;
 
     // MASTER STATE: All pages and the current active index
     // We merge fragments into lines ONCE at the start to create a persistent "Node Tree"
     const [pages, setPages] = useState(() => {
-        const rawPages = location.state?.sceneGraph?.data?.pages || location.state?.sceneGraph?.pages || [];
+        const rawPages = sourceData?.sceneGraph?.data?.pages || sourceData?.sceneGraph?.pages || [];
 
         return rawPages.map((page, pIdx) => {
             // Check if backend already provided blocks (Python)
@@ -219,10 +227,10 @@ export default function EditorPage() {
         });
     });
 
-    const [fontsKey] = useState(location.state?.sceneGraph?.data?.fonts_key || location.state?.sceneGraph?.fonts_key || '');
-    const [fonts] = useState(location.state?.sceneGraph?.data?.fonts || location.state?.sceneGraph?.fonts || []);
-    const [pdfName] = useState(location.state?.pdfName || 'document.pdf');
-    const [originalPdfBase64] = useState(location.state?.originalPdfBase64 || '');
+    const [fontsKey] = useState(sourceData?.sceneGraph?.data?.fonts_key || sourceData?.sceneGraph?.fonts_key || '');
+    const [fonts] = useState(sourceData?.sceneGraph?.data?.fonts || sourceData?.sceneGraph?.fonts || []);
+    const [pdfName] = useState(sourceData?.pdfName || 'document.pdf');
+    const [originalPdfBase64] = useState(sourceData?.originalPdfBase64 || '');
     const [activePageIndex, setActivePageIndex] = useState(0);
     const [isAdvanced, setIsAdvanced] = useState(true);
     const reflowEngine = useMemo(() => new ReflowEngine(fonts), [fonts]);
