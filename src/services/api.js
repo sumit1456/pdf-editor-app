@@ -1,9 +1,12 @@
 /**
+/**
  * Global API Configuration.
  * Change BASE_URL to "http://localhost:8000" for local development.
  */
 
 export const url_deployed = "https://my-images-python-backend.onrender.com";
+
+//https://my-images-python-backend.onrender.com
 
 export const BASE_URL2 = "http://localhost:8000";
 export const BASE_URL1 = "http://100.53.20.30:8000";

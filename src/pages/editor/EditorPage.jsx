@@ -39,7 +39,25 @@ const mapSpansToWordStyles = (items) => {
     return wordStyles;
 };
 
+const splitBullet = (content) => {
+    if (!content) return { bullet: '', text: '' };
 
+    // Robust pattern for bullet markers:
+    // 1. Common symbols: • · * ∗ ⋆ – - »
+    // 2. Ordered markers: 1. 1) a. a)
+    // Matches the marker and all trailing whitespace
+    const match = content.match(/^([•·*∗⋆–\-»]|[\da-zA-Z]+[.)])\s*/);
+
+    if (match) {
+        const bulletPart = match[0];
+        return {
+            bullet: bulletPart,
+            text: content.substring(bulletPart.length)
+        };
+    }
+
+    return { bullet: '', text: content };
+};
 
 const FONT_OPTIONS = [
     { label: 'Serif (Latex)', value: 'Source Serif 4' },
@@ -645,30 +663,84 @@ export default function EditorPage() {
                 const originalSpans = original?.items || original?.spans || [];
 
                 let processedSpans = null;
-                if (smartStyling || (edit.wordStyles && Object.keys(edit.wordStyles).length > 0)) {
-                    // --- SMART RE-SPANNING / WORD-LEVEL STYLING ---
-                    const words = newText.split(/(\s+)/); // Keep spaces
-                    const baseStyle = edit.safetyStyle || original?.originalStyle || (original?.items?.[0] || {});
+                const isBullet = !!original?.bullet || !!original?.is_bullet_start;
+
+                if (isBullet || smartStyling || (edit.wordStyles && Object.keys(edit.wordStyles).length > 0)) {
+                    const baseStyle = edit.safetyStyle || original?.originalStyle || (originalSpans[0] || {});
                     const wordStyles = edit.wordStyles || {};
 
-                    // Strategy: Map words to styles.
-                    // Note: 'words' includes spaces. wordStyles indices typically refer to non-space words.
-                    let wordCounter = 0;
-                    processedSpans = words.map((chunk) => {
-                        const isSpace = /^\s+$/.test(chunk);
-                        const style = (!isSpace && wordStyles[wordCounter]) ? wordStyles[wordCounter] : {};
-                        if (!isSpace) wordCounter++;
+                    if (isBullet) {
+                        const bulletSpan = originalSpans[0] || {};
+                        const firstTextSpan = originalSpans[1] || originalSpans[0] || {};
 
-                        return {
-                            text: chunk,
-                            font: style.font || baseStyle.font,
-                            size: style.size || baseStyle.size,
-                            color: style.color || baseStyle.color,
-                            is_bold: style.is_bold !== undefined ? style.is_bold : (baseStyle.is_bold || false),
-                            is_italic: style.is_italic !== undefined ? style.is_italic : (baseStyle.is_italic || false),
-                            font_variant: style.font_variant || baseStyle.font_variant || "normal"
+                        // 1. Build the bullet span
+                        const exportedBulletSpan = {
+                            text: original.bullet || bulletSpan.content || bulletSpan.text || '',
+                            font: bulletSpan.font || baseStyle.font,
+                            size: bulletSpan.size || baseStyle.size,
+                            color: bulletSpan.color || baseStyle.color,
+                            is_bold: bulletSpan.is_bold !== undefined ? bulletSpan.is_bold : (baseStyle.is_bold || false),
+                            is_italic: bulletSpan.is_italic !== undefined ? bulletSpan.is_italic : (baseStyle.is_italic || false),
+                            font_variant: bulletSpan.font_variant || baseStyle.font_variant || "normal",
+                            origin: bulletSpan.origin || original?.origin || null
                         };
-                    });
+
+                        // 2. Build the text spans
+                        let textSpans = [];
+                        if (smartStyling || (edit.wordStyles && Object.keys(edit.wordStyles).length > 0)) {
+                            const words = newText.split(/(\s+)/); // Keep spaces
+                            let wordCounter = 0;
+                            textSpans = words.map((chunk, idx) => {
+                                const isSpace = /^\s+$/.test(chunk);
+                                const style = (!isSpace && wordStyles[wordCounter]) ? wordStyles[wordCounter] : {};
+                                if (!isSpace) wordCounter++;
+
+                                return {
+                                    text: chunk,
+                                    font: style.font || baseStyle.font,
+                                    size: style.size || baseStyle.size,
+                                    color: style.color || baseStyle.color,
+                                    is_bold: style.is_bold !== undefined ? style.is_bold : (baseStyle.is_bold || false),
+                                    is_italic: style.is_italic !== undefined ? style.is_italic : (baseStyle.is_italic || false),
+                                    font_variant: style.font_variant || baseStyle.font_variant || "normal",
+                                    origin: idx === 0 ? (firstTextSpan.origin || null) : null
+                                };
+                            });
+                        } else {
+                            // Single text span for the entire newText
+                            textSpans = [{
+                                text: newText,
+                                font: baseStyle.font,
+                                size: baseStyle.size,
+                                color: baseStyle.color,
+                                is_bold: baseStyle.is_bold || false,
+                                is_italic: baseStyle.is_italic || false,
+                                font_variant: baseStyle.font_variant || "normal",
+                                origin: firstTextSpan.origin || null
+                            }];
+                        }
+
+                        processedSpans = [exportedBulletSpan, ...textSpans];
+                    } else {
+                        // Regular smart styling
+                        const words = newText.split(/(\s+)/);
+                        let wordCounter = 0;
+                        processedSpans = words.map((chunk) => {
+                            const isSpace = /^\s+$/.test(chunk);
+                            const style = (!isSpace && wordStyles[wordCounter]) ? wordStyles[wordCounter] : {};
+                            if (!isSpace) wordCounter++;
+
+                            return {
+                                text: chunk,
+                                font: style.font || baseStyle.font,
+                                size: style.size || baseStyle.size,
+                                color: style.color || baseStyle.color,
+                                is_bold: style.is_bold !== undefined ? style.is_bold : (baseStyle.is_bold || false),
+                                is_italic: style.is_italic !== undefined ? style.is_italic : (baseStyle.is_italic || false),
+                                font_variant: style.font_variant || baseStyle.font_variant || "normal"
+                            };
+                        });
+                    }
                 }
 
                 const getGoogleFontName = (fontName) => {
