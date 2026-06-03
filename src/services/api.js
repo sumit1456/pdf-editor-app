@@ -4,8 +4,7 @@
  * Change BASE_URL to "http://localhost:8000" for local development.
  */
 
-export const url_deployed = "http://localhost:8000";
-
+export const url_deployed = "https://my-images-python-backend.onrender.com"
 //https://my-images-python-backend.onrender.com
 
 export const BASE_URL2 = "http://localhost:8000";
