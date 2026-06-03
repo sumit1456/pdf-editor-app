@@ -1,62 +1,74 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sendChatMessage, sendChatMessageV2, sendEditMessage, sendEditMessageV2, checkIndexingStatus } from '../../services/PdfBackendService';
 import './ChatPanel.css';
 
 const ChatPanel = ({ pdfName, onAIModification }) => {
-    const queryClient = useQueryClient();
     const [mode, setMode] = useState('chat'); // 'chat' or 'edit'
-    const [useStreaming, setUseStreaming] = useState(true); // Toggle for streaming
-    
-    const sessionId = sessionStorage.getItem('pdf_session_id') || 'default-session';
-    const messagesKey = ['pdf-chat-messages', sessionId];
-    const statusKey = ['pdf-indexing-status', sessionId];
+    const [useStreaming, setUseStreaming] = useState(true);
 
-    // Use TanStack Query to manage messages state persistently
-    const { data: messages = [
-        {
-            role: 'assistant',
-            content: `Hello! I'm your AI assistant for **${pdfName}**. I can answer questions about the content or help you perform **AI-assisted PDF edits** directly. How can I help you today?`
-        }
-    ] } = useQuery({
-        queryKey: messagesKey,
-        enabled: false,
-        initialData: [
-            {
-                role: 'assistant',
-                content: `Hello! I'm your AI assistant for **${pdfName}**. I can answer questions about the content or help you perform **AI-assisted PDF edits** directly. How can I help you today?`
-            }
-        ]
-    });
-
-    const setMessages = (updater) => {
-        queryClient.setQueryData(messagesKey, updater);
-    };
-
-    const [input, setInput] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    
-    // Use TanStack Query for indexing status as well
-    const { data: indexingStatus = 'ready' } = useQuery({
-        queryKey: statusKey,
-        enabled: false,
-        initialData: 'ready'
-    });
-
-    const setIndexingStatus = (status) => {
-        queryClient.setQueryData(statusKey, status);
-    };
-    const scrollRef = useRef(null);
-    const pollInterval = useRef(null);
-    const [selectedLLM, setSelectedLLM] = useState('groq'); // 'groq', 'gemini', 'gemini-pro'
-    const appliedModIds = useRef(new Set()); // Track applied edits during a stream
+    // Display labels only — backend uses python-backend/.env (same as scripts/test_llm_apis.py)
+    const GROQ_MODEL = import.meta.env.VITE_GROQ_MODEL || 'openai/gpt-oss-120b';
+    const GOOGLE_MODEL = import.meta.env.VITE_GOOGLE_MODEL || 'gemini-2.5-flash-lite';
 
     const MODELS = {
-        'groq': { name: 'Groq (Fast)', icon: '⚡', provider: 'groq', model: 'llama-3.3-70b-versatile' },
-        'gemini': { name: 'Gemini Flash', icon: '🧠', provider: 'google', model: 'gemini-1.5-flash' },
-        'gemini-pro': { name: 'Gemini Pro', icon: '💎', provider: 'google', model: 'gemini-1.5-pro' },
-        'gpt-oss': { name: 'GPT-OSS 120B', icon: '🤖', provider: 'groq', model: 'openai/gpt-oss-120b' },
-        'llama-scout': { name: 'Llama Scout 17B', icon: '🦙', provider: 'groq', model: 'meta-llama/llama-4-scout-17b-16e-instruct' }
+        groq: { name: `Groq (${GROQ_MODEL})`, icon: '⚡', provider: 'groq' },
+        gemini: { name: `Gemini (${GOOGLE_MODEL})`, icon: '🧠', provider: 'google' },
+    };
+
+    const welcomeMessage = {
+        role: 'assistant',
+        content: `Hello! I'm your AI assistant for **${pdfName}**. I can answer questions about the content or help you perform **AI-assisted PDF edits** directly. How can I help you today?`
+    };
+
+    const [messages, setMessages] = useState([welcomeMessage]);
+    const [input, setInput] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [indexingStatus, setIndexingStatus] = useState('ready');
+
+    const scrollRef = useRef(null);
+    const pollInterval = useRef(null);
+    const [selectedLLM, setSelectedLLM] = useState('groq');
+    const appliedModIds = useRef(new Set());
+
+    const normalizeStreamPayload = (parsed) => {
+        if (!parsed || typeof parsed !== 'object') return parsed;
+        if (parsed.error && !parsed.answer) {
+            return { ...parsed, answer: `Sorry, something went wrong: ${parsed.error}` };
+        }
+        return parsed;
+    };
+
+    const updateLastAssistantMessage = (parsed) => {
+        const normalized = normalizeStreamPayload(parsed);
+        setMessages(prev => {
+            const lastIdx = prev.length - 1;
+            if (lastIdx < 0 || prev[lastIdx].role !== 'assistant') return prev;
+            return prev.map((msg, i) => {
+                if (i !== lastIdx) return msg;
+                const existing = typeof msg.content === 'object' && msg.content ? msg.content : {};
+                return {
+                    ...msg,
+                    content: { ...existing, ...normalized },
+                    isStreaming: true
+                };
+            });
+        });
+    };
+
+    const processSseLine = (line, onParsed) => {
+        if (!line.startsWith('data: ')) return false;
+        const dataStr = line.slice(6).trim();
+        if (dataStr === '[DONE]') return true;
+        if (!dataStr) return false;
+
+        try {
+            const parsed = JSON.parse(dataStr);
+            console.log('[ChatPanel Stream] Received chunk:', parsed);
+            onParsed(parsed);
+        } catch (e) {
+            console.warn('[ChatPanel Stream] Failed to parse SSE JSON:', dataStr.slice(0, 200), e);
+        }
+        return false;
     };
 
     // Initial status check and polling
@@ -123,11 +135,12 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
             console.log(`[ChatPanel] Mode: ${mode} | Using Stable Batch Logic`);
 
             const currentModel = MODELS[selectedLLM];
+            // Omit llm_model — backend reads GROQ_MODEL / GOOGLE_MODEL from .env (same as test_llm_apis.py)
+            console.log(`[ChatPanel] provider=${currentModel.provider} | model=backend .env default`);
 
-            // Standard batch API call
             const data = mode === 'edit'
-                ? await sendEditMessage(userMsg, sessionId, history, currentModel.provider, currentModel.model)
-                : await sendChatMessage(userMsg, sessionId, history, currentModel.provider, currentModel.model);
+                ? await sendEditMessage(userMsg, sessionId, history, currentModel.provider, null)
+                : await sendChatMessage(userMsg, sessionId, history, currentModel.provider, null);
 
             if (data.success) {
                 setMessages(prev => [...prev, {
@@ -181,60 +194,61 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 content: typeof m.content === 'object' ? m.content.answer : m.content
             }));
 
-            // Add placeholder for AI response
-            setMessages(prev => [...prev, { role: 'assistant', content: { answer: '...' }, isStreaming: true }]);
+            // Placeholder bubble — typing dots render inside it (no literal "...")
+            setMessages(prev => [...prev, { role: 'assistant', content: null, isStreaming: true }]);
 
             const currentModel = MODELS[selectedLLM];
-            // Switch service based on mode
+            console.log(`[ChatPanel Stream] provider=${currentModel.provider} | model=backend .env default`);
+
             const reader = mode === 'edit'
-                ? await sendEditMessageV2(userMsg, sessionId, history, currentModel.provider, currentModel.model)
-                : await sendChatMessageV2(userMsg, sessionId, history, currentModel.provider, currentModel.model);
+                ? await sendEditMessageV2(userMsg, sessionId, history, currentModel.provider, null)
+                : await sendChatMessageV2(userMsg, sessionId, history, currentModel.provider, null);
 
             const decoder = new TextDecoder();
             let finalModifications = null;
+            let sseBuffer = '';
+            let streamDone = false;
 
-            while (true) {
+            while (!streamDone) {
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                const chunk = decoder.decode(value);
-                const lines = chunk.split('\n');
+                sseBuffer += decoder.decode(value, { stream: true });
+                const lines = sseBuffer.split('\n');
+                sseBuffer = lines.pop() || '';
 
                 for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const dataStr = line.slice(6).trim();
-                        if (dataStr === '[DONE]') break;
-                        if (!dataStr) continue;
-
-                        try {
-                            const parsed = JSON.parse(dataStr);
-
-                            // 1. Update UI (Chat Message)
-                            setMessages(prev => {
-                                const updated = [...prev];
-                                const lastMsg = updated[updated.length - 1];
-                                lastMsg.content = {
-                                    ...lastMsg.content,
-                                    ...parsed
-                                };
-                                return updated;
-                            });
-
-                            if (parsed.modifications) {
-                                finalModifications = parsed.modifications;
-                            }
-                        } catch (e) {
-                            // Skip partial JSON errors
+                    if (processSseLine(line, (parsed) => {
+                        updateLastAssistantMessage(parsed);
+                        if (parsed.modifications) {
+                            finalModifications = parsed.modifications;
                         }
+                    })) {
+                        streamDone = true;
+                        break;
                     }
                 }
             }
 
+            // Process any remaining buffered line
+            if (sseBuffer.trim()) {
+                processSseLine(sseBuffer.trim(), (parsed) => {
+                    updateLastAssistantMessage(parsed);
+                    if (parsed.modifications) {
+                        finalModifications = parsed.modifications;
+                    }
+                });
+            }
+
+            console.log('[ChatPanel Stream] Stream finished');
+
             // Mark streaming as finished
             setMessages(prev => {
-                const updated = [...prev];
-                updated[updated.length - 1].isStreaming = false;
-                return updated;
+                const lastIdx = prev.length - 1;
+                if (lastIdx < 0) return prev;
+                return prev.map((msg, i) =>
+                    i === lastIdx ? { ...msg, isStreaming: false } : msg
+                );
             });
             setIsTyping(false);
 
@@ -248,10 +262,16 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
         } catch (error) {
             console.error("Streaming error:", error);
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: "Streaming connection lost. Please check your network."
-            }]);
+            setMessages(prev => {
+                const lastIdx = prev.length - 1;
+                const errorContent = { answer: `Streaming connection lost: ${error.message || 'Please check your network.'}` };
+                if (lastIdx >= 0 && prev[lastIdx].role === 'assistant' && prev[lastIdx].isStreaming) {
+                    return prev.map((msg, i) =>
+                        i === lastIdx ? { ...msg, content: errorContent, isStreaming: false } : msg
+                    );
+                }
+                return [...prev, { role: 'assistant', content: errorContent }];
+            });
             setIsTyping(false);
         }
     };
@@ -307,7 +327,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                     const isAssistant = msg.role === 'assistant';
                     let structuredData = null;
 
-                    if (isAssistant && typeof msg.content === 'object') {
+                    if (isAssistant && typeof msg.content === 'object' && msg.content) {
                         structuredData = msg.content;
                     } else if (isAssistant && typeof msg.content === 'string' && msg.content.trim().startsWith('{')) {
                         try {
@@ -315,10 +335,18 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                         } catch (e) { }
                     }
 
+                    const showTypingInBubble = msg.isStreaming && (
+                        !structuredData?.answer || structuredData.answer === '...'
+                    );
+
                     return (
-                        <div key={idx} className={`message-bubble ${msg.role}`}>
+                        <div key={idx} className={`message-bubble ${msg.role}${msg.isStreaming ? ' streaming' : ''}`}>
                             <div className="message-content">
-                                {structuredData ? (
+                                {showTypingInBubble ? (
+                                    <div className="typing-indicator" aria-label="Assistant is typing">
+                                        <span></span><span></span><span></span>
+                                    </div>
+                                ) : structuredData ? (
                                     <div className="structured-response">
                                         {structuredData.highlights && structuredData.highlights.length > 0 && (
                                             <div className="highlights-box">
@@ -362,10 +390,12 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                         </div>
                     );
                 })}
-                {isTyping && (
-                    <div className="message-bubble assistant typing">
-                        <div className="typing-indicator">
-                            <span></span><span></span><span></span>
+                {isTyping && !messages.some(m => m.isStreaming) && (
+                    <div className="message-bubble assistant">
+                        <div className="message-content">
+                            <div className="typing-indicator" aria-label="Assistant is typing">
+                                <span></span><span></span><span></span>
+                            </div>
                         </div>
                     </div>
                 )}

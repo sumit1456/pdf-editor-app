@@ -64,6 +64,18 @@
     overflow: hidden;
 }
 
+/* Off-hours warning banner */
+.off-hours-warning {
+  background: var(--bg-hover);
+  color: var(--ink);
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border-radius: var(--r-sm);
+  font-weight: 500;
+  text-align: center;
+}
+
+
 .bg-decoration {
     display: none;
 }
@@ -1524,4 +1536,649 @@ text {
 .layout-studio .property-hud {
     transform: scale(0.9);
     margin-bottom: 12px;
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   DARK MODE — Full Override
+   Matches the screenshot exactly:
+   · Pure #0a0a0a background
+   · #141414 panels (no visible border — just subtle separation)
+   · #1c1c1c surface cards / inputs
+   · #272727 borders
+   · White primary text, #999 muted, #555 dim
+   · White active states (page thumb, tab pill)
+   · Purple gradient "Optimize Text Fit" unchanged
+   ════════════════════════════════════════════════════════════════ */
+
+[data-theme="dark"] .editor-page,
+.dark .editor-page {
+
+    /* ── Re-alias all local vars to dark values (from screenshot) ── */
+    --bg:          #050505;
+    --white:       #0a0a0a;   /* "white" in dark = panel surface */
+    --surface:     #111113;
+    --surface-alt: #151515;
+    --border:      #1e1e1e;
+    --border-mid:  #2a2a2a;
+    --ink:         #f7f7f7;
+    --ink-2:       #d4d4d8;
+    --ink-3:       #a1a1aa;
+    --ink-4:       #71717a;
+
+    /* Deeper shadows for dark */
+    --sh-xs: 0 1px 3px rgba(0,0,0,0.5);
+    --sh-sm: 0 2px 8px rgba(0,0,0,0.6);
+    --sh-md: 0 4px 18px rgba(0,0,0,0.7);
+    --sh-lg: 0 8px 32px rgba(0,0,0,0.8);
+
+    background: #050505;
+    color: #f7f7f7;
+}
+
+/* ── Page root bg ── */
+[data-theme="dark"] .editor-page,
+.dark .editor-page {
+    background: #050505;
+}
+
+/* ── Panels: left navigator + right editing panel ──
+   In the SS they blend into the bg — just very slightly lighter */
+[data-theme="dark"] .editing-panel,
+.dark .editing-panel,
+[data-theme="dark"] .navigator-sidebar,
+.dark .navigator-sidebar {
+    background: #0a0a0a;
+    border-color: #1e1e1e;
+}
+
+/* ── Tab pill selector (Text Content / Links) ── */
+[data-theme="dark"] .tab-pill-selector,
+.dark .tab-pill-selector {
+    background: #161616;
+    border-color: #272727;
+}
+
+[data-theme="dark"] .tab-pill,
+.dark .tab-pill {
+    color: #666;
+    background: transparent;
+}
+
+[data-theme="dark"] .tab-pill.active,
+.dark .tab-pill.active {
+    background: #f0f0f0;
+    color: #0a0a0a;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* ── Section badge / labels ── */
+[data-theme="dark"] .section-badge,
+.dark .section-badge {
+    color: #555;
+    border-color: #272727;
+    background: transparent;
+}
+
+/* ── Input cards (right panel node list) ── */
+[data-theme="dark"] .premium-input-card,
+.dark .premium-input-card {
+    background: #111113;
+    border-bottom-color: #1e1e1e;
+}
+
+[data-theme="dark"] .premium-input-card:hover,
+.dark .premium-input-card:hover {
+    background: #151515;
+    border-color: #2a2a2a;
+}
+
+[data-theme="dark"] .premium-input-card.active,
+.dark .premium-input-card.active {
+    background: #1a1a1d;
+    border-color: #2a2a2a;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.7);
+}
+
+[data-theme="dark"] .premium-input-card.modified,
+.dark .premium-input-card.modified {
+    border-left-color: #f7f7f7;
+}
+
+/* ── Node labels / status badges ── */
+[data-theme="dark"] .node-id-label,
+.dark .node-id-label {
+    color: #444;
+}
+
+[data-theme="dark"] .status-badge,
+.dark .status-badge {
+    color: #444;
+    border-color: #272727;
+    background: transparent;
+}
+
+[data-theme="dark"] .premium-input-card.modified .status-badge,
+.dark .premium-input-card.modified .status-badge {
+    background: #f0f0f0;
+    color: #0a0a0a;
+    border-color: #f0f0f0;
+}
+
+/* ── Textareas inside cards ── */
+[data-theme="dark"] .card-input-area textarea,
+.dark .card-input-area textarea {
+    background: #0a0a0a;
+    border-color: #1e1e1e;
+    color: #d4d4d8;
+}
+
+[data-theme="dark"] .card-input-area textarea:focus,
+.dark .card-input-area textarea:focus {
+    border-color: #2a2a2a;
+    background: #0f0f0f;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.03);
+}
+
+/* ── Link field ── */
+[data-theme="dark"] .link-field,
+.dark .link-field {
+    background: #0a0a0a;
+    border-color: #1e1e1e;
+    color: #d4d4d8;
+}
+
+[data-theme="dark"] .link-field:focus,
+.dark .link-field:focus {
+    border-color: #2a2a2a;
+    background: #0f0f0f;
+}
+
+/* ── Field labels ── */
+[data-theme="dark"] .field-label,
+.dark .field-label {
+    color: #444;
+}
+
+/* ── Design config toolbar ── */
+[data-theme="dark"] .design-config-toolbar,
+.dark .design-config-toolbar {
+    border-bottom-color: #1e1e1e;
+    background: transparent;
+}
+
+/* ── Toolbar status pill ── */
+[data-theme="dark"] .toolbar-status,
+.dark .toolbar-status {
+    color: #555;
+    border-color: #272727;
+    background: transparent;
+}
+
+[data-theme="dark"] .toolbar-status.highlight,
+.dark .toolbar-status.highlight {
+    background: #f0f0f0;
+    color: #0a0a0a;
+    border-color: #f0f0f0;
+}
+
+/* ── Font select ── */
+[data-theme="dark"] .premium-font-select,
+.dark .premium-font-select {
+    background-color: #111113;
+    border-color: #2a2a2a;
+    color: #d4d4d8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1aa' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .premium-font-select:hover:not(:disabled),
+.dark .premium-font-select:hover:not(:disabled) {
+    border-color: #3a3a3a;
+}
+
+/* ── Size control ── */
+[data-theme="dark"] .size-control,
+.dark .size-control {
+    background: #111113;
+    border-color: #2a2a2a;
+}
+
+[data-theme="dark"] .size-control button,
+.dark .size-control button {
+    color: #71717a;
+}
+
+[data-theme="dark"] .size-control button:hover:not(:disabled),
+.dark .size-control button:hover:not(:disabled) {
+    background: #f7f7f7;
+    color: #050505;
+}
+
+[data-theme="dark"] .size-label,
+.dark .size-label {
+    color: #d4d4d8;
+    border-color: #2a2a2a;
+}
+
+/* ── Color swatch ── */
+[data-theme="dark"] .premium-color-swatch,
+.dark .premium-color-swatch {
+    border-color: #2a2a2a;
+    background: #111113;
+}
+
+[data-theme="dark"] .premium-color-swatch:hover:not(:disabled),
+.dark .premium-color-swatch:hover:not(:disabled) {
+    border-color: #3a3a3a;
+}
+
+/* ── B / I style toggles ── */
+[data-theme="dark"] .style-toggles,
+.dark .style-toggles {
+    background: #111113;
+    border-color: #2a2a2a;
+}
+
+[data-theme="dark"] .toggle-btn,
+.dark .toggle-btn {
+    color: #71717a;
+}
+
+[data-theme="dark"] .toggle-btn:hover:not(:disabled),
+.dark .toggle-btn:hover:not(:disabled) {
+    background: #1a1a1d;
+    color: #d4d4d8;
+}
+
+[data-theme="dark"] .toggle-btn.active,
+.dark .toggle-btn.active {
+    background: #f7f7f7;
+    color: #050505;
+}
+
+/* ── Caps / mode toggle buttons (BBox, Reflow, Multi-Line etc.) ── */
+[data-theme="dark"] .caps-toggle-btn,
+.dark .caps-toggle-btn {
+    background: transparent;
+    border-color: #2a2a2a;
+    color: #a1a1aa;
+}
+
+[data-theme="dark"] .caps-toggle-btn:hover:not(:disabled),
+.dark .caps-toggle-btn:hover:not(:disabled) {
+    border-color: #3a3a3a;
+    color: #d4d4d8;
+    background: #0f0f0f;
+}
+
+[data-theme="dark"] .caps-toggle-btn.active,
+.dark .caps-toggle-btn.active {
+    background: #f7f7f7;
+    color: #050505;
+    border-color: #f7f7f7;
+}
+
+/* ── Case transform select ── */
+[data-theme="dark"] .case-transform-select,
+.dark .case-transform-select {
+    background-color: #111113;
+    border-color: #2a2a2a;
+    color: #a1a1aa;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23a1a1aa' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .case-transform-select:hover:not(:disabled),
+.dark .case-transform-select:hover:not(:disabled) {
+    border-color: #3a3a3a;
+    color: #d4d4d8;
+}
+
+/* ── Select / Deselect all buttons ── */
+[data-theme="dark"] .select-all-btn,
+[data-theme="dark"] .deselect-all-btn,
+.dark .select-all-btn,
+.dark .deselect-all-btn {
+    background: transparent;
+    border-color: #2a2a2a;
+    color: #a1a1aa;
+}
+
+[data-theme="dark"] .select-all-btn:hover,
+[data-theme="dark"] .deselect-all-btn:hover,
+.dark .select-all-btn:hover,
+.dark .deselect-all-btn:hover {
+    background: #f7f7f7;
+    color: #050505;
+    border-color: #f7f7f7;
+}
+
+/* ── Word pills ── */
+[data-theme="dark"] .word-pill,
+.dark .word-pill {
+    background: transparent;
+    border-color: #2a2a2a;
+    color: #a1a1aa;
+}
+
+[data-theme="dark"] .word-pill:hover,
+.dark .word-pill:hover {
+    background: #0f0f0f;
+    color: #d4d4d8;
+    border-color: #3a3a3a;
+}
+
+[data-theme="dark"] .word-pill.active,
+.dark .word-pill.active {
+    background: #f7f7f7 !important;
+    color: #050505 !important;
+    border-color: #f7f7f7 !important;
+}
+
+/* ── Quick actions panel ── */
+[data-theme="dark"] .quick-actions-panel,
+.dark .quick-actions-panel {
+    background: #111113;
+    border-color: #1e1e1e;
+}
+
+[data-theme="dark"] .selection-count,
+.dark .selection-count {
+    color: #d4d4d8;
+}
+
+[data-theme="dark"] .close-actions,
+.dark .close-actions {
+    color: #71717a;
+}
+
+[data-theme="dark"] .close-actions:hover,
+.dark .close-actions:hover {
+    color: #d4d4d8;
+}
+
+[data-theme="dark"] .action-color-picker,
+.dark .action-color-picker {
+    background: #0a0a0a;
+    border-color: #1e1e1e;
+    background: #1c1c1c;
+    border-color: #333;
+}
+
+/* ── Zoom controls ── */
+[data-theme="dark"] .zoom-controls,
+.dark .zoom-controls {
+    background: #161616;
+    border-color: #272727;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .zoom-btn,
+.dark .zoom-btn {
+    color: #666;
+}
+
+[data-theme="dark"] .zoom-btn:hover,
+.dark .zoom-btn:hover {
+    background: #272727;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .zoom-level,
+.dark .zoom-level {
+    color: #e0e0e0;
+}
+
+/* ── Download button ── */
+[data-theme="dark"] .download-btn-premium,
+.dark .download-btn-premium {
+    background: #f0f0f0;
+    color: #0a0a0a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .download-btn-premium:hover,
+.dark .download-btn-premium:hover {
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+}
+
+/* ── Page thumbs (navigator grid) ── */
+[data-theme="dark"] .sidebar-thumb,
+.dark .sidebar-thumb {
+    background: #1c1c1c;
+    border-color: #2a2a2a;
+    color: #666;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+
+[data-theme="dark"] .sidebar-thumb:hover,
+.dark .sidebar-thumb:hover {
+    border-color: #3a3a3a;
+    color: #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .sidebar-thumb.active,
+.dark .sidebar-thumb.active {
+    background: #f0f0f0;
+    color: #0a0a0a;
+    border-color: #f0f0f0;
+    box-shadow: 0 2px 8px rgba(240,240,240,0.15);
+}
+
+/* ── Panel header rule ── */
+[data-theme="dark"] .panel-header,
+.dark .panel-header {
+    border-bottom-color: #1e1e1e;
+    background: transparent;
+}
+
+/* ── Navigator section divider ── */
+[data-theme="dark"] .navigator-section.top,
+.dark .navigator-section.top {
+    border-bottom-color: #1e1e1e;
+}
+
+[data-theme="dark"] .navigator-section::-webkit-scrollbar-thumb,
+.dark .navigator-section::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+}
+
+/* ── Property HUD ── */
+[data-theme="dark"] .property-hud,
+.dark .property-hud {
+    background: rgba(20, 20, 20, 0.92);
+    border-color: #272727;
+    box-shadow: 0 4px 24px -4px rgba(0,0,0,0.6);
+}
+
+[data-theme="dark"] .hud-label,
+.dark .hud-label {
+    color: #444;
+}
+
+[data-theme="dark"] .hud-value,
+.dark .hud-value {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .hud-divider,
+.dark .hud-divider {
+    background: linear-gradient(to bottom, transparent, #2a2a2a, transparent);
+}
+
+[data-theme="dark"] .hud-color-swatch,
+.dark .hud-color-swatch {
+    border-color: #2a2a2a;
+}
+
+/* ── Fit V3 popup ── */
+[data-theme="dark"] .fit-v3-options-popup,
+.dark .fit-v3-options-popup {
+    background: #161616;
+    border-color: #272727;
+}
+
+[data-theme="dark"] .overflow-value,
+.dark .overflow-value {
+    background: #1c1c1c;
+    border-color: #333;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .premium-range-slider,
+.dark .premium-range-slider {
+    background: #2a2a2a;
+}
+
+[data-theme="dark"] .premium-range-slider::-webkit-slider-thumb,
+.dark .premium-range-slider::-webkit-slider-thumb {
+    background: #f0f0f0;
+    border-color: #0a0a0a;
+}
+
+[data-theme="dark"] .premium-range-slider::-moz-range-thumb,
+.dark .premium-range-slider::-moz-range-thumb {
+    background: #f0f0f0;
+    border-color: #0a0a0a;
+}
+
+/* ── Layout switcher ── */
+[data-theme="dark"] .layout-switcher,
+.dark .layout-switcher {
+    background: #161616;
+    border-color: #272727;
+}
+
+[data-theme="dark"] .layout-btn,
+.dark .layout-btn {
+    color: #555;
+}
+
+[data-theme="dark"] .layout-btn:hover,
+.dark .layout-btn:hover {
+    background: #222;
+    color: #aaa;
+}
+
+[data-theme="dark"] .layout-btn.active,
+.dark .layout-btn.active {
+    background: #f0f0f0;
+    color: #0a0a0a;
+}
+
+/* ── Studio layout panel override ── */
+[data-theme="dark"] .layout-studio .editing-panel,
+.dark .layout-studio .editing-panel {
+    background: #111;
+    border-left-color: #1e1e1e;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .layout-studio .editing-panel .premium-input-card,
+.dark .layout-studio .editing-panel .premium-input-card {
+    background: #1a1a1a;
+    border-color: transparent;
+}
+
+[data-theme="dark"] .layout-studio .editing-panel .premium-input-card:hover,
+.dark .layout-studio .editing-panel .premium-input-card:hover {
+    border-color: #272727;
+    background: #1e1e1e;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* ── Off-hours warning ── */
+[data-theme="dark"] .off-hours-warning,
+.dark .off-hours-warning {
+    background: #1c1c1c;
+    color: #e0e0e0;
+}
+
+/* ── Scrollbar ── */
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+.dark ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+}
+
+/* ── Mobile dock ── */
+[data-theme="dark"] .mobile-action-dock,
+.dark .mobile-action-dock {
+    background: rgba(14, 14, 14, 0.95);
+    border-top-color: #1e1e1e;
+}
+
+[data-theme="dark"] .dock-item,
+.dark .dock-item {
+    color: #555;
+}
+
+[data-theme="dark"] .dock-item.active,
+.dark .dock-item.active {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .dock-item.primary,
+.dark .dock-item.primary {
+    background: #f0f0f0;
+    color: #0a0a0a;
+}
+
+/* ── Mobile drawer panels ── */
+@media (max-width: 1024px) {
+    [data-theme="dark"] .editing-panel,
+    [data-theme="dark"] .navigator-sidebar,
+    .dark .editing-panel,
+    .dark .navigator-sidebar {
+        background: #111111;
+        border-color: #1e1e1e;
+        box-shadow: 0 -12px 40px rgba(0,0,0,0.6);
+    }
+
+    [data-theme="dark"] .workspace-container .zoom-controls,
+    .dark .workspace-container .zoom-controls {
+        background: rgba(14, 14, 14, 0.95);
+        border-color: #272727;
+    }
+}
+
+/* ── dev-tag ── */
+[data-theme="dark"] .dev-tag,
+.dark .dev-tag {
+    background: #f0f0f0;
+    color: #0a0a0a;
+}
+
+/* ── studio-header ── */
+[data-theme="dark"] .studio-header,
+.dark .studio-header {
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .studio-header span,
+.dark .studio-header span {
+    color: #444;
+}
+
+/* ── navigator header ── */
+[data-theme="dark"] .navigator-header h3,
+.dark .navigator-header h3 {
+    color: #c8c8c8;
+}
+
+/* ── page-count-mini ── */
+[data-theme="dark"] .page-count-mini,
+.dark .page-count-mini {
+    color: #444;
+}
+
+/* ── "Optimize Text Fit" — keep purple, just slightly brighter ── */
+[data-theme="dark"] .premium-optimize-btn:not([disabled]),
+.dark .premium-optimize-btn:not([disabled]) {
+    box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);
 }

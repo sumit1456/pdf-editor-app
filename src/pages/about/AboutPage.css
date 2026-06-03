@@ -69,7 +69,7 @@
     letter-spacing: 0.1em;
     margin-bottom: 24px;
     display: inline-block;
-    border: 1px solid var(--border-accent);
+    border: 1px solid var(--border-light);
 }
 
 .about-hero h1 {
@@ -112,7 +112,7 @@
     border-radius: 24px;
     text-align: left;
     transition: var(--transition-smooth);
-    border: 1px solid var(--border-accent);
+    border: 1px solid var(--border-light);
 }
 
 .info-card:hover {
@@ -200,7 +200,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    border: 1px solid var(--border-accent);
+    border: 1px solid var(--border-light);
 }
 
 .vision-card h3 {

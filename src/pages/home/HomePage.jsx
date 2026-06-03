@@ -11,6 +11,25 @@ export default function HomePage() {
   const queryClient = useQueryClient();
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+  React.useEffect(() => {
+    const hour = new Date().getHours();
+    if (hour >= 0 && hour < 6) {
+      const showWarning = () => {
+        if (window.showMessage) {
+          window.showMessage(
+            "Service Notice",
+            "Some services might be stopped between 12 am and 6 am. Please try again after 6 am.",
+            "warning",
+            6000
+          );
+        } else {
+          setTimeout(showWarning, 100);
+        }
+      };
+      showWarning();
+    }
+  }, []);
+
   const handleUploadClick = () => {
     fileInputRef.current.click();
   };

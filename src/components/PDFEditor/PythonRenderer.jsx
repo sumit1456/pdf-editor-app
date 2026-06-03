@@ -132,17 +132,17 @@ const normalizeBulletMarker = (text) => {
  */
 const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSize, startOffset = 0, useOriginalFonts = false) => {
     if (!text) return text;
-    
+
     // Split into words, preserving spaces
     const parts = text.split(/(\s+)/);
     // Start at the offset so we align with the correct wordStyles entries
     let wordCounter = startOffset;
-    
+
     return parts.map((part, i) => {
         const isSpace = /^\s+$/.test(part);
         const style = (!isSpace && wordStyles?.[wordCounter]) ? wordStyles[wordCounter] : {};
         if (!isSpace) wordCounter++;
-        
+
         const spanStyle = { ...safetyStyle, ...style };
         const spanIsSmallCaps = spanStyle.font_variant === 'small-caps' || isSmallCaps;
         const spanSize = (Math.abs(spanStyle.size || baseSize) / GLOBAL_FONT_SCALE);
@@ -770,7 +770,7 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
                         const spanIsSmallCaps = span.font_variant === 'small-caps' || (span.font || '').toLowerCase().includes('cmcsc');
                         const spanSize = span.size; // Natural size, scale is on parent
                         return (
-                                <tspan key={si} x={forceX ? spanX : undefined} y={span.origin ? span.origin[1] : (span.y || item.y)} fontSize={Math.max(1, Math.abs(spanSize))} fill={getSVGColor(span.color, color)} fontWeight={spanIsSmallCaps ? '500' : (span.is_bold ? '700' : '400')} fontStyle={span.is_italic ? 'italic' : undefined} fontFamily={span.font ? normalizeFont(span.font, span.google_font, useOriginalFonts) : undefined} xmlSpace="preserve" style={{ fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal' }}>
+                            <tspan key={si} x={forceX ? spanX : undefined} y={span.origin ? span.origin[1] : (span.y || item.y)} fontSize={Math.max(1, Math.abs(spanSize))} fill={getSVGColor(span.color, color)} fontWeight={spanIsSmallCaps ? '500' : (span.is_bold ? '700' : '400')} fontStyle={span.is_italic ? 'italic' : undefined} fontFamily={span.font ? normalizeFont(span.font, span.google_font, useOriginalFonts) : undefined} xmlSpace="preserve" style={{ fontVariant: spanIsSmallCaps ? 'small-caps' : 'normal' }}>
                                 {renderVisualText(span.content, spanIsSmallCaps, spanSize)}
                             </tspan>
                         );
@@ -793,7 +793,7 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
                 <SemanticBlock
                     key={block.id || bi}
                     isFirstBlock={isFirstPage && bi === 0}
-                    block={block} 
+                    block={block}
                     edit={nodeEdits[block.id]}
                     nodeEdits={nodeEdits}
                     pageIndex={pageIndex} activeNodeId={activeNodeId}
@@ -813,14 +813,14 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
     );
 }, (prev, next) => {
     return prev.blocks === next.blocks &&
-           prev.nodeEdits === next.nodeEdits &&
-           prev.activeNodeId === next.activeNodeId &&
-           prev.fontsKey === next.fontsKey &&
-           prev.fontStyles === next.fontStyles &&
-           prev.metricRatio === next.metricRatio &&
-           prev.useOriginalFonts === next.useOriginalFonts &&
-           prev.showAllBboxes === next.showAllBboxes &&
-           prev.isFittingConfirmed === next.isFittingConfirmed;
+        prev.nodeEdits === next.nodeEdits &&
+        prev.activeNodeId === next.activeNodeId &&
+        prev.fontsKey === next.fontsKey &&
+        prev.fontStyles === next.fontStyles &&
+        prev.metricRatio === next.metricRatio &&
+        prev.useOriginalFonts === next.useOriginalFonts &&
+        prev.showAllBboxes === next.showAllBboxes &&
+        prev.isFittingConfirmed === next.isFittingConfirmed;
 });
 
 
@@ -839,8 +839,8 @@ const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIn
                         <LineRenderer
                             key={line.id || li}
                             isFirstLine={isFirstBlock && li === 0}
-                            line={line} 
-                            edit={nodeEdits[line.id]} 
+                            line={line}
+                            edit={nodeEdits[line.id]}
                             pageIndex={pageIndex} activeNodeId={activeNodeId}
                             selectedWordIndices={selectedWordIndices}
                             metricRatio={metricRatio} onDoubleClick={onDoubleClick} onSelect={onSelect}
@@ -962,12 +962,12 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
     // [FitV4] High-Fidelity Binary Font Fitting
     useEffect(() => {
         if (!isFittingConfirmed) return;
-        
+
         if (edit?.isFitted) {
             // console.log(`[FitV4] Line ${line.id} already fitted, skipping.`);
             return;
         }
-        
+
         if (fittingInFlight.current) {
             // console.log(`[FitV4] Line ${line.id} fit in flight, skipping.`);
             return;
@@ -984,7 +984,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
             fittingInFlight.current = false;
             return;
         }
-        
+
         // Use a small delay to avoid overwhelming the worker during rapid page loads
         const timer = setTimeout(() => {
             console.log(`[FitV4] Sending ${line.id} to worker...`);
@@ -1072,10 +1072,20 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                             const afterBulletContent = currentContentStr.substring(bulletIndex + bulletTextTrimmed.length);
                             const bulletForceX = firstSpan.origin ? firstSpan.origin[0] : firstSpan.bbox[0];
                             const textForceX = line.items[1].origin ? line.items[1].origin[0] : line.items[1].bbox[0];
+                            
+                            console.log("==========================================");
+                            console.log({
+                                bullet: bulletForceX,
+                                text: textForceX,
+                                gap: textForceX - bulletForceX,
+                                bulletText: bulletTextTrimmed
+                            });
+                            
                             const bulletFontFamily = isIconBullet ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(firstSpan.font, firstSpan.google_font, useOriginalFonts);
                             const bulletFontWeight = isIconBullet ? '900' : (firstSpan.is_bold ? '700' : '400');
                             const bulletFontSize = getMarkerDisplaySize(firstSpan, line.items, safeSize);
 
+                           
                             return (
                                 <>
                                     <tspan
@@ -1099,45 +1109,117 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                             );
                         }
 
+    
                         return <tspan x={initialStartX} y={baselineY} style={{ fontVariant: activeSmallCaps ? 'small-caps' : 'normal' }}>
                             {renderWordStyledText(currentContentStr, currentEdit.wordStyles || {}, activeStyle, activeSmallCaps, safeBSize, 0, useOriginalFonts)}
                         </tspan>;
                     })()
                 ) : (
-                    line.items.map((span, si) => {
-                        const isOriginalSmallCaps = (span.font_variant === 'small-caps') || (span.font || '').toLowerCase().includes('cmcsc');
-                        const spanX = span.origin ? span.origin[0] : span.bbox[0];
-                        const mapped = canonicalSymbolText(mapContent(span.content));
-                        const isIcon = /[\uf000-\uf999]/.test(mapped);
-                        const isBulletMarker = isStructuralSpan(span) && isBulletMarkerText(mapped);
-                        const prevSpan = si > 0 ? line.items[si - 1] : null;
-                        const prevIsBulletMarker = prevSpan && isStructuralSpan(prevSpan) && isBulletMarkerText(canonicalSymbolText(mapContent(prevSpan.content)));
-                        const prevX1 = si > 0 ? (prevSpan.bbox ? prevSpan.bbox[2] : 0) : -1;
-                        const forceX = si === 0 || prevIsBulletMarker || Math.abs(spanX - prevX1) > 0.5 ? spanX : undefined;
-                        const spanFontSize = isBulletMarker
-                            ? getMarkerDisplaySize(span, line.items, line.size)
-                            : Math.max(1, Math.abs((span.size / GLOBAL_FONT_SCALE)));
+                    (() => {
+                        // Check if first span is a bullet and handle bullet+text positioning
+                        const firstSpan = line.items[0];
+                        const firstSpanMapped = firstSpan ? canonicalSymbolText(mapContent(firstSpan.content)) : '';
+                        const firstSpanIsBullet = firstSpan && isStructuralSpan(firstSpan) && isBulletMarkerText(firstSpanMapped);
+                        
+                        if (firstSpanIsBullet && line.items.length > 1) {
+                            const bulletForceX = firstSpan.origin ? firstSpan.origin[0] : firstSpan.bbox[0];
+                            const textForceX = line.items[1].origin ? line.items[1].origin[0] : line.items[1].bbox[0];
+                            const gap = textForceX - bulletForceX+4;
+                            const isIconBullet = /[\uE000-\uF8FF]/.test(firstSpanMapped);
+                            const bulletFontSize = getMarkerDisplaySize(firstSpan, line.items, line.size);
+                            
+                            console.log("==========================================");
+                            console.log({
+                                bullet: bulletForceX,
+                                text: textForceX,
+                                gap: gap,
+                                bulletText: firstSpanMapped.trim()
+                            });
+                            
+                            return [
+                                // Render bullet
+                                <tspan
+                                    key="bullet"
+                                    x={bulletForceX}
+                                    y={firstSpan.origin ? firstSpan.origin[1] : baselineY}
+                                    fontSize={bulletFontSize}
+                                    fontWeight={isIconBullet ? '900' : (firstSpan.is_bold ? '700' : '400')}
+                                    fontStyle={firstSpan.is_italic ? 'italic' : 'normal'}
+                                    fontFamily={isIconBullet ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(firstSpan.font, firstSpan.google_font, useOriginalFonts)}
+                                    fill={getSVGColor(firstSpan.color, 'black')}
+                                >
+                                    {normalizeBulletMarker(firstSpanMapped)}
+                                </tspan>,
+                                // Render remaining text with forced X position using gap
+                                ...line.items.slice(1).map((span, si) => {
+                                    const isOriginalSmallCaps = (span.font_variant === 'small-caps') || (span.font || '').toLowerCase().includes('cmcsc');
+                                    const spanX = span.origin ? span.origin[0] : span.bbox[0];
+                                    const mapped = canonicalSymbolText(mapContent(span.content));
+                                    const isIcon = /[\uf000-\uf999]/.test(mapped);
+                                    const isBulletMarker = isStructuralSpan(span) && isBulletMarkerText(mapped);
+                                    const spanFontSize = isBulletMarker
+                                        ? getMarkerDisplaySize(span, line.items, line.size)
+                                        : Math.max(1, Math.abs((span.size / GLOBAL_FONT_SCALE)));
 
-                        if (span.path_data) {
-                            return null; // Rendered as <path> sibling below
+                                    if (span.path_data) {
+                                        return null; // Rendered as <path> sibling below
+                                    }
+
+                                    return (
+                                        <tspan
+                                            key={`text-${si}`}
+                                            x={si === 0 ? bulletForceX + gap : spanX}
+                                            y={span.origin ? span.origin[1] : baselineY}
+                                            fontSize={spanFontSize}
+                                            fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
+                                            fontStyle={span.is_italic ? 'italic' : 'normal'}
+                                            fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font, useOriginalFonts)}
+                                            fill={getSVGColor(span.color, 'black')}
+                                            xmlSpace="preserve"
+                                            style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>
+                                            {isBulletMarker ? normalizeBulletMarker(mapped) : renderVisualText(mapped, isOriginalSmallCaps, (span.size / GLOBAL_FONT_SCALE))}
+                                        </tspan>
+                                    );
+                                })
+                            ];
                         }
+                        
+                        // Normal rendering without bullet positioning
+                        return line.items.map((span, si) => {
+                            const isOriginalSmallCaps = (span.font_variant === 'small-caps') || (span.font || '').toLowerCase().includes('cmcsc');
+                            const spanX = span.origin ? span.origin[0] : span.bbox[0];
+                            const mapped = canonicalSymbolText(mapContent(span.content));
+                            const isIcon = /[\uf000-\uf999]/.test(mapped);
+                            const isBulletMarker = isStructuralSpan(span) && isBulletMarkerText(mapped);
+                            const prevSpan = si > 0 ? line.items[si - 1] : null;
+                            const prevIsBulletMarker = prevSpan && isStructuralSpan(prevSpan) && isBulletMarkerText(canonicalSymbolText(mapContent(prevSpan.content)));
+                            const prevX1 = si > 0 ? (prevSpan.bbox ? prevSpan.bbox[2] : 0) : -1;
+                            const forceX = si === 0 || prevIsBulletMarker || Math.abs(spanX - prevX1) > 0.5 ? spanX : undefined;
+                            const spanFontSize = isBulletMarker
+                                ? getMarkerDisplaySize(span, line.items, line.size)
+                                : Math.max(1, Math.abs((span.size / GLOBAL_FONT_SCALE)));
 
-                        return (
-                            <tspan
-                                key={si}
-                                x={forceX}
-                                y={span.origin ? span.origin[1] : baselineY}
-                                fontSize={spanFontSize}
-                                fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
-                                fontStyle={span.is_italic ? 'italic' : 'normal'}
-                                fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font, useOriginalFonts)}
-                                fill={getSVGColor(span.color, 'black')}
-                                xmlSpace="preserve"
-                                style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>
-                                {isBulletMarker ? normalizeBulletMarker(mapped) : renderVisualText(mapped, isOriginalSmallCaps, (span.size / GLOBAL_FONT_SCALE))}
-                            </tspan>
-                        );
-                    })
+                            if (span.path_data) {
+                                return null; // Rendered as <path> sibling below
+                            }
+
+                            return (
+                                <tspan
+                                    key={si}
+                                    x={forceX}
+                                    y={span.origin ? span.origin[1] : baselineY}
+                                    fontSize={spanFontSize}
+                                    fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
+                                    fontStyle={span.is_italic ? 'italic' : 'normal'}
+                                    fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font, useOriginalFonts)}
+                                    fill={getSVGColor(span.color, 'black')}
+                                    xmlSpace="preserve"
+                                    style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>
+                                    {isBulletMarker ? normalizeBulletMarker(mapped) : renderVisualText(mapped, isOriginalSmallCaps, (span.size / GLOBAL_FONT_SCALE))}
+                                </tspan>
+                            );
+                        });
+                    })()
                 )}
             </text>
             {/* Render any paths that were skipped inside the <text> block because they aren't valid children */}
