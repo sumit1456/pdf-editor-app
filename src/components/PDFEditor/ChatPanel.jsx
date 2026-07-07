@@ -151,7 +151,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 if (data.modifications && data.modifications.length > 0) {
                     console.log(`[ChatPanel] Applying ${data.modifications.length} modifications...`);
                     if (onAIModification) {
-                        onAIModification(data.modifications);
+                        onAIModification(data.modifications, userMsg);
                     }
                 }
             } else {
@@ -256,7 +256,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
             if (mode === 'edit' && finalModifications && finalModifications.length > 0) {
                 console.log(`[ChatPanel Stream] Stream finished. Applying ${finalModifications.length} fully formed modifications...`);
                 if (onAIModification) {
-                    onAIModification(finalModifications);
+                    onAIModification(finalModifications, userMsg);
                 }
             }
 

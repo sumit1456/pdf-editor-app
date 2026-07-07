@@ -525,6 +525,32 @@ export default function EditorPage() {
         return null;
     };
 
+    const getOriginalLineStyle = React.useCallback((lineId, fallbackStyle = null) => {
+        if (fallbackStyle && Object.keys(fallbackStyle).length > 0) {
+            return { ...fallbackStyle };
+        }
+
+        for (const page of pages) {
+            const flattened = page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || []);
+            const found = flattened.find(l => l.id === lineId);
+            if (found) {
+                const base = (found.items && found.items.length > 0) ? found.items[found.items.length - 1] : found;
+                const size = Number.parseFloat(base?.size);
+                const style = {};
+                if (Number.isFinite(size)) style.size = size;
+                if (base?.font !== undefined) style.font = base.font;
+                if (base?.googleFont !== undefined) style.googleFont = base.googleFont;
+                if (base?.color !== undefined) style.color = base.color;
+                if (base?.is_bold !== undefined) style.is_bold = base.is_bold;
+                if (base?.is_italic !== undefined) style.is_italic = base.is_italic;
+                if (base?.font_variant !== undefined) style.font_variant = base.font_variant;
+                return style;
+            }
+        }
+
+        return {};
+    }, [pages]);
+
     const activeNodeData = React.useMemo(() => {
         if (!activeNodeId) return null;
         const page = pages[activePageIndex];
@@ -854,7 +880,7 @@ export default function EditorPage() {
 
         setNodeEdits(prev => {
             const current = prev[lineId] || {};
-            const sStyle = current.safetyStyle || originalStyle || {};
+            const sStyle = { ...getOriginalLineStyle(lineId, originalStyle), ...(current.safetyStyle || {}) };
 
             // --- EXPERIMENTAL REFLOW ENGINE (Unified Block) ---
             if (isReflowEnabled && lineId.startsWith('block-reflow-')) {
@@ -864,7 +890,7 @@ export default function EditorPage() {
                     const blockIndex = page.blocks.findIndex(b => b.id === realBlockId);
                     if (blockIndex !== -1) {
                         const block = page.blocks[blockIndex];
-                        const sStyle = originalStyle || {}; // base paragraph style
+                        const sStyle = getOriginalLineStyle(lineId, originalStyle); // base paragraph style
 
                         // The user edits the full paragraph directly now
                         const fullText = newText.replace(/\s{2,}/g, ' ');
@@ -984,7 +1010,7 @@ export default function EditorPage() {
                 }
             };
         });
-    }, [isReflowEnabled, pages, activePageIndex]);
+    }, [isReflowEnabled, pages, activePageIndex, getOriginalLineStyle]);
 
 
 
@@ -996,7 +1022,7 @@ export default function EditorPage() {
             const next = { ...prev };
             targetIds.forEach(id => {
                 const current = next[id] || {};
-                const sStyle = { ...(current.safetyStyle || {}) };
+                const sStyle = { ...getOriginalLineStyle(id), ...(current.safetyStyle || {}) };
                 const wordStyles = { ...(current.wordStyles || {}) };
 
                 if (wordIndices !== null) {
@@ -1049,16 +1075,43 @@ export default function EditorPage() {
             });
             return next;
         });
-    }, [isLineMultiSelect, selectedNodeIds, pages, activePageIndex]);
+    }, [isLineMultiSelect, selectedNodeIds, pages, activePageIndex, getOriginalLineStyle]);
 
     // --- AI MODIFICATION BRIDGE ---
-    const handleAIModification = React.useCallback((modifications) => {
+    const handleAIModification = React.useCallback((modifications, sourceMessage = '') => {
         console.log('[EditorPage] handleAIModification called with:', modifications);
 
         if (!modifications || !Array.isArray(modifications) || modifications.length === 0) {
             console.warn('[EditorPage] No valid modifications — aborting.');
             return;
         }
+
+        const userAskedForStyle = /\b(style|font|size|larger|smaller|bigger|bold|italic|color|colour|red|blue|black|green|highlight|uppercase|lowercase|caps)\b/i.test(sourceMessage || '');
+
+        const allowedStyleKeys = new Set(['size', 'font', 'googleFont', 'color', 'is_bold', 'is_italic', 'font_variant']);
+
+        const sanitizeAIStyle = (style, hasContent) => {
+            if (!style || typeof style !== 'object' || Array.isArray(style)) return {};
+            if (hasContent && !userAskedForStyle) return {};
+            return Object.entries(style).reduce((safeStyle, [key, value]) => {
+                if (!allowedStyleKeys.has(key)) return safeStyle;
+                if (key === 'size') {
+                    const size = Number(value);
+                    if (Number.isFinite(size) && size > 0 && size < 300) safeStyle.size = size;
+                    return safeStyle;
+                }
+                if (key === 'color') {
+                    if (Array.isArray(value) && value.length === 3 && value.every(ch => Number.isFinite(Number(ch)))) {
+                        safeStyle.color = value.map(ch => Number(ch));
+                    }
+                    return safeStyle;
+                }
+                if ((key === 'is_bold' || key === 'is_italic') && typeof value !== 'boolean') return safeStyle;
+                if ((key === 'font' || key === 'googleFont' || key === 'font_variant') && typeof value !== 'string') return safeStyle;
+                safeStyle[key] = value;
+                return safeStyle;
+            }, {});
+        };
 
         modifications.forEach((mod, idx) => {
             if (!mod.id) {
@@ -1069,20 +1122,18 @@ export default function EditorPage() {
             console.log(`[EditorPage] Applying mod ${idx + 1}/${modifications.length} to node ${mod.id}:`, mod);
 
             const hasContent = mod.content !== null && mod.content !== undefined;
-            const hasStyle = mod.style !== null && mod.style !== undefined && Object.keys(mod.style).length > 0;
+            const safeStyle = sanitizeAIStyle(mod.style, hasContent);
+            const hasStyle = Object.keys(safeStyle).length > 0;
 
             if (hasStyle) {
-                // Delegate to handleStyleUpdate for each style property
-                Object.entries(mod.style).forEach(([key, value]) => {
-                    // pass `true` for ignoreSelection so AI edits only affect the target mod.id
+                Object.entries(safeStyle).forEach(([key, value]) => {
                     handleStyleUpdate(mod.id, key, value, null, true);
                 });
-                console.log(`[EditorPage] Styles delegated for ${mod.id}:`, mod.style);
+                console.log(`[EditorPage] Styles delegated for ${mod.id}:`, safeStyle);
             }
 
             if (hasContent) {
-                // Pass null as originalStyle so handleSidebarEdit reads from current safetyStyle
-                handleSidebarEdit(mod.id, mod.content, null);
+                handleSidebarEdit(mod.id, mod.content, getOriginalLineStyle(mod.id));
                 console.log(`[EditorPage] Content updated for ${mod.id}: "${mod.content.slice(0, 40)}..."`);
             }
 
@@ -1090,7 +1141,7 @@ export default function EditorPage() {
         });
 
         window.showMessage("AI Edit Applied", `Applied ${modifications.length} modification(s).`, "success");
-    }, [handleSidebarEdit, handleStyleUpdate]);
+    }, [handleSidebarEdit, handleStyleUpdate, getOriginalLineStyle]);
 
     const handleBatchStyleUpdate = React.useCallback((updates) => {
         if (!updates || updates.length === 0) return;
@@ -1100,7 +1151,7 @@ export default function EditorPage() {
             const next = { ...prev };
             updates.forEach(({ lineId, results, scale }) => {
                 const current = next[lineId] || {};
-                const sStyle = { ...(current.safetyStyle || {}) };
+                const sStyle = { ...getOriginalLineStyle(id), ...(current.safetyStyle || {}) };
                 const wordStyles = { ...(current.wordStyles || {}) };
 
                 // [FitV4 Pivot] Bake the fit directly into the font size of each segment
@@ -1376,6 +1427,7 @@ export default function EditorPage() {
         {(() => {
             const activeStyle = getActiveNodeStyle();
             const isWordSelection = selectedWordIndices.length > 0;
+            const activeFontSize = Number.isFinite(Number(activeStyle?.size)) ? Number(activeStyle.size) : null;
             if (!activeStyle) return (
                 <div style={{ color: 'var(--ink-4)', fontSize: '0.78rem', textAlign: 'center', padding: '20px 0' }}>
                     Select a line on the page to start editing
@@ -1412,16 +1464,16 @@ export default function EditorPage() {
                         </select>
 
                         <div className="size-control">
-                            <button disabled={!activeNodeId} onClick={() => {
-                                console.log('➖ Font Size Decrease - Current:', (activeStyle?.size || 10));
-                                handleStyleUpdate(activeNodeId, 'size', (activeStyle?.size || 10) - 1, isWordSelection ? selectedWordIndices : null);
+                            <button disabled={!activeNodeId || activeFontSize === null} onClick={() => {
+                                console.log('Font Size Decrease - Current:', activeFontSize);
+                                handleStyleUpdate(activeNodeId, 'size', Math.max(1, activeFontSize - 1), isWordSelection ? selectedWordIndices : null);
                             }}>−</button>
                             <span className="size-label">
-                                {activeNodeId ? Math.round(Math.abs(activeStyle?.size || 10)) : '--'}
+                                {activeNodeId && activeFontSize !== null ? Math.round(Math.abs(activeFontSize)) : '--'}
                             </span>
-                            <button disabled={!activeNodeId} onClick={() => {
-                                console.log('➕ Font Size Increase - Current:', (activeStyle?.size || 10));
-                                handleStyleUpdate(activeNodeId, 'size', (activeStyle?.size || 10) + 1, isWordSelection ? selectedWordIndices : null);
+                            <button disabled={!activeNodeId || activeFontSize === null} onClick={() => {
+                                console.log('Font Size Increase - Current:', activeFontSize);
+                                handleStyleUpdate(activeNodeId, 'size', activeFontSize + 1, isWordSelection ? selectedWordIndices : null);
                             }}>+</button>
                         </div>
 
