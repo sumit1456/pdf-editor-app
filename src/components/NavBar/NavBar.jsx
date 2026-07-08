@@ -37,7 +37,9 @@ export default function NavBar() {
         reader.readAsDataURL(file);
       });
 
-      const jsonOutput = await uploadPdfToBackend(file, 'python');
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      sessionStorage.setItem('pdf_session_id', sessionId);
+      const jsonOutput = await uploadPdfToBackend(file, sessionId);
 
       if (sidebarOpen) setSidebarOpen(false);
 

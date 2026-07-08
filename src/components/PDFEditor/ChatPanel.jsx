@@ -2,6 +2,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import { sendChatMessage, sendChatMessageV2, sendEditMessage, sendEditMessageV2, checkIndexingStatus } from '../../services/PdfBackendService';
 import './ChatPanel.css';
 
+/**
+ * TypewriterText — reveals `html` text word-by-word.
+ * When animate=false (history messages) it renders instantly.
+ * While animating it calls scrollRef.scrollTo on every tick.
+ */
+const TypewriterText = ({ html, animate, scrollRef }) => {
+    const words = (html || '').split(' ');
+    const [count, setCount] = useState(animate ? 0 : words.length);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        if (!animate) {
+            setCount(words.length);
+            return;
+        }
+        setCount(0);
+        let i = 0;
+        const BATCH = 15; // words per tick — reduce for slower reveal
+        timerRef.current = setInterval(() => {
+            i = Math.min(i + BATCH, words.length);
+            setCount(i);
+            if (scrollRef?.current) {
+                scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+            }
+            if (i >= words.length) clearInterval(timerRef.current);
+        }, 55);
+        return () => clearInterval(timerRef.current);
+    }, [html, animate]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const visible = words.slice(0, count).join(' ');
+    return <span dangerouslySetInnerHTML={{ __html: visible.replace(/\n/g, '<br/>') }} />;
+};
+
 const ChatPanel = ({ pdfName, onAIModification }) => {
     const [mode, setMode] = useState('chat'); // 'chat' or 'edit'
     const [useStreaming, setUseStreaming] = useState(true);
@@ -30,28 +63,23 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
     const [selectedLLM, setSelectedLLM] = useState('groq');
     const appliedModIds = useRef(new Set());
 
-    const normalizeStreamPayload = (parsed) => {
-        if (!parsed || typeof parsed !== 'object') return parsed;
-        if (parsed.error && !parsed.answer) {
-            return { ...parsed, answer: `Sorry, something went wrong: ${parsed.error}` };
-        }
-        return parsed;
-    };
-
-    const updateLastAssistantMessage = (parsed) => {
-        const normalized = normalizeStreamPayload(parsed);
+    const updateStreamingText = (rawText) => {
         setMessages(prev => {
             const lastIdx = prev.length - 1;
             if (lastIdx < 0 || prev[lastIdx].role !== 'assistant') return prev;
-            return prev.map((msg, i) => {
-                if (i !== lastIdx) return msg;
-                const existing = typeof msg.content === 'object' && msg.content ? msg.content : {};
-                return {
-                    ...msg,
-                    content: { ...existing, ...normalized },
-                    isStreaming: true
-                };
-            });
+            return prev.map((msg, i) =>
+                i === lastIdx ? { ...msg, content: rawText, isStreaming: true } : msg
+            );
+        });
+    };
+
+    const finalizeStreamingMessage = (structuredData) => {
+        setMessages(prev => {
+            const lastIdx = prev.length - 1;
+            if (lastIdx < 0 || prev[lastIdx].role !== 'assistant') return prev;
+            return prev.map((msg, i) =>
+                i === lastIdx ? { ...msg, content: structuredData, isStreaming: false } : msg
+            );
         });
     };
 
@@ -100,11 +128,19 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
         };
     }, []);
 
-    // Auto-scroll to bottom
+    // Auto-scroll to bottom — throttled and smooth during streaming
+    const scrollTimer = useRef(null);
     useEffect(() => {
         if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+            if (scrollTimer.current) clearTimeout(scrollTimer.current);
+            scrollTimer.current = setTimeout(() => {
+                scrollRef.current.scrollTo({
+                    top: scrollRef.current.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 80);
         }
+        return () => { if (scrollTimer.current) clearTimeout(scrollTimer.current); };
     }, [messages, isTyping]);
 
     const handleSend = async () => {
@@ -129,8 +165,8 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
             const history = messages.slice(-10).map(m => ({
                 role: m.role,
-                content: typeof m.content === 'object' ? m.content.answer : m.content
-            }));
+                content: (m.content !== null && typeof m.content === 'object') ? (m.content.answer ?? '') : (m.content ?? '')
+            })).filter(m => m.content);
 
             console.log(`[ChatPanel] Mode: ${mode} | Using Stable Batch Logic`);
 
@@ -191,8 +227,8 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
             const history = messages.slice(-10).map(m => ({
                 role: m.role,
-                content: typeof m.content === 'object' ? m.content.answer : m.content
-            }));
+                content: (m.content !== null && typeof m.content === 'object') ? (m.content.answer ?? '') : (m.content ?? '')
+            })).filter(m => m.content);
 
             // Placeholder bubble — typing dots render inside it (no literal "...")
             setMessages(prev => [...prev, { role: 'assistant', content: null, isStreaming: true }]);
@@ -208,6 +244,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
             let finalModifications = null;
             let sseBuffer = '';
             let streamDone = false;
+            let rawText = '';
 
             while (!streamDone) {
                 const { done, value } = await reader.read();
@@ -219,9 +256,23 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
                 for (const line of lines) {
                     if (processSseLine(line, (parsed) => {
-                        updateLastAssistantMessage(parsed);
-                        if (parsed.modifications) {
-                            finalModifications = parsed.modifications;
+                        if (parsed.type === 'delta') {
+                            rawText += parsed.content;
+                            updateStreamingText(rawText);
+                        } else if (parsed.type === 'result') {
+                            const data = parsed.data;
+                            finalizeStreamingMessage(data);
+                            if (data.modifications) {
+                                finalModifications = data.modifications;
+                            }
+                        } else if (parsed.answer) {
+                            // Handles edit mode single-payload and any direct or fallback chat response
+                            finalizeStreamingMessage(parsed);
+                            if (parsed.modifications !== undefined) {
+                                finalModifications = parsed.modifications;
+                            }
+                        } else if (parsed.error && !parsed.answer) {
+                            finalizeStreamingMessage({ answer: `Sorry, something went wrong: ${parsed.error}` });
                         }
                     })) {
                         streamDone = true;
@@ -233,9 +284,22 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
             // Process any remaining buffered line
             if (sseBuffer.trim()) {
                 processSseLine(sseBuffer.trim(), (parsed) => {
-                    updateLastAssistantMessage(parsed);
-                    if (parsed.modifications) {
-                        finalModifications = parsed.modifications;
+                    if (parsed.type === 'delta') {
+                        rawText += parsed.content;
+                        updateStreamingText(rawText);
+                    } else if (parsed.type === 'result') {
+                        const data = parsed.data;
+                        finalizeStreamingMessage(data);
+                        if (data.modifications) {
+                            finalModifications = data.modifications;
+                        }
+                    } else if (parsed.answer) {
+                        finalizeStreamingMessage(parsed);
+                        if (parsed.modifications !== undefined) {
+                            finalModifications = parsed.modifications;
+                        }
+                    } else if (parsed.error && !parsed.answer) {
+                        finalizeStreamingMessage({ answer: `Sorry, something went wrong: ${parsed.error}` });
                     }
                 });
             }
@@ -327,17 +391,17 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                     const isAssistant = msg.role === 'assistant';
                     let structuredData = null;
 
-                    if (isAssistant && typeof msg.content === 'object' && msg.content) {
+                    // Only treat as structured if content is a non-null object
+                    if (isAssistant && msg.content !== null && typeof msg.content === 'object') {
                         structuredData = msg.content;
-                    } else if (isAssistant && typeof msg.content === 'string' && msg.content.trim().startsWith('{')) {
-                        try {
-                            structuredData = JSON.parse(msg.content);
-                        } catch (e) { }
                     }
 
-                    const showTypingInBubble = msg.isStreaming && (
-                        !structuredData?.answer || structuredData.answer === '...'
-                    );
+                    // Show typing dots only when content is null (before first delta token)
+                    const showTypingInBubble = msg.isStreaming && msg.content === null;
+                    // Raw text streaming phase (delta tokens accumulating)
+                    const isStreamingText = msg.isStreaming && typeof msg.content === 'string';
+                    // Animate typewriter only on the last (newest) assistant message
+                    const shouldAnimate = !msg.isStreaming && isAssistant && idx === messages.length - 1;
 
                     return (
                         <div key={idx} className={`message-bubble ${msg.role}${msg.isStreaming ? ' streaming' : ''}`}>
@@ -346,8 +410,24 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                                     <div className="typing-indicator" aria-label="Assistant is typing">
                                         <span></span><span></span><span></span>
                                     </div>
+                                ) : isStreamingText ? (
+                                    // Progressive raw-text phase — show accumulating text with a blinking cursor
+                                    <div className="streaming-text">
+                                        <span dangerouslySetInnerHTML={{ __html: (msg.content || '').replace(/\n/g, '<br/>') }} />
+                                        <span className="stream-cursor" />
+                                    </div>
                                 ) : structuredData ? (
                                     <div className="structured-response">
+                                        {/* Answer first */}
+                                        <div className="main-answer">
+                                            <TypewriterText
+                                                html={structuredData.answer || ''}
+                                                animate={shouldAnimate}
+                                                scrollRef={scrollRef}
+                                            />
+                                        </div>
+
+                                        {/* Highlights below the answer */}
                                         {structuredData.highlights && structuredData.highlights.length > 0 && (
                                             <div className="highlights-box">
                                                 <div className="highlights-header">✨ Key Takeaways</div>
@@ -357,11 +437,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                                             </div>
                                         )}
 
-                                        <div
-                                            className="main-answer"
-                                            dangerouslySetInnerHTML={{ __html: (structuredData.answer || '').replace(/\n/g, '<br/>') }}
-                                        />
-
+                                        {/* Suggested questions at the bottom */}
                                         {structuredData.suggested_questions && structuredData.suggested_questions.length > 0 && (
                                             <div className="suggested-questions">
                                                 <div className="suggested-label">Try asking:</div>
@@ -372,7 +448,6 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                                                             className="suggested-q-pill"
                                                             onClick={() => {
                                                                 setInput(q);
-                                                                // Trigger send in next tick
                                                                 setTimeout(() => document.getElementById('chat-send-trigger')?.click(), 10);
                                                             }}
                                                         >

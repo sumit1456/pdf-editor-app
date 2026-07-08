@@ -428,3 +428,29 @@
     background: var(--bg-surface);
     transform: translateY(-1px);
 }
+
+/* ─── Streaming text phase (raw delta tokens) ────────── */
+.streaming-text {
+    line-height: 1.6;
+    word-wrap: break-word;
+    color: var(--ink-2);
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* Blinking cursor shown during streaming text phase */
+.stream-cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1em;
+    background: var(--ink-3);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    border-radius: 1px;
+    animation: cursorBlink 0.8s step-end infinite;
+}
+
+@keyframes cursorBlink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
