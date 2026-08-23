@@ -294,7 +294,7 @@ export default function EditorPage() {
 
             // On tab close: delete all OTHER non-protected sessions, keep the current one.
             // navigator.sendBeacon is the only reliable way to fire a request on tab close.
-            const url = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/cleanup-others/${sessionId}`;
+            const url = `${import.meta.env.VITE_API_URL || 'https://my-images-python-backend.onrender.com'}/cleanup-others/${sessionId}`;
             navigator.sendBeacon(url); // sendBeacon works with DELETE-like calls via blob
             console.log(`[EditorPage] Tab closing. Sent cleanup-others for session: ${sessionId}`);
         };

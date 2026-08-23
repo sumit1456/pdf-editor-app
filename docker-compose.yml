@@ -24,7 +24,7 @@ services:
     ports:
       - "3000:80"
     environment:
-      - VITE_API_URL=http://localhost:8000
+      - VITE_API_URL=https://my-images-python-backend.onrender.com
     deploy:
       resources:
         limits:
