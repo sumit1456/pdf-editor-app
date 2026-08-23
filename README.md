@@ -71,7 +71,7 @@ The frontend will be available at `http://localhost:3000` and the backend at `ht
 
 ## ⚙️ Configuration
 
-The frontend looks for a `VITE_API_URL` environment variable to connect to the backend. By default, it points to `http://localhost:8000`.
+The frontend looks for a `VITE_API_URL` environment variable to connect to the backend. By default, it uses the deployed service. Set `VITE_API_URL=http://localhost:8000` when running a local backend.
 
 ## 📜 License
 
