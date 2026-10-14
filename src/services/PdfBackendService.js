@@ -131,8 +131,9 @@ export const sendChatMessage = async (message, sessionId, history = [], provider
     }
 };
 
-/** Send a message to the optional planner/executor agent beta. */
+/** Send a message to the agent gateway and listen via SSE for the webhook result. */
 export const sendAgentMessage = async (message, sessionId) => {
+    // 1. Fire the run
     const response = await fetch(`${BASE_URL}/api/agent-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +144,43 @@ export const sendAgentMessage = async (message, sessionId) => {
     if (!response.ok) {
         throw new Error(data.detail || data.error || `Agent request failed (${response.status})`);
     }
-    return data;
+
+    const runId = data.run_id || data.id;
+    if (!runId) {
+        // Gateway returned an immediate result (no async run)
+        return data;
+    }
+
+    // 2. Subscribe to SSE stream — backend pushes the result when webhook arrives
+    return new Promise((resolve, reject) => {
+        const es = new EventSource(`${BASE_URL}/api/agent-result/${runId}/stream`);
+
+        const timeout = setTimeout(() => {
+            es.close();
+            reject(new Error('Agent run timed out waiting for result (120s).'));
+        }, 125000); // slightly longer than server-side 120s timeout
+
+        es.onmessage = (event) => {
+            clearTimeout(timeout);
+            es.close();
+            try {
+                const result = JSON.parse(event.data);
+                if (result.ready) {
+                    resolve(result);
+                } else {
+                    reject(new Error(result.error || 'Agent run failed.'));
+                }
+            } catch (e) {
+                reject(new Error('Failed to parse agent result.'));
+            }
+        };
+
+        es.onerror = () => {
+            clearTimeout(timeout);
+            es.close();
+            reject(new Error('SSE connection to agent result stream failed.'));
+        };
+    });
 };
 
 /**

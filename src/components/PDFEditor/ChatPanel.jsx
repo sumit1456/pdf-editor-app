@@ -96,13 +96,12 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 sessionStorage.setItem('pdf_session_id', sessionId);
             }
             const data = await sendAgentMessage(userMsg, sessionId);
-            // Gateway returns the run object directly; result arrives via webhook
-            const answer = data.output || data.answer || data.result;
+            const answer = data.answer || data.output || data.result;
             const content = typeof answer === 'string'
                 ? answer
                 : answer
-                    ? (answer?.answer || answer?.output || answer?.content || JSON.stringify(answer, null, 2))
-                    : `Request submitted (run: ${data.run_id || data.id || 'pending'}). The agent is processing your message.`;
+                    ? JSON.stringify(answer, null, 2)
+                    : 'The agent completed the run without returning a response.';
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content,
