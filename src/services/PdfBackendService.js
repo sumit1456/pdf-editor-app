@@ -131,6 +131,21 @@ export const sendChatMessage = async (message, sessionId, history = [], provider
     }
 };
 
+/** Send a message to the optional planner/executor agent beta. */
+export const sendAgentMessage = async (message, sessionId) => {
+    const response = await fetch(`${BASE_URL}/api/agent-chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, session_id: sessionId }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.detail || data.error || `Agent request failed (${response.status})`);
+    }
+    return data;
+};
+
 /**
  * Streaming version of chat message sending.
  * Returns a readable stream reader.

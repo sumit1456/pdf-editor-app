@@ -49,6 +49,27 @@
     user-select: none;
 }
 
+.agent-beta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: inherit;
+}
+
+.beta-tag {
+    font-size: 0.52rem;
+    letter-spacing: 0.04em;
+    padding: 2px 4px;
+    border-radius: 5px;
+    background: rgba(124, 92, 255, 0.14);
+    color: #7654d6;
+}
+
+.agent-beta-btn.active .beta-tag {
+    background: rgba(255, 255, 255, 0.2);
+    color: inherit;
+}
+
 .mode-btn:hover {
     border-color: var(--border-mid);
     color: var(--ink);

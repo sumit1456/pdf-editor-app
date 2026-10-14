@@ -1,13 +1,15 @@
 /**
  * Global API Configuration.
- * Set VITE_API_URL to "http://localhost:8000" when running a local backend.
+ * Configure VITE_API_URL in the frontend environment (for example, in pdf-editor-app/.env).
  */
 
-export const url_deployed = "https://my-images-python-backend.onrender.com"
-const configuredUrl = import.meta.env.VITE_API_URL || url_deployed;
+const configuredUrl = import.meta.env.VITE_API_URL;
+if (!configuredUrl) {
+    throw new Error('VITE_API_URL is required. Set it in the frontend environment before starting or building the app.');
+}
 
 export const BASE_URL2 = configuredUrl;
-export const BASE_URL = configuredUrl.replace(/\/$/, "");
+export const BASE_URL = configuredUrl.trim().replace(/\/$/, "");
 
 export const ENDPOINTS = {
     EXTRACT: "/pdf-extraction-config",

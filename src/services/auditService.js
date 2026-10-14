@@ -1,4 +1,4 @@
-const BASE_URL = 'https://my-images-python-backend.onrender.com';
+import { BASE_URL } from './api';
 
 /**
  * High-Fidelity Audit Reporter

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { sendChatMessage, sendChatMessageV2, sendEditMessage, sendEditMessageV2, checkIndexingStatus } from '../../services/PdfBackendService';
+import { sendChatMessage, sendChatMessageV2, sendEditMessage, sendEditMessageV2, sendAgentMessage, checkIndexingStatus } from '../../services/PdfBackendService';
 import './ChatPanel.css';
 
 /**
@@ -83,6 +83,40 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
         });
     };
 
+    const handleAgentSend = async () => {
+        const userMsg = input.trim();
+        if (!userMsg || isTyping || indexingStatus === 'indexing') return;
+        setInput('');
+        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setIsTyping(true);
+        try {
+            let sessionId = sessionStorage.getItem('pdf_session_id');
+            if (!sessionId) {
+                sessionId = `session_${Date.now()}`;
+                sessionStorage.setItem('pdf_session_id', sessionId);
+            }
+            const data = await sendAgentMessage(userMsg, sessionId);
+            // Gateway returns the run object directly; result arrives via webhook
+            const answer = data.output || data.answer || data.result;
+            const content = typeof answer === 'string'
+                ? answer
+                : answer
+                    ? (answer?.answer || answer?.output || answer?.content || JSON.stringify(answer, null, 2))
+                    : `Request submitted (run: ${data.run_id || data.id || 'pending'}). The agent is processing your message.`;
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content,
+            }]);
+        } catch (error) {
+            setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: `Agent beta error: ${error.message || 'Please try again.'}`,
+            }]);
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
     const processSseLine = (line, onParsed) => {
         if (!line.startsWith('data: ')) return false;
         const dataStr = line.slice(6).trim();
@@ -145,6 +179,8 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
 
     const handleSend = async () => {
         if (!input.trim() || isTyping || indexingStatus === 'indexing') return;
+
+        if (mode === 'agent') return handleAgentSend();
 
         // Route to streaming logic if enabled
         if (useStreaming) {
@@ -212,6 +248,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
      * Handles both Chat and Edit modes with real-time feedback.
      */
     const handleSendV2 = async () => {
+        if (mode === 'agent') return handleAgentSend();
         const userMsg = input.trim();
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
@@ -370,9 +407,18 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                     >
                         ✏️ Edit
                     </div>
+                    <button
+                        type="button"
+                        className={`mode-btn agent-beta-btn ${mode === 'agent' ? 'active' : ''}`}
+                        onClick={() => setMode('agent')}
+                        aria-pressed={mode === 'agent'}
+                        title="Try the planner and executor agent"
+                    >
+                        Agent <span className="beta-tag">BETA</span>
+                    </button>
                 </div>
 
-                <div className="llm-selector-container">
+                {mode !== 'agent' && <div className="llm-selector-container">
                     <select
                         value={selectedLLM}
                         onChange={(e) => setSelectedLLM(e.target.value)}
@@ -384,7 +430,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                             </option>
                         ))}
                     </select>
-                </div>
+                </div>}
             </div>
             <div className="chat-messages" ref={scrollRef}>
                 {messages.map((msg, idx) => {
@@ -487,7 +533,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder={indexingStatus === 'indexing' ? "Waiting for AI..." : (mode === 'chat' ? "Ask a question..." : "Describe changes...")}
+                        placeholder={indexingStatus === 'indexing' ? "Waiting for AI..." : (mode === 'chat' ? "Ask a question..." : mode === 'edit' ? "Describe changes..." : "Ask the planner + executor...")}
                         onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
@@ -505,7 +551,7 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                         <i className="fa-solid fa-paper-plane" style={{ fontSize: '0.9rem' }}></i>
                     </button>
                 </div>
-                <div className="chat-footer-hint">Powered by Groq & Pinecone</div>
+                <div className="chat-footer-hint">{mode === 'agent' ? 'Planner + Executor Agent · Beta' : 'Powered by Groq & Pinecone'}</div>
             </div>
         </div>
     );
