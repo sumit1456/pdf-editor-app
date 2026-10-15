@@ -74,6 +74,16 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
         });
     };
 
+    const updateStreamingProgress = (progress) => {
+        setMessages(prev => {
+            const lastIdx = prev.length - 1;
+            if (lastIdx < 0 || prev[lastIdx].role !== 'assistant') return prev;
+            return prev.map((msg, i) =>
+                i === lastIdx ? { ...msg, progress, isStreaming: true } : msg
+            );
+        });
+    };
+
     const finalizeStreamingMessage = (structuredData) => {
         setMessages(prev => {
             const lastIdx = prev.length - 1;
@@ -112,22 +122,36 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
             })).filter(m => m.content);
 
             let accumulatedText = '';
-            const data = await sendAgentMessage(userMsg, sessionId, history, agentTaskMode, ({ data: eventData }) => {
+            const data = await sendAgentMessage(userMsg, sessionId, history, agentTaskMode, ({ event, data: eventData }) => {
                 if (!eventData) return;
 
-                if (typeof eventData === 'string') {
-                    accumulatedText += eventData;
+                if (event === 'answer.delta') {
+                    const delta = typeof eventData === 'string'
+                        ? eventData
+                        : (eventData.delta ?? eventData.text ?? eventData.content ?? eventData.output?.text ?? '');
+                    if (!delta) return;
+                    accumulatedText += delta;
                     updateStreamingText(accumulatedText);
-                } else if (eventData.delta || eventData.text || eventData.content) {
-                    accumulatedText += (eventData.delta || eventData.text || eventData.content);
-                    updateStreamingText(accumulatedText);
-                } else if (eventData.thought) {
-                    updateStreamingText(`*Thinking: ${eventData.thought}*`);
-                } else if (eventData.step || eventData.status || eventData.description || eventData.message) {
-                    const statusMsg = eventData.step
-                        ? `Step ${eventData.step}${eventData.description ? `: ${eventData.description}` : ''}`
-                        : (eventData.description || eventData.status || eventData.message);
-                    updateStreamingText(`*Agent: ${statusMsg}...*`);
+                    return;
+                }
+
+                const details = typeof eventData === 'object' ? eventData : {};
+                const stepName = details.node_name || details.step_name || details.node_id || details.step;
+                const detailText = details.description || details.message || details.status;
+                const label = typeof stepName === 'string' ? stepName.replace(/[_-]+/g, ' ') : '';
+
+                if (event === 'connected') {
+                    updateStreamingProgress('Connected. Starting the agent…');
+                } else if (event === 'workflow_step_started') {
+                    updateStreamingProgress(label ? `Working on ${label}…` : (detailText || 'Working on the next step…'));
+                } else if (event === 'workflow_step_completed') {
+                    updateStreamingProgress(label ? `Finished ${label}.` : (detailText || 'Step completed.'));
+                } else if (event === 'workflow_step_failed') {
+                    updateStreamingProgress(label ? `${label} failed.` : (detailText || 'A workflow step failed.'));
+                } else if (event === 'progress_snapshot') {
+                    updateStreamingProgress(detailText || 'Agent is working…');
+                } else if (detailText) {
+                    updateStreamingProgress(detailText);
                 }
             });
 
@@ -517,6 +541,12 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                     return (
                         <div key={idx} className={`message-bubble ${msg.role}${msg.isStreaming ? ' streaming' : ''}`}>
                             <div className="message-content">
+                                {msg.isStreaming && msg.progress && (
+                                    <div className="agent-progress" role="status" aria-live="polite">
+                                        <span className="agent-progress-dot" />
+                                        <span>{msg.progress}</span>
+                                    </div>
+                                )}
                                 {showTypingInBubble ? (
                                     <div className="typing-indicator" aria-label="Assistant is typing">
                                         <span></span><span></span><span></span>

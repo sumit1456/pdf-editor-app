@@ -140,6 +140,25 @@
     word-wrap: break-word;
 }
 
+.agent-progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+    color: var(--ink-4);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+
+.agent-progress-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    border-radius: 50%;
+    background: var(--ink-4);
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
 .message-bubble.assistant.streaming {
     min-height: 36px;
 }
