@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
@@ -1143,6 +1143,44 @@ export default function EditorPage() {
 
         window.showMessage("AI Edit Applied", `Applied ${modifications.length} modification(s).`, "success");
     }, [handleSidebarEdit, handleStyleUpdate, getOriginalLineStyle]);
+
+    // Gateway edit webhooks publish patches to this session's live editor socket.
+    useEffect(() => {
+        if (!sessionId) return undefined;
+
+        let socket;
+        let retryTimer;
+        let disposed = false;
+        const connect = () => {
+            if (disposed) return;
+            const wsUrl = new URL(BASE_URL);
+            wsUrl.protocol = wsUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+            wsUrl.pathname = `/ws/editor/${encodeURIComponent(sessionId)}`;
+            wsUrl.search = '';
+            socket = new WebSocket(wsUrl.toString());
+            socket.onmessage = (event) => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    if (payload.type === 'editor_modifications' && payload.session_id === sessionId) {
+                        handleAIModification(payload.modifications, 'editor tool style edit');
+                    }
+                } catch (error) {
+                    console.error('[EditorPage] Invalid live edit message:', error);
+                }
+            };
+            socket.onclose = () => {
+                if (!disposed) retryTimer = window.setTimeout(connect, 1500);
+            };
+            socket.onerror = () => socket.close();
+        };
+
+        connect();
+        return () => {
+            disposed = true;
+            window.clearTimeout(retryTimer);
+            socket?.close();
+        };
+    }, [sessionId, handleAIModification]);
 
     const handleBatchStyleUpdate = React.useCallback((updates) => {
         if (!updates || updates.length === 0) return;
