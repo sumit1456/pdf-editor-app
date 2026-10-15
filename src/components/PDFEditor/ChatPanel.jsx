@@ -87,7 +87,11 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
         const userMsg = input.trim();
         if (!userMsg || isTyping || indexingStatus === 'indexing') return;
         setInput('');
-        setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+        setMessages(prev => [
+            ...prev,
+            { role: 'user', content: userMsg },
+            { role: 'assistant', content: null, isStreaming: true }
+        ]);
         setIsTyping(true);
         try {
             let sessionId = sessionStorage.getItem('pdf_session_id');
@@ -95,22 +99,51 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 sessionId = `session_${Date.now()}`;
                 sessionStorage.setItem('pdf_session_id', sessionId);
             }
-            const data = await sendAgentMessage(userMsg, sessionId);
+
+            let accumulatedText = '';
+            const data = await sendAgentMessage(userMsg, sessionId, ({ data: eventData }) => {
+                if (!eventData) return;
+
+                if (typeof eventData === 'string') {
+                    accumulatedText += eventData;
+                    updateStreamingText(accumulatedText);
+                } else if (eventData.delta || eventData.text || eventData.content) {
+                    accumulatedText += (eventData.delta || eventData.text || eventData.content);
+                    updateStreamingText(accumulatedText);
+                } else if (eventData.thought) {
+                    updateStreamingText(`*Thinking: ${eventData.thought}*`);
+                } else if (eventData.step || eventData.status || eventData.description || eventData.message) {
+                    const statusMsg = eventData.step
+                        ? `Step ${eventData.step}${eventData.description ? `: ${eventData.description}` : ''}`
+                        : (eventData.description || eventData.status || eventData.message);
+                    updateStreamingText(`*Agent: ${statusMsg}...*`);
+                }
+            });
+
             const answer = data.answer || data.output || data.result;
-            const content = typeof answer === 'string'
-                ? answer
-                : answer
-                    ? JSON.stringify(answer, null, 2)
-                    : 'The agent completed the run without returning a response.';
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content,
-            }]);
+            let content;
+            if (typeof answer === 'string') {
+                content = answer;
+            } else if (answer && typeof answer === 'object') {
+                if (answer.answer || answer.highlights || answer.suggested_questions) {
+                    content = answer;
+                } else {
+                    content = JSON.stringify(answer, null, 2);
+                }
+            } else {
+                content = 'The agent completed the run without returning a response.';
+            }
+
+            finalizeStreamingMessage(content);
+
+            const mods = data.modifications || (answer && typeof answer === 'object' && answer.modifications);
+            if (mods && Array.isArray(mods) && mods.length > 0 && onAIModification) {
+                console.log(`[ChatPanel Agent] Applying ${mods.length} modifications...`);
+                onAIModification(mods, userMsg);
+            }
         } catch (error) {
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `Agent beta error: ${error.message || 'Please try again.'}`,
-            }]);
+            console.error('[ChatPanel Agent] Error:', error);
+            finalizeStreamingMessage(`Agent error: ${error.message || 'Please try again.'}`);
         } finally {
             setIsTyping(false);
         }

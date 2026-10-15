@@ -131,9 +131,17 @@ export const sendChatMessage = async (message, sessionId, history = [], provider
     }
 };
 
-/** Send a message to the agent gateway and listen via SSE for the webhook result. */
-export const sendAgentMessage = async (message, sessionId) => {
-    // 1. Fire the run
+/**
+ * Send a message to the Agent Gateway and stream events/result via backend SSE proxy.
+ * Replaces the previous webhook-waiting mechanism with direct gateway SSE streaming.
+ *
+ * @param {string} message - User prompt
+ * @param {string} sessionId - PDF session ID
+ * @param {function} [onProgress] - Optional callback for intermediate events: ({ event, data, raw })
+ * @returns {Promise<{ ready: boolean, run_id: string, answer: any }>}
+ */
+export const sendAgentMessage = async (message, sessionId, onProgress = null) => {
+    // 1. Trigger agent run
     const response = await fetch(`${BASE_URL}/api/agent-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -147,40 +155,108 @@ export const sendAgentMessage = async (message, sessionId) => {
 
     const runId = data.run_id || data.id;
     if (!runId) {
-        // Gateway returned an immediate result (no async run)
+        // Gateway returned an immediate synchronous result (no async run)
         return data;
     }
 
-    // 2. Subscribe to SSE stream — backend pushes the result when webhook arrives
-    return new Promise((resolve, reject) => {
-        const es = new EventSource(`${BASE_URL}/api/agent-result/${runId}/stream`);
-
-        const timeout = setTimeout(() => {
-            es.close();
-            reject(new Error('Agent run timed out waiting for result (120s).'));
-        }, 125000); // slightly longer than server-side 120s timeout
-
-        es.onmessage = (event) => {
-            clearTimeout(timeout);
-            es.close();
-            try {
-                const result = JSON.parse(event.data);
-                if (result.ready) {
-                    resolve(result);
-                } else {
-                    reject(new Error(result.error || 'Agent run failed.'));
-                }
-            } catch (e) {
-                reject(new Error('Failed to parse agent result.'));
-            }
-        };
-
-        es.onerror = () => {
-            clearTimeout(timeout);
-            es.close();
-            reject(new Error('SSE connection to agent result stream failed.'));
-        };
+    // 2. Stream events from backend proxy: GET /api/agent-result/{run_id}/stream
+    const streamRes = await fetch(`${BASE_URL}/api/agent-result/${runId}/stream`, {
+        headers: {
+            'Accept': 'text/event-stream',
+        },
     });
+
+    if (!streamRes.ok) {
+        const errData = await streamRes.json().catch(() => ({}));
+        throw new Error(errData.detail || `Agent stream failed (${streamRes.status})`);
+    }
+
+    const reader = streamRes.body.getReader();
+    const decoder = new TextDecoder();
+    let sseBuffer = '';
+    let currentEvent = 'message';
+    let currentDataLines = [];
+    let completedResult = null;
+
+    const timeout = setTimeout(() => {
+        try { reader.cancel(); } catch { }
+    }, 130000);
+
+    const handleEventBlock = (eventType, dataLines) => {
+        if (!dataLines || dataLines.length === 0) return;
+        const raw = dataLines.join('\n');
+        let parsed = null;
+        try {
+            parsed = JSON.parse(raw);
+        } catch {
+            parsed = raw;
+        }
+
+        if (parsed && typeof parsed === 'object') {
+            if (parsed.ready === true) {
+                completedResult = parsed;
+            } else if (parsed.ready === false) {
+                throw new Error(parsed.error || 'Agent run failed.');
+            }
+        }
+
+        if (typeof onProgress === 'function') {
+            try {
+                onProgress({ event: eventType, data: parsed, raw });
+            } catch (cbErr) {
+                console.warn('[sendAgentMessage] Error in onProgress callback:', cbErr);
+            }
+        }
+    };
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            sseBuffer += decoder.decode(value, { stream: true });
+            const lines = sseBuffer.split('\n');
+            sseBuffer = lines.pop() || '';
+
+            for (const rawLine of lines) {
+                const line = rawLine.trimEnd();
+                if (!line) {
+                    // Empty line marks end of an SSE message block
+                    handleEventBlock(currentEvent, currentDataLines);
+                    currentEvent = 'message';
+                    currentDataLines = [];
+                } else if (line.startsWith('event:')) {
+                    currentEvent = line.slice(6).trim();
+                } else if (line.startsWith('data:')) {
+                    currentDataLines.push(line.slice(5).trimStart());
+                } else if (line.startsWith(':')) {
+                    // SSE keepalive comment
+                }
+            }
+        }
+
+        // Process any trailing buffered block
+        if (sseBuffer.trim()) {
+            const trailingLines = sseBuffer.split('\n');
+            for (const rawLine of trailingLines) {
+                const line = rawLine.trimEnd();
+                if (line.startsWith('event:')) {
+                    currentEvent = line.slice(6).trim();
+                } else if (line.startsWith('data:')) {
+                    currentDataLines.push(line.slice(5).trimStart());
+                }
+            }
+            handleEventBlock(currentEvent, currentDataLines);
+        }
+
+        if (completedResult) {
+            return completedResult;
+        }
+
+        throw new Error('Agent stream closed without returning a result.');
+    } finally {
+        clearTimeout(timeout);
+    }
 };
 
 /**
