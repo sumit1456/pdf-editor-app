@@ -140,12 +140,12 @@ export const sendChatMessage = async (message, sessionId, history = [], provider
  * @param {function} [onProgress] - Optional callback for intermediate events: ({ event, data, raw })
  * @returns {Promise<{ ready: boolean, run_id: string, answer: any }>}
  */
-export const sendAgentMessage = async (message, sessionId, onProgress = null) => {
+export const sendAgentMessage = async (message, sessionId, history = [], taskMode = 'chat', onProgress = null) => {
     // 1. Trigger agent run
     const response = await fetch(`${BASE_URL}/api/agent-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, session_id: sessionId }),
+        body: JSON.stringify({ message, session_id: sessionId, history, task_mode: taskMode }),
     });
 
     const data = await response.json().catch(() => ({}));

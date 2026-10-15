@@ -37,6 +37,7 @@ const TypewriterText = ({ html, animate, scrollRef }) => {
 
 const ChatPanel = ({ pdfName, onAIModification }) => {
     const [mode, setMode] = useState('chat'); // 'chat' or 'edit'
+    const [agentTaskMode, setAgentTaskMode] = useState('chat');
     const [useStreaming, setUseStreaming] = useState(true);
 
     // Display labels only — backend uses python-backend/.env (same as scripts/test_llm_apis.py)
@@ -86,6 +87,15 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
     const handleAgentSend = async () => {
         const userMsg = input.trim();
         if (!userMsg || isTyping || indexingStatus === 'indexing') return;
+        const sessionId = sessionStorage.getItem('pdf_session_id');
+        if (!sessionId) {
+            setMessages(prev => [...prev,
+                { role: 'user', content: userMsg },
+                { role: 'assistant', content: 'Open or upload a PDF first so I can access its session context.' }
+            ]);
+            setInput('');
+            return;
+        }
         setInput('');
         setMessages(prev => [
             ...prev,
@@ -94,14 +104,15 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
         ]);
         setIsTyping(true);
         try {
-            let sessionId = sessionStorage.getItem('pdf_session_id');
-            if (!sessionId) {
-                sessionId = `session_${Date.now()}`;
-                sessionStorage.setItem('pdf_session_id', sessionId);
-            }
+            const history = messages.slice(-10).map(m => ({
+                role: m.role,
+                content: (m.content !== null && typeof m.content === 'object')
+                    ? (m.content.answer ?? '')
+                    : (m.content ?? '')
+            })).filter(m => m.content);
 
             let accumulatedText = '';
-            const data = await sendAgentMessage(userMsg, sessionId, ({ data: eventData }) => {
+            const data = await sendAgentMessage(userMsg, sessionId, history, agentTaskMode, ({ data: eventData }) => {
                 if (!eventData) return;
 
                 if (typeof eventData === 'string') {
@@ -120,7 +131,14 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 }
             });
 
-            const answer = data.answer || data.output || data.result;
+            let answer = data.answer || data.output || data.result;
+            if (typeof answer === 'string') {
+                try {
+                    answer = JSON.parse(answer);
+                } catch {
+                    // Plain text responses are valid for the agent too.
+                }
+            }
             let content;
             if (typeof answer === 'string') {
                 content = answer;
@@ -429,13 +447,13 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 <div className="mode-btns">
                     <div
                         className={`mode-btn ${mode === 'chat' ? 'active' : ''}`}
-                        onClick={() => setMode('chat')}
+                        onClick={() => { setMode('chat'); setAgentTaskMode('chat'); }}
                     >
                         💬 Chat
                     </div>
                     <div
                         className={`mode-btn ${mode === 'edit' ? 'active' : ''}`}
-                        onClick={() => setMode('edit')}
+                        onClick={() => { setMode('edit'); setAgentTaskMode('edit'); }}
                     >
                         ✏️ Edit
                     </div>
@@ -449,6 +467,21 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                         Agent <span className="beta-tag">BETA</span>
                     </button>
                 </div>
+
+                {mode === 'agent' && (
+                    <label className="llm-selector-container">
+                        <span className="sr-only">Agent task mode</span>
+                        <select
+                            value={agentTaskMode}
+                            onChange={(event) => setAgentTaskMode(event.target.value)}
+                            className="llm-selector-dropdown"
+                            aria-label="Agent task mode"
+                        >
+                            <option value="chat">Agent: PDF chat</option>
+                            <option value="edit">Agent: PDF edit</option>
+                        </select>
+                    </label>
+                )}
 
                 {mode !== 'agent' && <div className="llm-selector-container">
                     <select
