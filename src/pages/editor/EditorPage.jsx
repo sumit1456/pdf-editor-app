@@ -11,7 +11,7 @@ import ChatPanel from '../../components/PDFEditor/ChatPanel';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { fontFitManager } from '../../utils/FontFitManager';
-import { savePdfToBackend, logFontMapping } from '../../services/PdfBackendService';
+import { savePdfToBackend, logFontMapping, syncCurrentLayout } from '../../services/PdfBackendService';
 import { BASE_URL } from '../../services/api';
 import './EditorPage.css';
 
@@ -272,6 +272,8 @@ export default function EditorPage() {
 
     const [selectedNodeIds, setSelectedNodeIds] = useState([]);
     const [isLineMultiSelect, setIsLineMultiSelect] = useState(false);
+    const [isAiMarkMode, setIsAiMarkMode] = useState(false);
+    const [markedLineIds, setMarkedLineIds] = useState([]);
     const [mobileActivePanel, setMobileActivePanel] = useState(null); // 'edit', 'pages', 'words' or null
     const [isDragEnabled, setIsDragEnabled] = useState(false); // Default dragging OFF as requested
     const [isFittingConfirmed, setIsFittingConfirmed] = useState(false); // [FitV4] Manual confirmation state
@@ -307,6 +309,93 @@ export default function EditorPage() {
     const reduxDispatch = useDispatch();
 
     const activePageData = pages[activePageIndex];
+
+    const currentPageLayout = useMemo(() => {
+        if (!activePageData) return { page: activePageIndex + 1, lines: [] };
+        const lines = [];
+        const blocks = activePageData.blocks || [];
+        if (blocks.length) {
+            blocks.forEach((block, blockIndex) => {
+                (block.lines || []).forEach((line, lineIndex) => {
+                    if (!line.id) return;
+                    const style = line.items?.[0] || line;
+                    lines.push({
+                        id: line.id,
+                        content: nodeEdits[line.id]?.content ?? line.content ?? '',
+                        page: activePageIndex + 1,
+                        block_id: block.id,
+                        block_type: block.type || 'text',
+                        role: block.type === 'heading' || block.type === 'header' ? 'heading' : 'body',
+                        order: lines.length,
+                        block_order: blockIndex,
+                        line_order: lineIndex,
+                        bbox: line.bbox || null,
+                        uri: line.uri || null,
+                        style: {
+                            size: style.size ?? line.size ?? null,
+                            font: style.font || null,
+                            color: style.color || null,
+                            is_bold: style.is_bold ?? false,
+                            is_italic: style.is_italic ?? false,
+                            font_variant: style.font_variant || 'normal'
+                        }
+                    });
+                });
+            });
+        } else {
+            (activePageData.items || []).forEach((line, index) => {
+                if (!line.id || line.type !== 'text') return;
+                const style = line.items?.[0] || line;
+                lines.push({
+                    id: line.id,
+                    content: nodeEdits[line.id]?.content ?? line.content ?? '',
+                    page: activePageIndex + 1,
+                    block_id: null,
+                    block_type: line.type || 'text',
+                    role: 'body',
+                    order: index,
+                    block_order: index,
+                    line_order: 0,
+                    bbox: line.bbox || null,
+                    uri: line.uri || null,
+                    style: {
+                        size: style.size ?? null,
+                        font: style.font || null,
+                        color: style.color || null,
+                        is_bold: style.is_bold ?? false,
+                        is_italic: style.is_italic ?? false,
+                        font_variant: style.font_variant || 'normal'
+                    }
+                });
+            });
+        }
+        return { page: activePageIndex + 1, lines };
+    }, [activePageData, activePageIndex, nodeEdits]);
+
+    const currentSelectedLayout = useMemo(() => markedLineIds
+        .map(id => currentPageLayout.lines.find(line => line.id === id))
+        .filter(Boolean), [markedLineIds, currentPageLayout]);
+
+    React.useEffect(() => {
+        if (!sessionId || !activePageData || !currentPageLayout?.lines?.length) return undefined;
+        const timeout = window.setTimeout(() => {
+            syncCurrentLayout(sessionId, currentPageLayout, currentSelectedLayout);
+        }, 100);
+        return () => window.clearTimeout(timeout);
+    }, [sessionId, activePageData, activePageIndex, currentPageLayout, currentSelectedLayout]);
+
+    React.useEffect(() => {
+        setMarkedLineIds([]);
+        setIsAiMarkMode(false);
+    }, [activePageIndex]);
+
+    const toggleAIMarkedLine = React.useCallback((lineId) => {
+        const line = currentPageLayout.lines.find(item => item.id === lineId);
+        if (!line) return;
+        setMarkedLineIds(prev => prev.includes(lineId)
+            ? prev.filter(id => id !== lineId)
+            : [...prev, lineId]);
+    }, [currentPageLayout]);
 
     // Semantic Text items for Side Panels (Blocks for Python, Lines for Java)
     const textLines = useMemo(() => {
@@ -432,6 +521,14 @@ export default function EditorPage() {
             }, 2000);
         }
     }, [isLineMultiSelect, nodeEdits, textLines, pages, activePageIndex]);
+
+    const handleCanvasLineSelect = React.useCallback((lineId) => {
+        if (isAiMarkMode) {
+            toggleAIMarkedLine(lineId);
+            return;
+        }
+        scrollToNode(lineId);
+    }, [isAiMarkMode, toggleAIMarkedLine, scrollToNode]);
 
     const handleZoom = React.useCallback((delta) => {
         setZoom(prev => Math.min(2.0, Math.max(0.3, parseFloat((prev + delta).toFixed(2)))));
@@ -1866,12 +1963,15 @@ export default function EditorPage() {
                     page={activePageData}
                     pageIndex={activePageIndex}
                     activeNodeId={activeNodeId}
+                    markedNodeIds={currentSelectedLayout.map(line => line.id)}
+                    isAiMarkMode={isAiMarkMode}
+                    onSelectLines={setMarkedLineIds}
                     selectedWordIndices={selectedWordIndices}
                     fontsKey={fontsKey}
                     fonts={fonts}
                     nodeEdits={nodeEdits}
                     onUpdate={handlePageUpdate}
-                    onSelect={scrollToNode}
+                    onSelect={handleCanvasLineSelect}
                     onDoubleClick={handleDoubleClick}
                     onMove={handleNodeMove}
                     scale={zoom}
@@ -1982,6 +2082,11 @@ export default function EditorPage() {
                 <ChatPanel
                     pdfName={pdfName}
                     onAIModification={handleAIModification}
+                    currentPageLayout={currentPageLayout}
+                    currentSelectedLayout={currentSelectedLayout}
+                    isAiMarkMode={isAiMarkMode}
+                    onToggleAiMarkMode={() => setIsAiMarkMode(prev => !prev)}
+                    onClearMarkedLayout={() => setMarkedLineIds([])}
                 />
             ) : (
                 <div style={{ padding: '15px', color: 'var(--ink)' }}>

@@ -26,6 +26,27 @@ export const uploadPdfToBackend = async (file, sessionId) => {
     }
 };
 
+export const syncCurrentLayout = async (sessionId, currentPageLayout, currentSelectedLayout = []) => {
+    if (!sessionId || !currentPageLayout) return;
+    try {
+        const response = await fetch(`${BASE_URL}/tool/set_current_layout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session_id: sessionId,
+                current_page_layout: currentPageLayout,
+                current_selected_layout: currentSelectedLayout,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(`Layout cache failed (${response.status})`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.warn('[syncCurrentLayout] Could not preload page layout:', error);
+    }
+};
+
 /**
  * Service to save/export the reconstructed PDF.
  */
@@ -140,12 +161,12 @@ export const sendChatMessage = async (message, sessionId, history = [], provider
  * @param {function} [onProgress] - Optional callback for intermediate events: ({ event, data, raw })
  * @returns {Promise<{ ready: boolean, run_id: string, answer: any }>}
  */
-export const sendAgentMessage = async (message, sessionId, history = [], taskMode = 'chat', onProgress = null) => {
+export const sendAgentMessage = async (message, sessionId, history = [], taskMode = 'chat', onProgress = null, layoutState = {}) => {
     // 1. Trigger agent run
     const response = await fetch(`${BASE_URL}/api/agent-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, session_id: sessionId, history, task_mode: taskMode }),
+        body: JSON.stringify({ message, session_id: sessionId, history, task_mode: taskMode, ...layoutState }),
     });
 
     const data = await response.json().catch(() => ({}));

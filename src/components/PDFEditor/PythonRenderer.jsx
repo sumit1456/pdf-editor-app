@@ -190,7 +190,7 @@ const canonicalSymbolText = (text) => {
         .replace(/âœ•/g, '✕').replace(/âœ–/g, '✖').replace(/â†’/g, '→');
 };
 
-const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, onMove, isDragEnabled, onCalibrated, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
+const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, markedNodeIds = [], isAiMarkMode = false, onSelectLines, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, onMove, isDragEnabled, onCalibrated, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     // console.log("[PythonRenderer] Mounting for Page", pageIndex + 1, "useOriginalFonts:", useOriginalFonts);
 
     const containerRef = useRef(null);
@@ -199,6 +199,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const [isReady, setIsReady] = useState(false);
     const [metricRatio, setMetricRatio] = useState(1.0); // Backend already applies 1.33x scaling to result.json
+    const [selectionBox, setSelectionBox] = useState(null);
+    const selectionGestureRef = useRef(null);
 
     // --- DRAG ENGINE ---
     const itemRefs = useRef(new Map());
@@ -633,8 +635,106 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
     const scaledStyleWidth = baseWidth * scale;
     const scaledStyleHeight = baseHeight * scale;
 
+    const pageLines = useMemo(() => page?.blocks?.length
+        ? page.blocks.flatMap(block => block.lines || [])
+        : (page?.items || []).filter(item => item.type === 'text'), [page]);
+
+    const getLineBounds = (line) => {
+        if (Array.isArray(line.bbox) && line.bbox.length >= 4) return line.bbox;
+        const itemBoxes = (line.items || []).map(item => item.bbox).filter(box => Array.isArray(box) && box.length >= 4);
+        const x0 = line.x0 ?? (itemBoxes.length ? Math.min(...itemBoxes.map(box => box[0])) : null);
+        const y0 = line.y0 ?? (itemBoxes.length ? Math.min(...itemBoxes.map(box => box[1])) : null);
+        const x1 = line.x1 ?? (itemBoxes.length ? Math.max(...itemBoxes.map(box => box[2])) : null);
+        const y1 = line.y1 ?? (itemBoxes.length ? Math.max(...itemBoxes.map(box => box[3])) : null);
+        return [x0, y0, x1, y1].some(value => value === null) ? null : [x0, y0, x1, y1];
+    };
+
+    useEffect(() => {
+        setSelectionBox(null);
+        selectionGestureRef.current = null;
+    }, [pageIndex, isAiMarkMode]);
+
+    const selectionPoint = (event, svg) => {
+        const rect = svg.getBoundingClientRect();
+        return {
+            x: Math.max(0, Math.min(baseWidth, ((event.clientX - rect.left) / rect.width) * baseWidth)),
+            y: Math.max(0, Math.min(baseHeight, ((event.clientY - rect.top) / rect.height) * baseHeight)),
+        };
+    };
+
+    const handleSelectionPointerDown = (event) => {
+        if (!isAiMarkMode || event.button !== 0) return;
+        event.preventDefault();
+        const point = selectionPoint(event, event.currentTarget);
+        const resizeHandle = event.target?.dataset?.resizeHandle;
+        const startBox = resizeHandle && selectionBox ? selectionBox : null;
+        selectionGestureRef.current = {
+            mode: startBox ? 'resize' : 'draw',
+            handle: resizeHandle,
+            start: point,
+            box: startBox,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+        if (!startBox) setSelectionBox({ x1: point.x, y1: point.y, x2: point.x, y2: point.y });
+    };
+
+    const handleSelectionPointerMove = (event) => {
+        const gesture = selectionGestureRef.current;
+        if (!gesture) return;
+        const point = selectionPoint(event, event.currentTarget);
+        if (gesture.mode === 'draw') {
+            setSelectionBox({
+                x1: Math.min(gesture.start.x, point.x),
+                y1: Math.min(gesture.start.y, point.y),
+                x2: Math.max(gesture.start.x, point.x),
+                y2: Math.max(gesture.start.y, point.y),
+            });
+            return;
+        }
+        const box = { ...gesture.box };
+        if (gesture.handle.includes('w')) box.x1 = point.x;
+        if (gesture.handle.includes('e')) box.x2 = point.x;
+        if (gesture.handle.includes('n')) box.y1 = point.y;
+        if (gesture.handle.includes('s')) box.y2 = point.y;
+        setSelectionBox(box);
+    };
+
+    const handleSelectionPointerUp = (event) => {
+        const gesture = selectionGestureRef.current;
+        if (gesture?.mode === 'draw') {
+            const point = selectionPoint(event, event.currentTarget);
+            const moved = Math.hypot(point.x - gesture.start.x, point.y - gesture.start.y);
+            if (moved < 6 / Math.max(scale, 0.1) && onSelect) {
+                const tolerance = 8 / Math.max(scale, 0.1);
+                const hit = pageLines.find(line => {
+                    const bbox = getLineBounds(line);
+                    return bbox && point.x >= bbox[0] - tolerance && point.x <= bbox[2] + tolerance
+                        && point.y >= bbox[1] - tolerance && point.y <= bbox[3] + tolerance;
+                });
+                if (hit?.id) onSelect(hit.id);
+            }
+        }
+        selectionGestureRef.current = null;
+    };
+
+    useEffect(() => {
+        if (!isAiMarkMode || !selectionBox || !onSelectLines) return;
+        const left = Math.min(selectionBox.x1, selectionBox.x2);
+        const right = Math.max(selectionBox.x1, selectionBox.x2);
+        const top = Math.min(selectionBox.y1, selectionBox.y2);
+        const bottom = Math.max(selectionBox.y1, selectionBox.y2);
+        if (right - left < 2 || bottom - top < 2) return;
+
+        const selectedIds = pageLines.filter(line => {
+            const bbox = getLineBounds(line);
+            if (!bbox) return false;
+            return bbox[0] <= right && bbox[2] >= left && bbox[1] <= bottom && bbox[3] >= top;
+        }).map(line => line.id).filter(Boolean);
+        onSelectLines(selectedIds);
+    }, [isAiMarkMode, selectionBox, pageLines, onSelectLines]);
+
     return (
-        <div className="webgl-single-page" style={{ width: 'auto', height: 'auto', position: 'relative', background: 'transparent', padding: '0px' }}>
+        <div className="webgl-single-page" style={{ width: 'auto', height: 'auto', position: 'relative', background: 'transparent', padding: '0px', cursor: isAiMarkMode ? 'crosshair' : 'default' }}>
             {/* PAGE BADGE REMOVED */}
             <div
                 className="page-paper-wrapper"
@@ -656,6 +756,8 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                             blocks={page.blocks}
                             isFirstPage={pageIndex === 0}
                             nodeEdits={nodeEdits || {}} pageIndex={pageIndex} activeNodeId={activeNodeId}
+                            markedNodeIds={markedNodeIds}
+                            isAiMarkMode={isAiMarkMode}
                             selectedWordIndices={selectedWordIndices} fontsKey={fontsKey} fontStyles={fontStyles} metricRatio={metricRatio}
                             onDoubleClick={onDoubleClick} onSelect={onSelect}
                             itemRefs={itemRefs} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={handlePointerUp} isDragEnabled={isDragEnabled}
@@ -664,6 +766,33 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
                         />
                     ) : null)}
                 </svg>
+                {isAiMarkMode && (
+                    <svg
+                        className="ai-layout-selection-overlay"
+                        viewBox={`0 0 ${baseWidth} ${baseHeight}`}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 20, touchAction: 'none', cursor: 'crosshair' }}
+                        onPointerDown={handleSelectionPointerDown}
+                        onPointerMove={handleSelectionPointerMove}
+                        onPointerUp={handleSelectionPointerUp}
+                        onPointerCancel={handleSelectionPointerUp}
+                    >
+                        <rect x="0" y="0" width={baseWidth} height={baseHeight} fill="transparent" />
+                        {selectionBox && (() => {
+                            const x = Math.min(selectionBox.x1, selectionBox.x2);
+                            const y = Math.min(selectionBox.y1, selectionBox.y2);
+                            const width = Math.abs(selectionBox.x2 - selectionBox.x1);
+                            const height = Math.abs(selectionBox.y2 - selectionBox.y1);
+                            const handleSize = 9 / Math.max(scale, 0.1);
+                            const handles = [
+                                ['nw', x, y], ['ne', x + width, y], ['sw', x, y + height], ['se', x + width, y + height],
+                            ];
+                            return <g key="selection-box">
+                                <rect x={x} y={y} width={width} height={height} fill="rgba(37, 99, 235, 0.10)" stroke="#2563eb" strokeWidth={2 / Math.max(scale, 0.1)} pointerEvents="none" />
+                                {handles.map(([handle, hx, hy]) => <rect key={handle} data-resize-handle={handle} x={hx - handleSize / 2} y={hy - handleSize / 2} width={handleSize} height={handleSize} rx={handleSize / 4} fill="white" stroke="#1d4ed8" strokeWidth={1.5 / Math.max(scale, 0.1)} style={{ cursor: `${handle}-resize`, pointerEvents: 'all' }} />)}
+                            </g>;
+                        })()}
+                    </svg>
+                )}
             </div>
         </div>
     );
@@ -674,6 +803,9 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, selectedWord
         prev.scale === next.scale &&
         prev.nodeEdits === next.nodeEdits &&
         prev.activeNodeId === next.activeNodeId &&
+        prev.markedNodeIds === next.markedNodeIds &&
+        prev.isAiMarkMode === next.isAiMarkMode &&
+        prev.onSelectLines === next.onSelectLines &&
         prev.selectedWordIndices === next.selectedWordIndices &&
         prev.fontsKey === next.fontsKey &&
         prev.isDragEnabled === next.isDragEnabled &&
@@ -784,7 +916,7 @@ function EditableTextItem({ item, index, edit, pageIndex, activeNodeId, fonts, m
     );
 }
 
-const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
+const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, activeNodeId, markedNodeIds, isAiMarkMode, selectedWordIndices, fontsKey, fontStyles, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     // console.log("[BlockLayer] Rendering blocks:", blocks?.length, "useOriginalFonts:", useOriginalFonts);
     return (
         <g className="block-layer" key={fontsKey}>
@@ -797,6 +929,8 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
                     edit={nodeEdits[block.id]}
                     nodeEdits={nodeEdits}
                     pageIndex={pageIndex} activeNodeId={activeNodeId}
+                    markedNodeIds={markedNodeIds}
+                    isAiMarkMode={isAiMarkMode}
                     selectedWordIndices={selectedWordIndices}
                     metricRatio={metricRatio} onDoubleClick={onDoubleClick}
                     onSelect={onSelect}
@@ -815,6 +949,8 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
     return prev.blocks === next.blocks &&
         prev.nodeEdits === next.nodeEdits &&
         prev.activeNodeId === next.activeNodeId &&
+        prev.markedNodeIds === next.markedNodeIds &&
+        prev.isAiMarkMode === next.isAiMarkMode &&
         prev.fontsKey === next.fontsKey &&
         prev.fontStyles === next.fontStyles &&
         prev.metricRatio === next.metricRatio &&
@@ -825,7 +961,7 @@ const BlockLayer = React.memo(({ blocks, isFirstPage, nodeEdits, pageIndex, acti
 
 
 
-const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
+const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIndex, activeNodeId, markedNodeIds, isAiMarkMode, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRefs, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     // console.log("[SemanticBlock] block:", block.id, "useOriginalFonts:", useOriginalFonts);
     const lines = useMemo(() => {
         return block.lines || [];
@@ -842,6 +978,8 @@ const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIn
                             line={line}
                             edit={nodeEdits[line.id]}
                             pageIndex={pageIndex} activeNodeId={activeNodeId}
+                            isMarked={markedNodeIds?.includes(line.id)}
+                            isAiMarkMode={isAiMarkMode}
                             selectedWordIndices={selectedWordIndices}
                             metricRatio={metricRatio} onDoubleClick={onDoubleClick} onSelect={onSelect}
                             onScaleUpdate={onScaleUpdate}
@@ -862,7 +1000,7 @@ const SemanticBlock = React.memo(({ isFirstBlock, block, edit, nodeEdits, pageIn
     );
 });
 
-const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNodeId, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
+const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNodeId, isMarked = false, isAiMarkMode = false, selectedWordIndices, metricRatio, onDoubleClick, onSelect, itemRef, onPointerDown, onPointerMove, onPointerUp, isDragEnabled, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     const isActive = activeNodeId === line.id;
     const targetId = line.id;
 
@@ -1022,14 +1160,14 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                 });
             }}
             onClick={(e) => {
-                if (!isDragEnabled && onSelect) {
+                if ((isAiMarkMode || !isDragEnabled) && onSelect) {
                     e.stopPropagation();
                     onSelect(targetId);
                 }
             }}
         >
-            {(isActive || showAllBboxes) && <rect x={currentEdit.bbox ? currentEdit.bbox[0] : line.x0} y={currentEdit.bbox ? currentEdit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill="none" stroke={isActive ? "#2563eb" : "#dc2626"} strokeWidth="2" opacity={isActive ? 1 : 0.8} strokeDasharray={isActive ? "4 2" : "3 1"} pointerEvents="none" style={{ animation: isActive ? 'blink 2s infinite' : 'none' }} />}
-            <rect x={(currentEdit.bbox ? currentEdit.bbox[0] : line.x0) - 5} y={(currentEdit.bbox ? currentEdit.bbox[1] : (line.y - (line.height || line.size || 10))) - 4} width={Math.max(50, finalPdfWidth + 10)} height={(line.height || line.size || 12) + 8} fill="transparent" pointerEvents="all" />
+            {(isActive || isMarked || showAllBboxes) && <rect x={currentEdit.bbox ? currentEdit.bbox[0] : line.x0} y={currentEdit.bbox ? currentEdit.bbox[1] : (line.y - (line.height || line.size || 10))} width={finalPdfWidth} height={line.height || line.size || 12} fill={isMarked ? 'rgba(59, 130, 246, 0.18)' : 'none'} stroke={isMarked || isActive ? "#2563eb" : "#dc2626"} strokeWidth={isMarked ? "2.5" : "2"} opacity={isMarked || isActive ? 1 : 0.8} strokeDasharray={isMarked ? "none" : isActive ? "4 2" : "3 1"} pointerEvents="none" style={{ animation: isActive && !isMarked ? 'blink 2s infinite' : 'none' }} />}
+            <rect x={(currentEdit.bbox ? currentEdit.bbox[0] : line.x0) - 8} y={(currentEdit.bbox ? currentEdit.bbox[1] : (line.y - (line.height || line.size || 10))) - 7} width={Math.max(80, finalPdfWidth + 16)} height={Math.max(24, (line.height || line.size || 12) + 14)} fill="transparent" pointerEvents="all" />
             <text
                 x={initialStartX} y={baselineY}
                 fontSize={Math.max(1, Math.abs(finalFontSize))}

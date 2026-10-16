@@ -35,7 +35,7 @@ const TypewriterText = ({ html, animate, scrollRef }) => {
     return <span dangerouslySetInnerHTML={{ __html: visible.replace(/\n/g, '<br/>') }} />;
 };
 
-const ChatPanel = ({ pdfName, onAIModification }) => {
+const ChatPanel = ({ pdfName, onAIModification, currentPageLayout, currentSelectedLayout = [], isAiMarkMode = false, onToggleAiMarkMode, onClearMarkedLayout }) => {
     const [mode, setMode] = useState('chat'); // 'chat' or 'edit'
     const [agentTaskMode, setAgentTaskMode] = useState('chat');
     const [useStreaming, setUseStreaming] = useState(true);
@@ -153,9 +153,17 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                 } else if (detailText) {
                     updateStreamingProgress(detailText);
                 }
+            }, {
+                current_page_layout: currentPageLayout,
+                current_selected_layout: currentSelectedLayout
             });
 
-            let answer = data.answer || data.output || data.result;
+            const agentResponse = data.answer ?? data.output ?? data.result;
+            console.log('[ChatPanel Agent] Final response received:', {
+                runId: data.run_id,
+                response: agentResponse,
+            });
+            let answer = agentResponse;
             if (typeof answer === 'string') {
                 try {
                     answer = JSON.parse(answer);
@@ -521,6 +529,39 @@ const ChatPanel = ({ pdfName, onAIModification }) => {
                     </select>
                 </div>}
             </div>
+            {mode === 'agent' && (
+                <div className={`agent-target-picker ${isAiMarkMode ? 'marking' : ''}`}>
+                    <div className="agent-target-picker-row">
+                        <button
+                            type="button"
+                            className="agent-target-button"
+                            aria-pressed={isAiMarkMode}
+                            onClick={onToggleAiMarkMode}
+                        >
+                            {isAiMarkMode ? 'Done selecting' : 'Select lines on PDF'}
+                        </button>
+                        <span className="agent-target-summary">
+                            {isAiMarkMode
+                                ? 'Drag a box around the text; resize it to adjust the selection'
+                                : currentSelectedLayout.length
+                                    ? `${currentSelectedLayout.length} line${currentSelectedLayout.length === 1 ? '' : 's'} selected on page ${currentPageLayout?.page ?? ''}`
+                                    : `No lines selected · page ${currentPageLayout?.page ?? ''} is the fallback`}
+                        </span>
+                        {currentSelectedLayout.length > 0 && (
+                            <button type="button" className="agent-target-clear" onClick={onClearMarkedLayout}>
+                                Clear
+                            </button>
+                        )}
+                    </div>
+                    {currentSelectedLayout.length > 0 && (
+                        <div className="agent-target-preview" aria-label="Selected text lines">
+                            {currentSelectedLayout.map(line => (
+                                <span key={line.id} title={line.content}>{line.content || '(empty line)'}</span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
             <div className="chat-messages" ref={scrollRef}>
                 {messages.map((msg, idx) => {
                     const isAssistant = msg.role === 'assistant';
