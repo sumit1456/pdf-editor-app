@@ -1,3 +1,5 @@
+import { normalizePdfSymbols } from '../../utils/pdfTextHelper';
+
 /**
  * lineRenderUtils.js
  * SHARED UTILITIES FOR TEXT RENDERING
@@ -36,14 +38,8 @@ export function getSVGColor(color, fallback = 'black') {
 /**
  * Maps special characters and identifies structural spans.
  */
-export function mapContent(text) {
-    if (!text) return '';
-    return text
-        .replace(/\u2022/g, '•')
-        .replace(/\u2217/g, '∗')
-        .replace(/\u22c6/g, '⋆')
-        .replace(/\u2013/g, '–')
-        .replace(/\u2014/g, '—');
+export function mapContent(text, fontName) {
+    return normalizePdfSymbols(text || '', fontName);
 }
 
 /**
@@ -100,3 +96,4 @@ export function renderWordStyledText(text, wordStyles = {}, baseStyle = {}, isSm
         );
     });
 }
+

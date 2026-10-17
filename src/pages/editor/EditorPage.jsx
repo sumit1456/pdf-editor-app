@@ -13,14 +13,48 @@ import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { fontFitManager } from '../../utils/FontFitManager';
 import { savePdfToBackend, logFontMapping, syncCurrentLayout } from '../../services/PdfBackendService';
 import { BASE_URL } from '../../services/api';
+import { normalizePdfSymbols } from '../../utils/pdfTextHelper';
 import './EditorPage.css';
 
-// Helper to decouple bullets from content (Global for use in initializers)
-const mapSpansToWordStyles = (items) => {
+const BULLET_SELECTION_INDEX = '__bullet__';
+const tokenizeWords = (text) => (text || '').split(/\s+/).filter(Boolean);
+
+const isMarkerSpan = (item) => {
+    const text = normalizePdfSymbols(item?.content || '', item?.font).trim();
+    return /^[\da-z]+[.)]$/i.test(text) || (text.length > 0 && text.length <= 8 && !/[\p{L}\p{N}]/u.test(text) && /[\p{P}\p{S}\uE000-\uF8FF]/u.test(text));
+};
+
+const getLineSelectorData = (line, contentOverride) => {
+    const content = contentOverride ?? line?.content ?? '';
+    const parsed = splitBullet(content);
+    const markerSpan = line?.items?.[0];
+    const bullet = (line?.bullet || parsed.bullet || (line?.is_bullet_start && isMarkerSpan(markerSpan)
+        ? normalizePdfSymbols(markerSpan.content, markerSpan.font).trim()
+        : '')).trim();
+    let text = parsed.bullet ? parsed.text : content;
+    if (bullet && text.trimStart().startsWith(bullet)) {
+        text = text.trimStart().slice(bullet.length).trimStart();
+    }
+    return { bullet, words: tokenizeWords(text) };
+};
+
+const getAllSelectorIndices = (line, contentOverride) => {
+    const { bullet, words } = getLineSelectorData(line, contentOverride);
+    return [...(bullet ? [BULLET_SELECTION_INDEX] : []), ...words.map((_, index) => index)];
+};
+
+// Word styles are indexed against text words only. A marker is a separate
+// selectable element and must never consume a text-word index.
+const mapSpansToWordStyles = (items, hasBulletMarker = false) => {
     const wordStyles = {};
     let wordIdx = 0;
     (items || []).forEach((item, i) => {
-        const content = item.content || '';
+        if (i === 0 && hasBulletMarker && isMarkerSpan(item)) return;
+        let content = item.content || '';
+        if (i === 0 && hasBulletMarker) {
+            const markerPrefix = splitBullet(content);
+            if (markerPrefix.bullet) content = markerPrefix.text;
+        }
         const trimmed = content.trim();
         if (!trimmed) return;
         const words = trimmed.split(/\s+/);
@@ -49,8 +83,11 @@ const splitBullet = (content) => {
     // Matches the marker and all trailing whitespace
     const match = content.match(/^([•·*∗⋆–\-»]|[\da-zA-Z]+[.)])\s*/);
 
-    if (match) {
-        const bulletPart = match[0];
+    const emojiMatch = content.match(/^((?:\p{Extended_Pictographic}(?:\uFE0F|\uFE0E|\p{Emoji_Modifier})?)(?:\u200D\p{Extended_Pictographic}(?:\uFE0F|\uFE0E|\p{Emoji_Modifier})?)*)\s*/u);
+    const unicodeMatch = content.match(/^([\u2022\u25cf\u25cb\u25e6\u25aa\u25ab\u25a0\u25a1\u25c6\u25c7\u2605\u2713\u2714\u2715\u2716\u27a4\u27a2\u27a1\u2013\u2014\u00b7*+\-]|[\da-zA-Z]+[.)])\s*/u);
+    const bulletMatch = emojiMatch || unicodeMatch || match;
+    if (bulletMatch) {
+        const bulletPart = bulletMatch[0];
         return {
             bullet: bulletPart,
             text: content.substring(bulletPart.length)
@@ -58,6 +95,21 @@ const splitBullet = (content) => {
     }
 
     return { bullet: '', text: content };
+};
+
+const splitLineBullet = (line) => {
+    const parsed = splitBullet(line?.content || '');
+    if (parsed.bullet) return parsed;
+
+    const marker = line?.items?.[0];
+    if ((line?.is_bullet_start || (line?.items?.length > 1 && isMarkerSpan(marker))) && isMarkerSpan(marker)) {
+        const bullet = normalizePdfSymbols(marker.content, marker.font).trim();
+        const text = (line.content || '').trimStart();
+        if (bullet && text.startsWith(bullet)) {
+            return { bullet, text: text.slice(bullet.length).trimStart() };
+        }
+    }
+    return { bullet: '', text: line?.content || '' };
 };
 
 const FONT_OPTIONS = [
@@ -206,7 +258,7 @@ export default function EditorPage() {
                     ...block,
                     lines: block.lines.map(line => {
                         const isBullet = !!line.is_bullet_start;
-                        const { bullet, text } = isBullet ? splitBullet(line.content) : { bullet: '', text: line.content };
+                        const { bullet, text } = isBullet ? splitLineBullet(line) : { bullet: '', text: line.content };
                         return {
                             ...line,
                             content: text,
@@ -228,7 +280,7 @@ export default function EditorPage() {
             // Apply bullet splitting to Java items as well
             const processedItems = mergedItems.map(item => {
                 if (item.type === 'text') {
-                    const { bullet, text } = splitBullet(item.content);
+                    const { bullet, text } = splitLineBullet(item);
                     return {
                         ...item,
                         bullet: bullet,
@@ -482,30 +534,48 @@ export default function EditorPage() {
             .reverse();
     }, [activePageData, activeTab]);
 
-    const scrollToNode = React.useCallback((idOrIndex) => {
+    const scrollToNode = React.useCallback((idOrIndex, { manageSelection = true } = {}) => {
         setActiveNodeId(idOrIndex);
-        if (!isLineMultiSelect) setSelectedNodeIds([idOrIndex]);
-        else if (!selectedNodeIds.includes(idOrIndex)) setSelectedNodeIds(prev => [...prev, idOrIndex]);
+        if (manageSelection) {
+            if (!isLineMultiSelect) setSelectedNodeIds([idOrIndex]);
+            else if (!selectedNodeIds.includes(idOrIndex)) setSelectedNodeIds(prev => [...prev, idOrIndex]);
+        }
+
+        const line = textLines.find(l => l.id === idOrIndex);
+        const p = pages[activePageIndex];
+        const rawLine = (p?.blocks ? p.blocks.flatMap(b => b.lines) : (p?.items || [])).find(l => l.id === idOrIndex);
+        const sourceLine = line || rawLine;
+        const selectorData = getLineSelectorData(sourceLine, nodeEdits[idOrIndex]?.content ?? sourceLine?.content);
+        setSelectedWordIndices(getAllSelectorIndices(sourceLine, nodeEdits[idOrIndex]?.content ?? sourceLine?.content));
+        setIsMultiSelect(false);
 
         // Ensure wordStyles are initialized on navigation
-        if (!nodeEdits[idOrIndex]?.wordStyles) {
-            const line = textLines.find(l => l.id === idOrIndex);
+        if (!nodeEdits[idOrIndex]?.wordStyles || (selectorData.bullet && !nodeEdits[idOrIndex]?.bulletStyle)) {
             // Search in fragments too if line mapping is missing items
             let items = line?.items;
             if (!items) {
-                const p = pages[activePageIndex];
-                const rawLine = (p.blocks ? p.blocks.flatMap(b => b.lines) : (p.items || [])).find(l => l.id === idOrIndex);
                 items = rawLine?.items;
             }
 
             if (items) {
-                const initialWordStyles = mapSpansToWordStyles(items);
+                const initialWordStyles = mapSpansToWordStyles(items, !!selectorData.bullet);
+                const marker = selectorData.bullet && items[0] ? items[0] : null;
+                const initialBulletStyle = marker ? {
+                    font: marker.font,
+                    size: marker.size,
+                    color: marker.color,
+                    is_bold: marker.is_bold,
+                    is_italic: marker.is_italic,
+                    googleFont: marker.google_font,
+                    font_variant: marker.font_variant || 'normal'
+                } : undefined;
                 setNodeEdits(prev => ({
                     ...prev,
                     [idOrIndex]: {
                         ...(prev[idOrIndex] || {}),
-                        wordStyles: initialWordStyles,
-                        isModified: false
+                        wordStyles: prev[idOrIndex]?.wordStyles || initialWordStyles,
+                        ...(initialBulletStyle && !prev[idOrIndex]?.bulletStyle ? { bulletStyle: initialBulletStyle } : {}),
+                        isModified: prev[idOrIndex]?.isModified || false
                     }
                 }));
             }
@@ -520,7 +590,7 @@ export default function EditorPage() {
                 element.classList.remove('highlight-flash');
             }, 2000);
         }
-    }, [isLineMultiSelect, nodeEdits, textLines, pages, activePageIndex]);
+    }, [isLineMultiSelect, nodeEdits, textLines, pages, activePageIndex, selectedNodeIds]);
 
     const handleCanvasLineSelect = React.useCallback((lineId) => {
         if (isAiMarkMode) {
@@ -549,22 +619,28 @@ export default function EditorPage() {
         const edit = nodeEdits[activeNodeId];
 
         // TARGETING FIX: Always target the LAST word by default for the toolbar status
-        const content = edit?.content || "";
-        const words = content.split(/\s+/).filter(Boolean);
+        const content = edit?.content ?? activeNodeData?.content ?? "";
+        const selectorData = getLineSelectorData(activeNodeData, content);
+        const words = selectorData.words;
         const lastWordIdx = words.length > 0 ? words.length - 1 : 0;
 
         if (selectedWordIndices.length > 0) {
-            // Check if ALL words are selected
-            const contentStr = edit?.content || "";
-            const totalWords = contentStr.split(/\s+/).filter(Boolean).length;
+            const totalElements = words.length + (selectorData.bullet ? 1 : 0);
 
-            // If more than 1 word or ALL words selected, prefer the line's safetyStyle (base style)
-            // This ensures common font size is shown when a line is selected
-            if (selectedWordIndices.length === totalWords && totalWords > 1) {
+            if (selectedWordIndices.length === totalElements && totalElements > 1) {
                 if (edit?.safetyStyle) return edit.safetyStyle;
             }
 
             const lastIdx = selectedWordIndices[selectedWordIndices.length - 1];
+            if (lastIdx === BULLET_SELECTION_INDEX) {
+                const originalMarker = activeNodeData?.items?.[0];
+                const markerStyle = edit?.bulletStyle || (selectorData.bullet && originalMarker ? originalMarker : null);
+                if (markerStyle) {
+                    const style = { ...(edit?.safetyStyle || {}), ...markerStyle };
+                    if (style.size) style.size = parseFloat(style.size);
+                    return style;
+                }
+            }
             if (edit?.wordStyles?.[lastIdx]) {
                 const style = { ...(edit.safetyStyle || {}), ...edit.wordStyles[lastIdx] };
                 // Ensure size is a number
@@ -756,11 +832,11 @@ export default function EditorPage() {
                 const isLink = firstLine.type === 'link' || !!firstLine.uri;
                 setActiveTab(isLink ? 'links' : 'text');
                 setActiveNodeId(firstLine.id);
-                // Auto-select first word as requested
-                if (firstLine.content && firstLine.content.trim().length > 0) {
-                    const words = firstLine.content.split(/\s+/).filter(Boolean);
-                    setSelectedWordIndices(words.map((_, i) => i));
-                    setIsMultiSelect(true);
+                // Select every addressable element on the active line.
+                const initialSelection = getAllSelectorIndices(firstLine);
+                if (initialSelection.length > 0) {
+                    setSelectedWordIndices(initialSelection);
+                    setIsMultiSelect(false);
                 }
                 setIsInitialLoad(false);
             }
@@ -796,16 +872,17 @@ export default function EditorPage() {
                     if (isBullet) {
                         const bulletSpan = originalSpans[0] || {};
                         const firstTextSpan = originalSpans[1] || originalSpans[0] || {};
+                        const bulletStyle = edit.bulletStyle || {};
 
                         // 1. Build the bullet span
                         const exportedBulletSpan = {
                             text: original.bullet || bulletSpan.content || bulletSpan.text || '',
-                            font: bulletSpan.font || baseStyle.font,
-                            size: bulletSpan.size || baseStyle.size,
-                            color: bulletSpan.color || baseStyle.color,
-                            is_bold: bulletSpan.is_bold !== undefined ? bulletSpan.is_bold : (baseStyle.is_bold || false),
-                            is_italic: bulletSpan.is_italic !== undefined ? bulletSpan.is_italic : (baseStyle.is_italic || false),
-                            font_variant: bulletSpan.font_variant || baseStyle.font_variant || "normal",
+                            font: bulletStyle.font || bulletSpan.font || baseStyle.font,
+                            size: bulletStyle.size ?? bulletSpan.size ?? baseStyle.size,
+                            color: bulletStyle.color || bulletSpan.color || baseStyle.color,
+                            is_bold: bulletStyle.is_bold !== undefined ? bulletStyle.is_bold : (bulletSpan.is_bold !== undefined ? bulletSpan.is_bold : (baseStyle.is_bold || false)),
+                            is_italic: bulletStyle.is_italic !== undefined ? bulletStyle.is_italic : (bulletSpan.is_italic !== undefined ? bulletSpan.is_italic : (baseStyle.is_italic || false)),
+                            font_variant: bulletStyle.font_variant || bulletSpan.font_variant || baseStyle.font_variant || "normal",
                             origin: bulletSpan.origin || original?.origin || null
                         };
 
@@ -1122,16 +1199,44 @@ export default function EditorPage() {
                 const current = next[id] || {};
                 const sStyle = { ...getOriginalLineStyle(id), ...(current.safetyStyle || {}) };
                 const wordStyles = { ...(current.wordStyles || {}) };
+                const sourceLine = pages.flatMap(page => page.blocks ? page.blocks.flatMap(block => block.lines) : (page.items || [])).find(line => line.id === id);
+                const sourceMarker = sourceLine?.items?.[0];
+                const hasSourceBullet = !!(sourceLine?.bullet || sourceLine?.is_bullet_start || isMarkerSpan(sourceMarker));
+                const bulletStyle = {
+                    ...(hasSourceBullet && sourceMarker ? {
+                        font: sourceMarker.font,
+                        size: sourceMarker.size,
+                        color: sourceMarker.color,
+                        is_bold: sourceMarker.is_bold,
+                        is_italic: sourceMarker.is_italic,
+                        googleFont: sourceMarker.google_font,
+                        font_variant: sourceMarker.font_variant || 'normal'
+                    } : {}),
+                    ...(current.bulletStyle || {})
+                };
+                let bulletStyleChanged = false;
 
                 if (wordIndices !== null) {
                     const indices = Array.isArray(wordIndices) ? wordIndices : [wordIndices];
                     indices.forEach(idx => {
                         if (idx === null || idx === undefined) return;
+                        if (idx === BULLET_SELECTION_INDEX) {
+                            bulletStyle[field] = value;
+                            if (field === 'font') bulletStyle.googleFont = value;
+                            bulletStyleChanged = true;
+                            return;
+                        }
                         if (!wordStyles[idx]) wordStyles[idx] = {};
                         wordStyles[idx] = { ...wordStyles[idx], [field]: value };
                     });
 
-                    if (isLineMultiSelect) {
+                    const selectorData = getLineSelectorData(sourceLine, current.content ?? sourceLine?.content);
+                    const allIndices = [
+                        ...(selectorData.bullet ? [BULLET_SELECTION_INDEX] : []),
+                        ...selectorData.words.map((_, index) => index)
+                    ];
+                    const targetsWholeLine = allIndices.length > 0 && allIndices.length === indices.length && allIndices.every(index => indices.includes(index));
+                    if (isLineMultiSelect || targetsWholeLine) {
                         sStyle[field] = value;
                         if (field === 'font') sStyle.googleFont = value;
                     }
@@ -1144,6 +1249,11 @@ export default function EditorPage() {
                     });
                     sStyle[field] = value;
                     if (field === 'font') sStyle.googleFont = value;
+                    if (hasSourceBullet) {
+                        bulletStyle[field] = value;
+                        if (field === 'font') bulletStyle.googleFont = value;
+                        bulletStyleChanged = true;
+                    }
                 } else {
                     const content = current.content || "";
                     const wordsCount = content.split(/\s+/).filter(Boolean).length;
@@ -1167,6 +1277,7 @@ export default function EditorPage() {
                     ...current,
                     safetyStyle: sStyle,
                     wordStyles: wordStyles,
+                    ...(bulletStyleChanged ? { bulletStyle } : {}),
                     bbox: newBBox,
                     isModified: true
                 };
@@ -1249,7 +1360,7 @@ export default function EditorPage() {
             const next = { ...prev };
             updates.forEach(({ lineId, results, scale }) => {
                 const current = next[lineId] || {};
-                const sStyle = { ...getOriginalLineStyle(id), ...(current.safetyStyle || {}) };
+                const sStyle = { ...getOriginalLineStyle(lineId), ...(current.safetyStyle || {}) };
                 const wordStyles = { ...(current.wordStyles || {}) };
 
                 // [FitV4 Pivot] Bake the fit directly into the font size of each segment
@@ -1259,9 +1370,10 @@ export default function EditorPage() {
                     sStyle.size = results[0].optimalSize;
 
                     // Update individual words
-                    results.forEach((res, i) => {
-                        if (!wordStyles[i]) wordStyles[i] = { ...sStyle };
-                        wordStyles[i].size = res.optimalSize;
+                    results.forEach((res) => {
+                        if (res.wordIndex === null || res.wordIndex === undefined) return;
+                        if (!wordStyles[res.wordIndex]) wordStyles[res.wordIndex] = { ...sStyle };
+                        wordStyles[res.wordIndex].size = res.optimalSize;
                     });
                 }
 
@@ -1338,7 +1450,7 @@ export default function EditorPage() {
                             };
                         }
                         if (!wordStyles) {
-                            wordStyles = mapSpansToWordStyles(found.items);
+                            wordStyles = mapSpansToWordStyles(found.items, !!(found.bullet || found.is_bullet_start));
                         }
                         break;
                     }
@@ -1422,7 +1534,7 @@ export default function EditorPage() {
 
             const page = pages[pIdx];
             const line = (page.blocks ? page.blocks.flatMap(b => b.lines) : (page.items || [])).find(l => l.id === lineId);
-            const initialWordStyles = mapSpansToWordStyles(line?.items);
+            const initialWordStyles = mapSpansToWordStyles(line?.items, !!(line?.bullet || line?.is_bullet_start));
 
             return {
                 ...prev,
@@ -1553,7 +1665,7 @@ export default function EditorPage() {
                                 });
                                 return match ? match.value : '';
                             })()}
-                            onChange={(e) => handleStyleUpdate(activeNodeId, 'font', e.target.value)}
+                            onChange={(e) => handleStyleUpdate(activeNodeId, 'font', e.target.value, isWordSelection ? selectedWordIndices : null)}
                         >
                             <option value="" disabled>{activeNodeId ? "Change Font Family" : "---"}</option>
                             {FONT_OPTIONS.map(opt => (
@@ -1687,8 +1799,7 @@ export default function EditorPage() {
                                         setSelectedNodeIds([activeNodeId]);
                                         const line = textLines.find(l => l.id === activeNodeId);
                                         const content = nodeEdits[activeNodeId]?.content || line?.content || "";
-                                        const words = content.split(/\s+/).filter(Boolean);
-                                        setSelectedWordIndices(words.map((_, i) => i));
+                                        setSelectedWordIndices(getAllSelectorIndices(line || activeNodeData, content));
                                         setIsMultiSelect(true);
                                     }
                                 } else {
@@ -1736,7 +1847,7 @@ export default function EditorPage() {
                         <button
                             className={`premium-optimize-btn ${isFittingConfirmed ? 'active' : ''}`}
                             onClick={() => setIsFittingConfirmed(true)}
-                            title="Fit all text lines perfectly into their PDF bounding boxes"
+                            title="Fit edited text into its PDF bounding box without enlarging the original font"
                             style={{
                                 background: isFittingConfirmed ? 'var(--brand-primary)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
                                 color: 'white',
@@ -1755,7 +1866,7 @@ export default function EditorPage() {
                             disabled={isFittingConfirmed}
                         >
                             <span className="icon" style={{ fontSize: '1.1rem' }}>{isFittingConfirmed ? '✓' : '✨'}</span>
-                            {isFittingConfirmed ? 'Layout Optimized' : 'Optimize Text Fit'}
+                            {isFittingConfirmed ? 'Fit Applied' : 'Fit Edited Text'}
                         </button>
                     </div>
                 </div>
@@ -1774,9 +1885,8 @@ export default function EditorPage() {
                                 style={{ fontSize: '0.65rem' }}
                                 onClick={() => {
                                     const content = nodeEdits[activeNodeId]?.content || activeNodeData.content || "";
-                                    const words = content.split(/\s+/).filter(Boolean);
-                                    setSelectedWordIndices(words.map((_, i) => i));
-                                    setIsMultiSelect(true);
+                                    setSelectedWordIndices(getAllSelectorIndices(activeNodeData, content));
+                                    setIsMultiSelect(false);
                                 }}
                             >
                                 Select All
@@ -1805,32 +1915,41 @@ export default function EditorPage() {
                     </div>
 
                     <div className="word-pill-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {(nodeEdits[activeNodeId]?.content || activeNodeData.content || "").split(/\s+/).filter(Boolean).map((word, idx) => (
-                            <div
-                                key={idx}
-                                className={`word-pill ${selectedWordIndices.includes(idx) ? 'active' : ''}`}
-                                onClick={() => {
-                                    if (isMultiSelect) {
-                                        setSelectedWordIndices(prev =>
-                                            prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
-                                        );
-                                    } else {
-                                        setSelectedWordIndices(prev =>
-                                            prev.includes(idx) && prev.length === 1 ? [] : [idx]
-                                        );
-                                    }
-                                }}
-                            >
-                                {word}
-                            </div>
-                        ))}
+                        {(() => {
+                            const content = nodeEdits[activeNodeId]?.content ?? activeNodeData.content ?? '';
+                            const { bullet, words } = getLineSelectorData(activeNodeData, content);
+                            const entries = [
+                                ...(bullet ? [{ key: BULLET_SELECTION_INDEX, label: bullet, isBullet: true }] : []),
+                                ...words.map((word, index) => ({ key: index, label: word, isBullet: false }))
+                            ];
+                            return entries.map(entry => (
+                                <div
+                                    key={entry.key}
+                                    className={`word-pill ${selectedWordIndices.includes(entry.key) ? 'active' : ''}`}
+                                    title={entry.isBullet ? 'Bullet marker' : 'Text word'}
+                                    onClick={() => {
+                                        if (isMultiSelect) {
+                                            setSelectedWordIndices(prev =>
+                                                prev.includes(entry.key) ? prev.filter(index => index !== entry.key) : [...prev, entry.key]
+                                            );
+                                        } else {
+                                            setSelectedWordIndices(prev =>
+                                                prev.includes(entry.key) && prev.length === 1 ? [] : [entry.key]
+                                            );
+                                        }
+                                    }}
+                                >
+                                    {entry.label}
+                                </div>
+                            ));
+                        })()}
                     </div>
 
                     {selectedWordIndices.length > 0 && (
                         <div className="quick-actions-panel">
                             <div className="quick-actions-header">
                                 <div className="selection-count">
-                                    Editing {selectedWordIndices.length} {selectedWordIndices.length === 1 ? 'Word' : 'Words'}
+                                    Editing {selectedWordIndices.length} {selectedWordIndices.length === 1 ? 'Element' : 'Elements'}
                                 </div>
                                 <button className="close-actions" onClick={() => setSelectedWordIndices([])}>Close</button>
                             </div>
@@ -2057,21 +2176,15 @@ export default function EditorPage() {
                             displayContent={displayContent}
                             onClick={() => {
                                 if (isLineMultiSelect) {
-                                    setSelectedNodeIds(prev => {
-                                        const currentlySelected = prev.includes(line.id);
-                                        const next = currentlySelected ? prev.filter(id => id !== line.id) : [...prev, line.id];
-                                        if (!currentlySelected) setActiveNodeId(line.id);
-                                        return next;
-                                    });
+                                    const currentlySelected = selectedNodeIds.includes(line.id);
+                                    setSelectedNodeIds(prev => currentlySelected ? prev.filter(id => id !== line.id) : [...prev, line.id]);
+                                    if (!currentlySelected) scrollToNode(line.id, { manageSelection: false });
                                 } else {
-                                    setActiveNodeId(line.id);
-                                    setSelectedNodeIds([line.id]);
+                                    scrollToNode(line.id);
                                 }
                             }}
                             onFocus={() => {
-                                setActiveNodeId(line.id);
-                                if (!isLineMultiSelect) setSelectedNodeIds([line.id]);
-                                else if (!selectedNodeIds.includes(line.id)) setSelectedNodeIds(prev => [...prev, line.id]);
+                                scrollToNode(line.id);
                             }}
                             onChangeText={(val, selectionStart) => handleSidebarEdit(line.id, val, line.originalStyle, selectionStart)}
                             onChangeLink={(val) => handleSidebarEdit(line.id, displayContent, line.originalStyle, undefined, val)}

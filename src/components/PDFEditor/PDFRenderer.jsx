@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
+import { getPdfGlyphFontFamily, getPdfGlyphFontWeight, hasPrivateUseGlyph, isFontAwesomeFont, mapContentToIcons } from '../../utils/pdfTextHelper';
 
 export default function PDFRenderer({ data, isMini = false, activePageIndex, nodeEdits = {} }) {
     const [localPages, setLocalPages] = useState([]);
@@ -226,7 +227,7 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
     const content = edit.content !== undefined ? edit.content : line.content;
 
     const isListItem = block.type === 'list-item';
-    const startsWithBullet = /^[\u2022\u2217\u22c6\*\-\uâ–ª\[]/.test(content.trim());
+    const startsWithBullet = /^[•◦▪▫■□‣⁃∙·*−–—-]/u.test(content.trim());
     const isMarkerLine = isListItem && (line.is_bullet_start || startsWithBullet);
 
     if (isListItem) {
@@ -241,32 +242,6 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
     // Style Safety: Use the second item (actual text) for the content style
     const contentItem = (isMarkerLine && items.length > 1) ? items[1] : firstItem;
     const isSmallCaps = (contentItem.font || '').toLowerCase().includes('cmcsc');
-
-    const mapContentToIcons = (text, fontName) => {
-        if (!text) return text;
-        const lowerFont = (fontName || '').toLowerCase();
-
-        // LaTeX/Computer Modern Symbol replacements
-        let mapped = text
-            .replace(/\u2022/g, '•')  // Bullet
-            .replace(/\u2217/g, '∗')  // Asterisk bullet
-            .replace(/\u22c6/g, '⋆')  // Star bullet
-            .replace(/\u2013/g, '–')  // En-dash
-            .replace(/\u2014/g, '—')  // Em-dash
-            .replace(/^I$/g, '•')     // Artifact mapping: 'I' -> Bullet
-            .replace(/^G$/g, '•');    // Artifact mapping: 'G' -> Bullet
-
-        // FontAwesome Mapping (Based on nable_python.pdf findings)
-        if (lowerFont.includes('fontawesome')) {
-            mapped = mapped
-                .replace(/\u0083/g, '\uf095') // ƒ -> Phone (PhoneAlt)
-                .replace(/#/g, '\uf0e0')      // # -> Envelope
-                .replace(/\u00a7/g, '\uf09b') // § -> Github
-                .replace(/\u00ef/g, '\uf08c') // ï -> LinkedIn
-                .replace(/\u00d0/g, '\uf121'); // Ð -> Code / LeetCode
-        }
-        return mapped;
-    };
 
     const renderLine = () => {
         const baseStyle = edit.safetyStyle || contentItem;
@@ -284,18 +259,23 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
             const restPart = content; // Stripped content from EditorPage
 
             const bMetrics = block.bullet_metrics || {};
+            const markerStyle = edit.bulletStyle || firstItem;
             // Bullet size correction: if extraction says 6 but it's a primary bullet, ensure it's at least 70% of text size
             const rawBSize = Math.abs(bMetrics.size || firstItem.size);
-            const safeBSize = (rawBSize < safeFontSize * 0.7) ? safeFontSize * 0.8 : rawBSize;
+            const safeBSize = edit.bulletStyle?.size != null
+                ? Math.abs(Number(edit.bulletStyle.size))
+                : ((rawBSize < safeFontSize * 0.7) ? safeFontSize * 0.8 : rawBSize);
 
             return (
                 <g className="decoupled-line">
                     <text
                         x={bulletX}
                         y={baselineY}
-                        fontFamily={normalizeFont(firstItem.font)}
+                        fontFamily={getPdfGlyphFontFamily(markerPart, markerStyle.font || firstItem.font, markerStyle.googleFont || markerStyle.google_font)}
                         fontSize={safeBSize}
-                        fill={firstItem.color ? `rgb(${firstItem.color[0] * 255},${firstItem.color[1] * 255},${firstItem.color[2] * 255})` : 'black'}
+                        fontWeight={markerStyle.is_bold ? 'bold' : 'normal'}
+                        fontStyle={markerStyle.is_italic ? 'italic' : 'normal'}
+                        fill={markerStyle.color ? `rgb(${markerStyle.color[0] * 255},${markerStyle.color[1] * 255},${markerStyle.color[2] * 255})` : 'black'}
                         dominantBaseline="alphabetic"
                     >
                         {markerPart}
@@ -323,9 +303,12 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
                 return items.map((span, si) => {
                     const isSpanSmallCaps = (span.font || '').toLowerCase().includes('cmcsc');
                     const mappedContent = mapContentToIcons(span.content, span.font);
-                    const isIconFont = (span.font || '').toLowerCase().includes('fontawesome');
+                    const isIconFont = isFontAwesomeFont(span.font) && hasPrivateUseGlyph(mappedContent);
                     
                     const spanFont = edit.safetyStyle?.googleFont || edit.safetyStyle?.font || span.font;
+                    const spanFontFamily = hasPrivateUseGlyph(mappedContent)
+                        ? getPdfGlyphFontFamily(mappedContent, span.font, span.google_font, true)
+                        : normalizeFont(spanFont);
                     const spanSize = edit.safetyStyle?.size || span.size;
                     const spanColor = edit.safetyStyle?.color || span.color;
                     const spanBold = edit.safetyStyle?.is_bold !== undefined ? edit.safetyStyle?.is_bold : span.is_bold;
@@ -336,9 +319,9 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
                             key={si}
                             x={(si === 0 || Math.abs(span.origin?.[0] - items[si - 1]?.bbox?.[2]) > 0.5) ? (span.origin?.[0] || span.bbox[0]) : undefined}
                             fontSize={Math.abs(spanSize)}
-                            fontFamily={isIconFont ? '"Font Awesome 6 Free", "Font Awesome 5 Free"' : normalizeFont(spanFont)}
+                            fontFamily={spanFontFamily}
                             fill={spanColor ? `rgb(${spanColor[0] * 255},${spanColor[1] * 255},${spanColor[2] * 255})` : 'black'}
-                            fontWeight={spanBold ? 'bold' : 'normal'}
+                            fontWeight={isIconFont ? getPdfGlyphFontWeight(span.font, spanBold, mappedContent) : spanBold ? 'bold' : 'normal'}
                             fontStyle={spanItalic ? 'italic' : 'normal'}
                             style={{ fontVariant: isSpanSmallCaps ? 'small-caps' : 'normal' }}
                         >

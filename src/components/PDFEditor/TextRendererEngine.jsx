@@ -9,6 +9,7 @@ import {
     mapContent, 
     renderVisualText 
 } from './lineRenderUtils';
+import { getPdfGlyphFontFamily, getPdfGlyphFontWeight } from '../../utils/pdfTextHelper';
 
 /**
  * TextRendererEngine.jsx
@@ -100,13 +101,10 @@ export function TextLine({
 
     const renderFragments = () => {
         return line.fragments.map((frag, i) => {
-            const mappedText = mapContent(frag.text);
-            const isIcon = /[\uf000-\uf999]/.test(mappedText);
-            const fragFamily = isIcon 
-                ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif'
-                : resolveFontFamily(frag.font, frag.googleFont);
+            const mappedText = mapContent(frag.text, frag.font);
+            const fragFamily = getPdfGlyphFontFamily(mappedText, frag.font, frag.googleFont);
             
-            const fragWeight = isIcon ? '900' : (frag.isBold ? '700' : '400');
+            const fragWeight = getPdfGlyphFontWeight(frag.font, frag.isBold, mappedText);
             const fragStyle = frag.isItalic ? 'italic' : 'normal';
             const fragColor = getSVGColor(frag.color, 'black');
             const isSmallCaps = frag.fontVariant === 'small-caps' || (frag.font || '').toLowerCase().includes('cmcsc');

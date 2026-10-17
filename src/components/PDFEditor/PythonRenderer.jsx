@@ -6,6 +6,7 @@ import { ReflowEngine } from '../../lib/pdf-extractor/ReflowEngine';
 import { MEASURE_CTX, getRealFontString, normalizeFont, getWeightFromFont, GLOBAL_FONT_SCALE } from './reflowUtils';
 import { fontFitManager } from '../../utils/FontFitManager';
 import { buildWorkerPayload } from './workerUtils';
+import { getPdfGlyphFontFamily, getPdfGlyphFontWeight, hasPrivateUseGlyph, isFontAwesomeFont, normalizePdfSymbols } from '../../utils/pdfTextHelper';
 
 // Now purely a Single Page Renderer for Python Backend
 
@@ -96,7 +97,7 @@ const isBulletMarkerText = (text) => {
 
 const getMarkerDisplaySize = (span, lineItems, fallbackSize) => {
     const textNeighbor = (lineItems || []).find(item => {
-        const mapped = canonicalSymbolText(mapContent(item.content || ''));
+        const mapped = canonicalSymbolText(mapContent(item.content || '', item.font));
         return !isStructuralSpan(item) || !isBulletMarkerText(mapped);
     });
     return Math.abs(((textNeighbor?.size || fallbackSize || span?.size || 10) / GLOBAL_FONT_SCALE));
@@ -105,16 +106,12 @@ const getMarkerDisplaySize = (span, lineItems, fallbackSize) => {
 const lineStartsWithMarker = (line) => {
     const first = line?.items?.[0];
     if (!first) return false;
-    const mapped = canonicalSymbolText(mapContent(first.content || ''));
+    const mapped = canonicalSymbolText(mapContent(first.content || '', first.font));
     return isStructuralSpan(first) && isBulletMarkerText(mapped);
 };
 
 const normalizeBulletMarker = (text) => {
-    const raw = (text || '').trim();
-    if (!raw) return raw;
-    if (/^[*·•∙‣⁃▪▫■□-]$/.test(raw)) return '•';
-    if (raw === 'â€¢' || raw === 'Â·' || raw === 'â—' || raw === 'â–ª' || raw === 'â– ') return '•';
-    return raw;
+    return (text || '').trim();
 };
 
 /**
@@ -147,9 +144,9 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
         const spanIsSmallCaps = spanStyle.font_variant === 'small-caps' || isSmallCaps;
         const spanSize = (Math.abs(spanStyle.size || baseSize) / GLOBAL_FONT_SCALE);
         const spanColor = getSVGColor(spanStyle.color, 'inherit');
-        const spanWeight = getWeightFromFont(spanStyle.font, spanStyle.is_bold);
+        const spanWeight = getPdfGlyphFontWeight(spanStyle.font, spanStyle.is_bold, part);
         const spanItalic = spanStyle.is_italic ? 'italic' : 'normal';
-        const spanFamily = normalizeFont(spanStyle.font, spanStyle.googleFont, useOriginalFonts);
+        const spanFamily = getPdfGlyphFontFamily(part, spanStyle.font, spanStyle.googleFont || spanStyle.google_font, useOriginalFonts);
 
         return (
             <tspan
@@ -170,25 +167,9 @@ const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps, baseSi
     });
 };
 
-const mapContent = (text) => {
-    if (!text) return text;
-    return text
-        .replace(/\u00ad/g, '-') // Soft hyphen
-        .replace(/\u25cf/g, '●') // Circle bullet
-        .replace(/\u2022/g, '•').replace(/\u2217/g, '*').replace(/\u22c6/g, '*')
-        .replace(/\u2013/g, '–').replace(/\u2014/g, '—')
-        .replace(/\u0083/g, '\uf095').replace(/\u00a7/g, '\uf09b')
-        .replace(/\u00ef/g, '\uf08c').replace(/\u00d0/g, '\uf121');
-};
+const mapContent = (text, fontName) => normalizePdfSymbols(text, fontName);
 
-const canonicalSymbolText = (text) => {
-    if (!text) return text;
-    return text
-        .replace(/â€¢/g, '•').replace(/Â·/g, '·').replace(/â—/g, '●')
-        .replace(/â–ª/g, '▪').replace(/â–«/g, '▫').replace(/â– /g, '■').replace(/â–¡/g, '□')
-        .replace(/â€“/g, '–').replace(/â€”/g, '—').replace(/âœ“/g, '✓').replace(/âœ”/g, '✔')
-        .replace(/âœ•/g, '✕').replace(/âœ–/g, '✖').replace(/â†’/g, '→');
-};
+const canonicalSymbolText = (text) => normalizePdfSymbols(text);
 
 const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, markedNodeIds = [], isAiMarkMode = false, onSelectLines, selectedWordIndices = [], fontsKey, fonts, nodeEdits, onUpdate, onSelect, onDoubleClick, scale, onMove, isDragEnabled, onCalibrated, showAllBboxes, useOriginalFonts, onScaleUpdate, onBatchUpdate, isFittingConfirmed }) => {
     // console.log("[PythonRenderer] Mounting for Page", pageIndex + 1, "useOriginalFonts:", useOriginalFonts);
@@ -1035,6 +1016,15 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
         return line.items[0] || {};
     }, [line]);
 
+    // A merged line's first span may be a Dingbats marker. Editing applies one
+    // text font to the line, so keep that marker font from leaking onto letters.
+    const editTextFont = isStructuralSpan(firstItem) && line.items?.length > 1
+        ? styleItem.font
+        : (currentEdit.safetyStyle?.font || styleItem.font);
+    const editTextGoogleFont = isStructuralSpan(firstItem) && line.items?.length > 1
+        ? (styleItem.google_font || styleItem.googleFont)
+        : (currentEdit.safetyStyle?.googleFont || currentEdit.safetyStyle?.google_font || styleItem.google_font || styleItem.googleFont);
+
     const { calibratedFontSize: baseFontSize, legacyFittingRatio, dynamicPdfWidth: finalPdfWidth, targetBrowserWidth } = useMemo(() => {
         const baseSize = Math.abs(styleItem.size || line.size || 10);
         let totalWidth = 0;
@@ -1044,12 +1034,11 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
             if (!itemText) return;
             const itemWeight = item.is_bold ? '700' : '400';
             const itemStyle = item.is_italic ? 'italic' : 'normal';
-            let itemFamily = normalizeFont(item.font, item.google_font, useOriginalFonts);
             const itemSize = Math.abs(item.size || baseSize) / GLOBAL_FONT_SCALE; // Apply Reduction
-            const mappedText = mapContent(itemText);
-            if (/[\uf000-\uf999]/.test(mappedText)) {
-                itemFamily = '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif';
-                MEASURE_CTX.font = `normal 900 ${itemSize}px ${itemFamily}`;
+            const mappedText = mapContent(itemText, item.font);
+            const itemFamily = getPdfGlyphFontFamily(mappedText, item.font, item.google_font, useOriginalFonts);
+            if (isFontAwesomeFont(item.font) && hasPrivateUseGlyph(mappedText)) {
+                MEASURE_CTX.font = `normal ${getPdfGlyphFontWeight(item.font, item.is_bold, mappedText)} ${itemSize}px ${itemFamily}`;
             } else {
                 MEASURE_CTX.font = `${itemStyle} ${itemWeight} ${itemSize}px ${itemFamily}`;
             }
@@ -1099,7 +1088,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
 
     // [FitV4] High-Fidelity Binary Font Fitting
     useEffect(() => {
-        if (!isFittingConfirmed) return;
+        if (!isFittingConfirmed || !isModified) return;
 
         if (edit?.isFitted) {
             // console.log(`[FitV4] Line ${line.id} already fitted, skipping.`);
@@ -1128,13 +1117,15 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
             console.log(`[FitV4] Sending ${line.id} to worker...`);
             fontFitManager.fitTextToBbox(payload.words, targetWidth, (results, summary) => {
                 console.log(`[FitV4] Worker results for ${line.id}:`, { results: results?.length, scale: summary?.optimalScale });
-                if (results && results.length > 0 && summary && onBatchUpdate) {
+                if (results && results.length > 0 && summary?.overallFits && onBatchUpdate) {
                     onBatchUpdate([{
                         lineId: line.id,
                         results: results, // Pass full per-word results
                         size: results[0].optimalSize,
                         scale: summary.optimalScale
                     }]);
+                } else if (summary && !summary.overallFits) {
+                    console.warn(`[FitV4] ${line.id} cannot fit inside its PDF box without exceeding the minimum supported text size.`);
                 }
                 fittingInFlight.current = false;
             }, (err) => {
@@ -1144,7 +1135,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
         }, 50);
 
         return () => clearTimeout(timer);
-    }, [line.id, line.content, useOriginalFonts, onBatchUpdate, edit?.isFitted, isFittingConfirmed, targetBrowserWidth, finalPdfWidth]);
+    }, [line.id, line.content, useOriginalFonts, onBatchUpdate, edit?.isFitted, isFittingConfirmed, isModified, targetBrowserWidth, finalPdfWidth]);
 
     const finalFontSize = (baseFontSize / GLOBAL_FONT_SCALE); // Apply Reduction
 
@@ -1171,7 +1162,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
             <text
                 x={initialStartX} y={baselineY}
                 fontSize={Math.max(1, Math.abs(finalFontSize))}
-                fontFamily={normalizeFont(currentEdit.safetyStyle?.font || styleItem.font, currentEdit.safetyStyle?.googleFont || currentEdit.safetyStyle?.google_font || styleItem.google_font, useOriginalFonts)}
+                fontFamily={normalizeFont(editTextFont, editTextGoogleFont, useOriginalFonts)}
                 fill={getSVGColor(currentEdit.safetyStyle?.color || styleItem.color, 'black')}
                 fontStyle={(currentEdit.safetyStyle?.is_italic !== undefined ? currentEdit.safetyStyle.is_italic : styleItem.is_italic) ? 'italic' : 'normal'}
                 dominantBaseline="alphabetic" xmlSpace="preserve"
@@ -1190,26 +1181,40 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                 {isModified ? (
                     (() => {
                         const hasSafetyStyle = currentEdit.safetyStyle && Object.keys(currentEdit.safetyStyle).length > 0;
-                        const activeStyle = hasSafetyStyle ? currentEdit.safetyStyle : styleItem;
+                        const activeStyle = hasSafetyStyle
+                            ? { ...currentEdit.safetyStyle, font: editTextFont, googleFont: editTextGoogleFont }
+                            : styleItem;
                         const safeSize = activeStyle.size || styleItem.size || line.size;
                         const activeSmallCaps = (activeStyle.font_variant || 'normal') === 'small-caps' || isSmallCaps;
                         const safeBSize = safeSize;
 
                         const firstSpan = line.items[0];
-                        const bulletTextRaw = firstSpan ? canonicalSymbolText(mapContent(firstSpan.content)) : '';
+                        const bulletTextRaw = line.bullet
+                            ? canonicalSymbolText(mapContent(line.bullet, firstSpan?.font))
+                            : (firstSpan ? canonicalSymbolText(mapContent(firstSpan.content, firstSpan.font)) : '');
                         const bulletTextTrimmed = bulletTextRaw.trim();
 
-                        const isIconBullet = /[\uE000-\uF8FF]/.test(bulletTextRaw);
-                        const isBulletItem = firstSpan && isStructuralSpan(firstSpan);
-                        const currentContentStr = canonicalSymbolText(mapContent(content));
+                        const isBulletItem = !!line.bullet || (firstSpan && isStructuralSpan(firstSpan));
+                        // `content` is a merged line and can contain normal text after a
+                        // Dingbats bullet. Apply the source font mapping only to the
+                        // individual bullet span above, never to the entire line.
+                        const currentContentStr = canonicalSymbolText(content);
 
-                        const bulletWordCount = bulletTextTrimmed.split(/\s+/).filter(Boolean).length;
-
-                        if (isBulletItem && currentContentStr.trimStart().startsWith(bulletTextTrimmed) && line.items.length > 1) {
-                            const bulletIndex = currentContentStr.indexOf(bulletTextTrimmed);
-                            const afterBulletContent = currentContentStr.substring(bulletIndex + bulletTextTrimmed.length);
+                        if (isBulletItem && firstSpan && (line.items.length > 1 || line.bullet)) {
+                            const hasInlineBullet = currentContentStr.trimStart().startsWith(bulletTextTrimmed);
+                            const bulletIndex = hasInlineBullet ? currentContentStr.indexOf(bulletTextTrimmed) : -1;
+                            const afterBulletContent = hasInlineBullet
+                                ? currentContentStr.substring(bulletIndex + bulletTextTrimmed.length)
+                                : currentContentStr;
+                            const bulletStyle = currentEdit.bulletStyle || firstSpan;
+                            const bulletFontSize = bulletStyle.size != null
+                                ? Math.abs(Number(bulletStyle.size)) / GLOBAL_FONT_SCALE
+                                : getMarkerDisplaySize(firstSpan, line.items, safeSize);
                             const bulletForceX = firstSpan.origin ? firstSpan.origin[0] : firstSpan.bbox[0];
-                            const textForceX = line.items[1].origin ? line.items[1].origin[0] : line.items[1].bbox[0];
+                            const nextTextSpan = line.items[1];
+                            const textForceX = nextTextSpan
+                                ? (nextTextSpan.origin ? nextTextSpan.origin[0] : nextTextSpan.bbox[0])
+                                : (bulletForceX + bulletFontSize);
                             
                             console.log("==========================================");
                             console.log({
@@ -1219,9 +1224,8 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                 bulletText: bulletTextTrimmed
                             });
                             
-                            const bulletFontFamily = isIconBullet ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(firstSpan.font, firstSpan.google_font, useOriginalFonts);
-                            const bulletFontWeight = isIconBullet ? '900' : (firstSpan.is_bold ? '700' : '400');
-                            const bulletFontSize = getMarkerDisplaySize(firstSpan, line.items, safeSize);
+                            const bulletFontFamily = getPdfGlyphFontFamily(bulletTextRaw, bulletStyle.font || firstSpan.font, bulletStyle.googleFont || bulletStyle.google_font || firstSpan.google_font, useOriginalFonts);
+                            const bulletFontWeight = getPdfGlyphFontWeight(bulletStyle.font || firstSpan.font, bulletStyle.is_bold ?? firstSpan.is_bold, bulletTextRaw);
 
                            
                             return (
@@ -1230,9 +1234,9 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                         x={bulletForceX} y={baselineY}
                                         fontFamily={bulletFontFamily}
                                         fontWeight={bulletFontWeight}
-                                        fontStyle={firstSpan.is_italic ? 'italic' : 'normal'}
+                                        fontStyle={(bulletStyle.is_italic ?? firstSpan.is_italic) ? 'italic' : 'normal'}
                                         fontSize={bulletFontSize}
-                                        fill={getSVGColor(firstSpan.color, 'black')}
+                                        fill={getSVGColor(bulletStyle.color || firstSpan.color, 'black')}
                                     >
                                         {normalizeBulletMarker(bulletTextTrimmed)}
                                     </tspan>
@@ -1241,7 +1245,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                         fontStyle='normal'
                                         style={{ fontVariant: activeSmallCaps ? 'small-caps' : 'normal' }}
                                     >
-                                        {renderWordStyledText(afterBulletContent.replace(/^\s+/, ''), currentEdit.wordStyles || {}, activeStyle, activeSmallCaps, safeBSize, bulletWordCount, useOriginalFonts)}
+                                        {renderWordStyledText(afterBulletContent.replace(/^\s+/, ''), currentEdit.wordStyles || {}, activeStyle, activeSmallCaps, safeBSize, 0, useOriginalFonts)}
                                     </tspan>
                                 </>
                             );
@@ -1256,14 +1260,13 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                     (() => {
                         // Check if first span is a bullet and handle bullet+text positioning
                         const firstSpan = line.items[0];
-                        const firstSpanMapped = firstSpan ? canonicalSymbolText(mapContent(firstSpan.content)) : '';
+                        const firstSpanMapped = firstSpan ? canonicalSymbolText(mapContent(firstSpan.content, firstSpan.font)) : '';
                         const firstSpanIsBullet = firstSpan && isStructuralSpan(firstSpan) && isBulletMarkerText(firstSpanMapped);
                         
                         if (firstSpanIsBullet && line.items.length > 1) {
                             const bulletForceX = firstSpan.origin ? firstSpan.origin[0] : firstSpan.bbox[0];
                             const textForceX = line.items[1].origin ? line.items[1].origin[0] : line.items[1].bbox[0];
                             const gap = textForceX - bulletForceX+4;
-                            const isIconBullet = /[\uE000-\uF8FF]/.test(firstSpanMapped);
                             const bulletFontSize = getMarkerDisplaySize(firstSpan, line.items, line.size);
                             
                             console.log("==========================================");
@@ -1281,9 +1284,9 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                     x={bulletForceX}
                                     y={firstSpan.origin ? firstSpan.origin[1] : baselineY}
                                     fontSize={bulletFontSize}
-                                    fontWeight={isIconBullet ? '900' : (firstSpan.is_bold ? '700' : '400')}
+                                    fontWeight={getPdfGlyphFontWeight(firstSpan.font, firstSpan.is_bold, firstSpanMapped)}
                                     fontStyle={firstSpan.is_italic ? 'italic' : 'normal'}
-                                    fontFamily={isIconBullet ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(firstSpan.font, firstSpan.google_font, useOriginalFonts)}
+                                    fontFamily={getPdfGlyphFontFamily(firstSpanMapped, firstSpan.font, firstSpan.google_font, useOriginalFonts)}
                                     fill={getSVGColor(firstSpan.color, 'black')}
                                 >
                                     {normalizeBulletMarker(firstSpanMapped)}
@@ -1292,8 +1295,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                 ...line.items.slice(1).map((span, si) => {
                                     const isOriginalSmallCaps = (span.font_variant === 'small-caps') || (span.font || '').toLowerCase().includes('cmcsc');
                                     const spanX = span.origin ? span.origin[0] : span.bbox[0];
-                                    const mapped = canonicalSymbolText(mapContent(span.content));
-                                    const isIcon = /[\uf000-\uf999]/.test(mapped);
+                                    const mapped = canonicalSymbolText(mapContent(span.content, span.font));
                                     const isBulletMarker = isStructuralSpan(span) && isBulletMarkerText(mapped);
                                     const spanFontSize = isBulletMarker
                                         ? getMarkerDisplaySize(span, line.items, line.size)
@@ -1309,9 +1311,9 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                             x={si === 0 ? bulletForceX + gap : spanX}
                                             y={span.origin ? span.origin[1] : baselineY}
                                             fontSize={spanFontSize}
-                                            fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
+                                            fontWeight={getPdfGlyphFontWeight(span.font, span.is_bold, mapped)}
                                             fontStyle={span.is_italic ? 'italic' : 'normal'}
-                                            fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font, useOriginalFonts)}
+                                            fontFamily={getPdfGlyphFontFamily(mapped, span.font, span.google_font, useOriginalFonts)}
                                             fill={getSVGColor(span.color, 'black')}
                                             xmlSpace="preserve"
                                             style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>
@@ -1326,11 +1328,10 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                         return line.items.map((span, si) => {
                             const isOriginalSmallCaps = (span.font_variant === 'small-caps') || (span.font || '').toLowerCase().includes('cmcsc');
                             const spanX = span.origin ? span.origin[0] : span.bbox[0];
-                            const mapped = canonicalSymbolText(mapContent(span.content));
-                            const isIcon = /[\uf000-\uf999]/.test(mapped);
+                            const mapped = canonicalSymbolText(mapContent(span.content, span.font));
                             const isBulletMarker = isStructuralSpan(span) && isBulletMarkerText(mapped);
                             const prevSpan = si > 0 ? line.items[si - 1] : null;
-                            const prevIsBulletMarker = prevSpan && isStructuralSpan(prevSpan) && isBulletMarkerText(canonicalSymbolText(mapContent(prevSpan.content)));
+                            const prevIsBulletMarker = prevSpan && isStructuralSpan(prevSpan) && isBulletMarkerText(canonicalSymbolText(mapContent(prevSpan.content, prevSpan.font)));
                             const prevX1 = si > 0 ? (prevSpan.bbox ? prevSpan.bbox[2] : 0) : -1;
                             const forceX = si === 0 || prevIsBulletMarker || Math.abs(spanX - prevX1) > 0.5 ? spanX : undefined;
                             const spanFontSize = isBulletMarker
@@ -1347,9 +1348,9 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
                                     x={forceX}
                                     y={span.origin ? span.origin[1] : baselineY}
                                     fontSize={spanFontSize}
-                                    fontWeight={isIcon ? '900' : (span.is_bold ? '700' : '400')}
+                                    fontWeight={getPdfGlyphFontWeight(span.font, span.is_bold, mapped)}
                                     fontStyle={span.is_italic ? 'italic' : 'normal'}
-                                    fontFamily={isIcon ? '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif' : normalizeFont(span.font, span.google_font, useOriginalFonts)}
+                                    fontFamily={getPdfGlyphFontFamily(mapped, span.font, span.google_font, useOriginalFonts)}
                                     fill={getSVGColor(span.color, 'black')}
                                     xmlSpace="preserve"
                                     style={{ fontFeatureSettings: isOriginalSmallCaps ? '"smcp"' : 'normal', fontVariant: isOriginalSmallCaps ? 'small-caps' : 'normal' }}>

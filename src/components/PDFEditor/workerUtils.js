@@ -20,14 +20,16 @@ export const buildWorkerPayload = (line, edit, useOriginalFonts = false) => {
     let wordCounter = 0;
     const wordList = parts.map((part, i) => {
         const isSpace = /^\s+$/.test(part);
-        const style = (!isSpace && wordStyles[wordCounter]) ? wordStyles[wordCounter] : {};
-        if (!isSpace) wordCounter++;
+        const wordIndex = isSpace ? null : wordCounter++;
+        const style = (!isSpace && wordStyles[wordIndex]) ? wordStyles[wordIndex] : {};
         
         const activeStyle = { ...safetyStyle, ...style };
         
         return {
             id: `p-${i}`,
             content: part,
+            wordIndex,
+            isWhitespace: isSpace,
             font: normalizeFont(activeStyle.font || line.font, activeStyle.googleFont || line.google_font, useOriginalFonts),
             size: Math.abs(activeStyle.size || baseSize), // This is the original size for this segment
             weight: getWeightFromFont(activeStyle.font || line.font, activeStyle.is_bold ?? line.is_bold),

@@ -24,7 +24,8 @@ export function getWeightFromFont(fontName, isBoldFlag) {
     return isBoldFlag ? '700' : '400';
 }
 
-export function normalizeFont(fontName, googleFont) {
+export function normalizeFont(fontName, googleFont, forceOriginal = false) {
+    if (forceOriginal && fontName) return fontName;
     if (googleFont) return `'${googleFont}', sans-serif`;
 
     const font = (fontName || '').toLowerCase();
@@ -57,27 +58,79 @@ export function getRealFontString(fontName, googleFont, weight, size, style) {
     return `${style} ${weight} ${size}px ${family}`;
 }
 
-/**
- * Maps special characters and icons based on font context.
- */
-export function mapContentToIcons(text, fontName) {
+const MOJIBAKE_REPAIRS = [
+    ['â€¢', '•'], ['Â·', '·'], ['â—', '●'], ['â–ª', '▪'], ['â–«', '▫'],
+    ['â– ', '■'], ['â–¡', '□'], ['â€“', '–'], ['â€”', '—'], ['âœ“', '✓'],
+    ['âœ”', '✔'], ['âœ•', '✕'], ['âœ–', '✖'], ['â†’', '→']
+];
+
+const DINGBAT_GLYPHS = Object.freeze({
+    // Must stay in parity with python-backend/server.py:ZAPFDINGBATS_MAP.
+    I: '■', l: '●', m: '●', '#': '★', '\u0014': '✔', G: '●', H: '■',
+    n: '▪', o: '□', F: '➤', E: '➢', y: '➡', P: '✓', Q: '✔', R: '✕',
+    S: '✖', u: '♦', v: '❖', '(': '☎', '8': '✉', '<': '✈'
+});
+
+const FONT_AWESOME_GLYPHS = Object.freeze({
+    '\u0083': '\uf095', // phone
+    '#': '\uf0e0',       // envelope
+    '\u00a7': '\uf09b', // GitHub
+    '\u00ef': '\uf08c', // LinkedIn
+    '\u00d0': '\uf121'  // code
+});
+
+export const isFontAwesomeFont = (fontName = '') =>
+    /font\s*awesome|fontawesome|fa[-_ ](solid|regular|brands)/i.test(fontName);
+
+export const isFontAwesomeBrandFont = (fontName = '') =>
+    isFontAwesomeFont(fontName) && /brands/i.test(fontName);
+
+export const getPdfGlyphFontWeight = (fontName, isBold = false, text = '') =>
+    isFontAwesomeFont(fontName) && hasPrivateUseGlyph(text)
+        ? (isFontAwesomeBrandFont(fontName) ? '400' : '900')
+        : (isBold ? '700' : '400');
+
+export const hasPrivateUseGlyph = (text = '') => /[\uE000-\uF8FF]/u.test(text);
+
+export function normalizePdfSymbols(text, fontName = '') {
     if (!text) return text;
-    const lowerFont = (fontName || '').toLowerCase();
 
-    let mapped = text
-        .replace(/\u2022/g, '•')  // Bullet
-        .replace(/\u2217/g, '*')  // Mathematical Asterisk
-        .replace(/\u22c6/g, '*')  // Star bullet
-        .replace(/\u2013/g, '–')  // En-dash
-        .replace(/\u2014/g, '—'); // Em-dash
+    let normalized = text.replaceAll('\u00ad', '-');
+    for (const [broken, repaired] of MOJIBAKE_REPAIRS) {
+        normalized = normalized.replaceAll(broken, repaired);
+    }
 
-    mapped = mapped
-        .replace(/\u0083/g, '\uf095') // Phone
-        .replace(/\u00a7/g, '\uf09b') // Github
-        .replace(/\u00ef/g, '\uf08c') // LinkedIn
-        .replace(/\u00d0/g, '\uf121'); // Code
+    const font = fontName.toLowerCase().replace(/^[A-Z]{6}\+/, '');
+    if (isFontAwesomeFont(font)) {
+        return Array.from(normalized, char => FONT_AWESOME_GLYPHS[char] || char).join('');
+    }
 
-    return mapped;
+    if (/zapf|dingbat|wingdings|webdings|(^|\s)symbol($|\s)/i.test(font)) {
+        return Array.from(normalized, char => DINGBAT_GLYPHS[char] || char).join('');
+    }
+
+    // Keep normal Unicode punctuation and private-use glyphs intact. Their
+    // appearance depends on the source font, so generic substitutions distort it.
+    return normalized;
+}
+
+/** Backwards-compatible name used by the renderers and measurement helpers. */
+export const mapContentToIcons = normalizePdfSymbols;
+
+export function getPdfGlyphFontFamily(text, fontName, googleFont, forceOriginal = false) {
+    if (isFontAwesomeFont(fontName) && hasPrivateUseGlyph(text)) {
+        return isFontAwesomeBrandFont(fontName)
+            ? '"Font Awesome 6 Brands", "Font Awesome 6 Free", sans-serif'
+            : '"Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif';
+    }
+    // The normalized Dingbats text is Unicode now; using ZapfDingbats as the
+    // browser font reinterprets that Unicode codepoint as an encoded glyph and
+    // can turn circles/squares into bars or tiny fallback marks.
+    if (/zapf|dingbat|wingdings|webdings|(^|\\s)symbol($|\\s)/i.test(fontName || '') && !hasPrivateUseGlyph(text)) {
+        return '"Inter", "Noto Sans Symbols", "Segoe UI Symbol", sans-serif';
+    }
+    if (hasPrivateUseGlyph(text) && fontName) return normalizeFont(fontName, googleFont, true);
+    return normalizeFont(fontName, googleFont, forceOriginal);
 }
 
 /**
@@ -96,11 +149,14 @@ export function measureLineWidth(items, baseSize) {
         const size = Math.abs(item.size || baseSize);
 
         const mappedText = mapContentToIcons(itemText, item.font);
-        const isIcon = /[\uf000-\uf999]/.test(mappedText);
+        const isIcon = isFontAwesomeFont(item.font) && hasPrivateUseGlyph(mappedText);
+        const iconWeight = getPdfGlyphFontWeight(item.font, item.is_bold, mappedText);
 
         const fontString = isIcon
-            ? `normal 900 ${size}px "Font Awesome 6 Free", "Font Awesome 6 Brands", sans-serif`
-            : getRealFontString(item.font, item.google_font, weight, size, style);
+            ? `normal ${iconWeight} ${size}px ${getPdfGlyphFontFamily(mappedText, item.font, item.google_font)}`
+            : hasPrivateUseGlyph(mappedText)
+                ? `${style} ${weight} ${size}px ${getPdfGlyphFontFamily(mappedText, item.font, item.google_font)}`
+                : getRealFontString(item.font, item.google_font, weight, size, style);
 
         MEASURE_CTX.font = fontString;
         totalWidth += MEASURE_CTX.measureText(itemText).width;

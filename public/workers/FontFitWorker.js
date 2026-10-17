@@ -44,26 +44,25 @@ function measureLine(words, scaleFactor) {
 
 // Binary search for optimal line-wide scale factor
 function findOptimalScale(words, targetWidth) {
-    // Determine the safe range for the scale factor based on +/- 5pt constraint
-    // The most restrictive word determines the global range.
-    let minScale = 0.1;
-    let maxScale = 5.0; // Default limit for expansion search
+    // Fitting may reduce text to keep it inside its PDF box, but it must never
+    // enlarge the source text just because the extracted box has spare width.
+    const minScale = 0.1;
+    const maxScale = 1.0;
+    const originalWidth = measureLine(words, 1.0);
 
-    words.forEach(word => {
-        const size = word.size || 12;
-        // Limit: |size * scale - size| <= 5
-        // scale_min = (size - 5) / size
-        // scale_max = (size + 5) / size
-        const sMin = Math.max(0.1, (size - 5) / size);
-        const sMax = (size + 5) / size; // [FitV4] Allow expansion within 5pt constraint
-        
-        if (sMin > minScale) minScale = sMin;
-        if (sMax < maxScale) maxScale = sMax;
-    });
+    if (originalWidth <= targetWidth) {
+        return {
+            optimalScale: 1.0,
+            actualWidth: parseFloat(originalWidth.toFixed(3)),
+            iterations: 0,
+            minScaleUsed: minScale,
+            maxScaleUsed: maxScale
+        };
+    }
 
     let low = minScale;
     let high = maxScale;
-    let optimalScale = 1.0;
+    let optimalScale = minScale;
     let iterations = 0;
     const maxIterations = 25;
     const tolerance = 0.005; // 0.5% precision for scale
@@ -76,7 +75,7 @@ function findOptimalScale(words, targetWidth) {
 
         if (midWidth <= targetWidth) {
             optimalScale = mid;
-            low = mid + tolerance; // Try growing more to fill width
+            low = mid + tolerance; // Find the largest size that still fits
         } else {
             high = mid - tolerance; // Too big, must shrink
         }
@@ -118,10 +117,11 @@ self.onmessage = function (e) {
         const lineResult = findOptimalScale(words, targetWidth);
 
         // Map result back to word objects
-        const results = words.map((word) => {
+        const results = words.filter(word => !word.isWhitespace).map((word) => {
             const wordFittedSize = (word.size || 12) * lineResult.optimalScale;
             return {
                 id: word.id,
+                wordIndex: word.wordIndex,
                 content: word.content,
                 originalSize: word.size || 12,
                 optimalSize: wordFittedSize,

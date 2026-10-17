@@ -2,6 +2,7 @@ import React, { useMemo, useEffect, useRef, useState, useCallback, useLayoutEffe
 import * as PIXI from 'pixi.js';
 import { PixiRendererEngine } from '../engine/WebEngine';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
+import { getPdfGlyphFontFamily, getPdfGlyphFontWeight, mapContentToIcons, normalizePdfSymbols } from '../../utils/pdfTextHelper';
 
 // Now purely a Single Page Renderer
 const normalizeFont = (fontName, googleFont) => {
@@ -397,9 +398,9 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
             if (!isSpace) wordCounter++;
             const spanStyle = { ...safetyStyle, ...style };
             const spanSize = Math.abs(spanStyle.size || baseSize);
-            const spanWeight = spanStyle.is_bold ? '700' : '400';
+            const spanWeight = getPdfGlyphFontWeight(spanStyle.font, spanStyle.is_bold, part);
             const spanItalic = spanStyle.is_italic ? 'italic' : 'normal';
-            const spanFamily = normalizeFont(spanStyle.font, spanStyle.googleFont);
+            const spanFamily = getPdfGlyphFontFamily(part, spanStyle.font, spanStyle.googleFont || spanStyle.google_font);
             const spanColor = Array.isArray(spanStyle.color)
                 ? `rgb(${Math.round(spanStyle.color[0] * 255)}, ${Math.round(spanStyle.color[1] * 255)}, ${Math.round(spanStyle.color[2] * 255)})`
                 : 'black';
@@ -423,6 +424,15 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
         <g className="text-layer" key={fontsKey}>
             {items.map((item, i) => {
                 if (item.type !== 'text') return null;
+
+                // Merged lines can start with a Dingbats bullet, but the rest of
+                // the line is ordinary text. Use the first non-Dingbats span for
+                // the line's text font instead of inheriting the marker font.
+                const contentSpan = item.items?.find(span =>
+                    !/(zapf|dingbat|wingdings|webdings)/i.test(span.font || '')
+                ) || item;
+                const contentFont = contentSpan.font || item.font;
+                const contentGoogleFont = contentSpan.google_font || contentSpan.googleFont || item.google_font;
 
                 const w = item.bbox[2] - item.bbox[0];
                 const [a, b, c, d] = item.matrix || [1, 0, 0, 1];
@@ -487,32 +497,39 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
                                 dominantBaseline="alphabetic"
                             >
                                 {(() => {
-                                    const mapContentToIcons = (text, fontName) => {
-                                        if (!text) return text;
-                                        const isSymbolic = fontName && (fontName.includes('Symbol') || fontName.includes('Dingbats') || fontName.includes('Wingdings'));
-
-                                        return text
-                                            .replace(/\u2022/g, '•')  // Bullet
-                                            .replace(/\u2217/g, '*')  // Mathematical Asterisk -> Standard Asterisk
-                                            .replace(/\u22c6/g, '*')  // Star bullet -> Standard Asterisk
-                                            .replace(/\u2013/g, '–')  // En-dash
-                                            .replace(/\u2014/g, '—')  // Em-dash
-                                            .replace(/^I$/g, isSymbolic ? '•' : 'I')     // Artifact mapping: 'I' -> Bullet
-                                            .replace(/^G$/g, isSymbolic ? '•' : 'G');    // Artifact mapping: 'G' -> Bullet
-                                    };
-
                                     const edit = nodeEdits?.[item.id || i];
                                     if (edit) {
                                         const wordStyles = edit.wordStyles || {};
-                                        const sStyle = edit.safetyStyle || {
-                                            size: Math.abs(item.size),
-                                            font: item.font,
-                                            googleFont: item.google_font,
-                                            is_bold: item.is_bold,
-                                            is_italic: item.is_italic,
-                                            color: item.color
+                                        const markerSpan = item.items?.[0];
+                                        const markerText = (item.bullet || (markerSpan && /zapf|dingbat|wingdings|webdings/i.test(markerSpan.font || '') ? markerSpan.content : '') || '').trim();
+                                        const mappedMarker = mapContentToIcons(markerText, markerSpan?.font || item.font);
+                                        const markerStyle = edit.bulletStyle || markerSpan || {};
+                                        const sStyle = {
+                                            ...(edit.safetyStyle || {
+                                                size: Math.abs(item.size),
+                                                is_bold: item.is_bold,
+                                                is_italic: item.is_italic,
+                                                color: item.color
+                                            }),
+                                            font: contentFont,
+                                            googleFont: contentGoogleFont
                                         };
-                                        return renderWordStyledText(mapContentToIcons(item.content, item.font), wordStyles, sStyle, sStyle.size);
+                                        return (
+                                            <>
+                                                {markerText && (
+                                                    <tspan
+                                                        fontSize={Math.abs(Number(markerStyle.size || contentSpan.size || item.size))}
+                                                        fontFamily={getPdfGlyphFontFamily(mappedMarker, markerStyle.font || markerSpan?.font || item.font, markerStyle.googleFont || markerSpan?.google_font || item.google_font)}
+                                                        fontWeight={getPdfGlyphFontWeight(markerStyle.font || markerSpan?.font || item.font, markerStyle.is_bold, mappedMarker)}
+                                                        fontStyle={markerStyle.is_italic ? 'italic' : 'normal'}
+                                                        fill={markerStyle.color ? `rgb(${Math.round(markerStyle.color[0] * 255)}, ${Math.round(markerStyle.color[1] * 255)}, ${Math.round(markerStyle.color[2] * 255)})` : 'black'}
+                                                    >
+                                                        {mappedMarker}
+                                                    </tspan>
+                                                )}
+                                                {renderWordStyledText(normalizePdfSymbols(item.content), wordStyles, sStyle, sStyle.size)}
+                                            </>
+                                        );
                                     }
 
                                     return (
@@ -520,8 +537,8 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
                                             <tspan
                                                 fill={item.color ? `rgb(${Math.round(item.color[0] * 255)}, ${Math.round(item.color[1] * 255)}, ${Math.round(item.color[2] * 255)})` : 'black'}
                                                 fontSize={Math.abs(item.size)}
-                                                fontFamily={normalizeFont(item.font, item.google_font)}
-                                                fontWeight={item.is_bold ? '700' : '400'}
+                                                fontFamily={getPdfGlyphFontFamily(mapContentToIcons(item.bullet || '', item.font), item.font, item.google_font)}
+                                                fontWeight={getPdfGlyphFontWeight(item.font, item.is_bold, mapContentToIcons(item.bullet || '', item.font))}
                                                 fontStyle={item.is_italic ? 'italic' : 'normal'}
                                             >
                                                 {mapContentToIcons(item.bullet || '', item.font)}
@@ -529,12 +546,12 @@ function EditableTextLayer({ items, height, pageIndex, activeNodeId, fontsKey, n
                                             <tspan
                                                 fill={item.color ? `rgb(${Math.round(item.color[0] * 255)}, ${Math.round(item.color[1] * 255)}, ${Math.round(item.color[2] * 255)})` : 'black'}
                                                 fontSize={Math.abs(item.size)}
-                                                fontFamily={normalizeFont(item.font, item.google_font)}
-                                                fontWeight={item.is_bold ? '700' : '400'}
+                                                fontFamily={getPdfGlyphFontFamily(normalizePdfSymbols(item.content), contentFont, contentGoogleFont)}
+                                                fontWeight={getPdfGlyphFontWeight(contentFont, contentSpan.is_bold ?? item.is_bold, normalizePdfSymbols(item.content))}
                                                 fontStyle={item.is_italic ? 'italic' : 'normal'}
                                                 xmlSpace="preserve"
                                             >
-                                                {mapContentToIcons(item.content, item.font)}
+                                                {normalizePdfSymbols(item.content)}
                                             </tspan>
                                         </>
                                     );

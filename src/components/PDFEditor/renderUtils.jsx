@@ -1,5 +1,6 @@
 import React from 'react';
 import { getWeightFromFont, normalizeFont } from './reflowUtils';
+import { normalizePdfSymbols } from '../../utils/pdfTextHelper';
 
 export const getSVGColor = (c, fallback = 'black') => {
     if (!c) return fallback;
@@ -129,13 +130,4 @@ export const renderWordStyledText = (text, wordStyles, safetyStyle, isSmallCaps,
     });
 };
 
-export const mapContent = (text) => {
-    if (!text) return text;
-    return text
-        .replace(/\u00ad/g, '-') // Soft hyphen
-        .replace(/\u25cf/g, '●') // Circle bullet
-        .replace(/\u2022/g, '•').replace(/\u2217/g, '*').replace(/\u22c6/g, '*')
-        .replace(/\u2013/g, '–').replace(/\u2014/g, '—')
-        .replace(/\u0083/g, '\uf095').replace(/\u00a7/g, '\uf09b')
-        .replace(/\u00ef/g, '\uf08c').replace(/\u00d0/g, '\uf121');
-};
+export const mapContent = (text, fontName) => normalizePdfSymbols(text, fontName);
