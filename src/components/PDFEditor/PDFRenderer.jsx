@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { getPdfGlyphFontFamily, getPdfGlyphFontWeight, hasPrivateUseGlyph, isFontAwesomeFont, mapContentToIcons } from '../../utils/pdfTextHelper';
+import { normalizeFont } from './reflowUtils';
+import { cleanPdfFontName } from '../../utils/fontFamilyMapper';
 
 export default function PDFRenderer({ data, isMini = false, activePageIndex, nodeEdits = {} }) {
     const [localPages, setLocalPages] = useState([]);
@@ -61,7 +63,7 @@ function PageRenderer({ page, pageIndex, fonts, nodeEdits }) {
         if (!fonts || fonts.length === 0) return '';
         return fonts.map(f => `
             @font-face {
-                font-family: "${f.name}";
+                font-family: "${cleanPdfFontName(f.name)}";
                 src: url(data:application/font-woff;base64,${f.data});
             }
         `).join('\n');
@@ -214,14 +216,6 @@ function LineRenderer({ line, block, nodeEdits, pageIndex }) {
     const items = line.items || [];
     const firstItem = items[0];
     if (!firstItem) return null;
-
-    const normalizeFont = (fontName) => {
-        if (!fontName) return '"Latin Modern Roman", "Times New Roman", serif';
-        const name = fontName.toLowerCase();
-        if (name.includes('cmbx') || name.includes('bold')) return '"Latin Modern Roman", serif';
-        if (name.includes('cm') || name.includes('sfrm')) return '"Latin Modern Roman", serif';
-        return `"${fontName.replace(/^[A-Z]{6}\+/, '')}", "Latin Modern Roman", serif`;
-    };
 
     const edit = nodeEdits[line.id] || {};
     const content = edit.content !== undefined ? edit.content : line.content;

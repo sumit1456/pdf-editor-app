@@ -14,6 +14,7 @@ import { fontFitManager } from '../../utils/FontFitManager';
 import { savePdfToBackend, logFontMapping, syncCurrentLayout } from '../../services/PdfBackendService';
 import { BASE_URL } from '../../services/api';
 import { normalizePdfSymbols } from '../../utils/pdfTextHelper';
+import { ENABLE_BBOX_TEXT_FIT } from '../../utils/fontFitConfig';
 import './EditorPage.css';
 
 const BULLET_SELECTION_INDEX = '__bullet__';
@@ -1847,7 +1848,7 @@ export default function EditorPage() {
                         <button
                             className={`premium-optimize-btn ${isFittingConfirmed ? 'active' : ''}`}
                             onClick={() => setIsFittingConfirmed(true)}
-                            title="Fit edited text into its PDF bounding box without enlarging the original font"
+                            title={ENABLE_BBOX_TEXT_FIT ? "Fit edited text into its PDF bounding box without enlarging the original font" : "Temporarily disabled for font mapping comparison"}
                             style={{
                                 background: isFittingConfirmed ? 'var(--brand-primary)' : 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
                                 color: 'white',
@@ -1863,10 +1864,10 @@ export default function EditorPage() {
                                 cursor: isFittingConfirmed ? 'default' : 'pointer',
                                 transform: isFittingConfirmed ? 'scale(0.98)' : 'scale(1)'
                             }}
-                            disabled={isFittingConfirmed}
+                            disabled={!ENABLE_BBOX_TEXT_FIT || isFittingConfirmed}
                         >
                             <span className="icon" style={{ fontSize: '1.1rem' }}>{isFittingConfirmed ? '✓' : '✨'}</span>
-                            {isFittingConfirmed ? 'Fit Applied' : 'Fit Edited Text'}
+                            {!ENABLE_BBOX_TEXT_FIT ? 'Text Fit Off' : isFittingConfirmed ? 'Fit Applied' : 'Fit Edited Text'}
                         </button>
                     </div>
                 </div>

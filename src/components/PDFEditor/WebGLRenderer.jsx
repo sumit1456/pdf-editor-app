@@ -5,40 +5,6 @@ import { mergeFragmentsIntoLines } from '../../lib/pdf-extractor/LineMerger';
 import { getPdfGlyphFontFamily, getPdfGlyphFontWeight, mapContentToIcons, normalizePdfSymbols } from '../../utils/pdfTextHelper';
 
 // Now purely a Single Page Renderer
-const normalizeFont = (fontName, googleFont) => {
-    if (googleFont) {
-        const gf = googleFont.toLowerCase();
-        if (gf.includes('inter')) return "'Inter', sans-serif";
-        if (gf.includes('source serif')) return "'Source Serif 4', serif";
-        if (gf.includes('roboto')) return "'Roboto', sans-serif";
-        if (gf.includes('open sans')) return "'Open Sans', sans-serif";
-        if (gf.includes('montserrat')) return "'Montserrat', sans-serif";
-        if (gf.includes('lora')) return "'Lora', serif";
-        if (gf.includes('merriweather')) return "'Merriweather', serif";
-        if (gf.includes('libre baskerville')) return "'Libre Baskerville', serif";
-        if (gf.includes('playfair display')) return "'Playfair Display', serif";
-        if (gf.includes('oswald')) return "'Oswald', sans-serif";
-        if (gf.includes('roboto mono')) return "'Roboto Mono', monospace";
-        if (gf.includes('jetbrains mono')) return "'JetBrains Mono', monospace";
-        if (gf.includes('fira code')) return "'Fira Code', monospace";
-        if (gf.includes('poppins')) return "'Poppins', sans-serif";
-        if (gf.includes('crimson pro')) return "'Crimson Pro', serif";
-        if (gf.includes('dancing script')) return "'Dancing Script', cursive";
-        if (gf.includes('orbitron')) return "'Orbitron', sans-serif";
-        if (gf.includes('pt serif')) return "'PT Serif', serif";
-        if (gf.includes('pt sans')) return "'PT Sans', sans-serif";
-        if (gf.includes('ubuntu')) return "'Ubuntu', sans-serif";
-    }
-
-    if (!fontName) return "'Source Serif 4', serif";
-    const name = fontName.toLowerCase();
-    if (name === 'inter') return "'Inter', sans-serif";
-    if (name === 'roboto') return "'Roboto', sans-serif";
-    if (name === 'open sans') return "'Open Sans', sans-serif";
-    if (name.includes('source serif 4')) return "'Source Serif 4', serif";
-    return `"${fontName}", serif`;
-};
-
 const WebGLRenderer = React.memo(({ page, pageIndex, activeNodeId, fontsKey, nodeEdits = {}, onUpdate, onSelect, scale }) => {
     const containerRef = useRef(null);
     const engineRef = useRef(null);

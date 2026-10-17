@@ -2,6 +2,7 @@
  * PDF Text Helper Service
  * Handles text measurement and scaling calculations for the PDF Editor.
  */
+import { mapPdfFontFamily } from './fontFamilyMapper';
 
 const MEASURE_CANVAS = typeof document !== 'undefined' ? document.createElement('canvas') : null;
 const MEASURE_CTX = MEASURE_CANVAS ? MEASURE_CANVAS.getContext('2d') : null;
@@ -25,20 +26,7 @@ export function getWeightFromFont(fontName, isBoldFlag) {
 }
 
 export function normalizeFont(fontName, googleFont, forceOriginal = false) {
-    if (forceOriginal && fontName) return fontName;
-    if (googleFont) return `'${googleFont}', sans-serif`;
-
-    const font = (fontName || '').toLowerCase();
-    if (font.includes('serif')) return 'serif';
-    if (font.includes('mono')) return 'monospace';
-    if (font.includes('sans')) return 'sans-serif';
-
-    // LaTeX Fallbacks
-    if (font.includes('cmr')) return 'var(--serif-latex)';
-    if (font.includes('cmtt')) return 'var(--mono-code)';
-    if (font.includes('cmss')) return 'var(--sans-modern)';
-
-    return 'serif';
+    return mapPdfFontFamily(fontName, googleFont, { forceOriginal });
 }
 
 /**
@@ -47,13 +35,13 @@ export function normalizeFont(fontName, googleFont, forceOriginal = false) {
 export function getRealFontString(fontName, googleFont, weight, size, style) {
     let family = normalizeFont(fontName, googleFont);
 
-    if (family.includes('var(--serif-latex)')) family = "'Source Serif 4', serif";
-    else if (family.includes('var(--mono-code)')) family = "'Roboto Mono', monospace";
-    else if (family.includes('var(--sans-modern)')) family = "'Inter', sans-serif";
-    else if (family.includes('var(--serif-academic)')) family = "'Merriweather', serif";
-    else if (family.includes('var(--serif-high-contrast)')) family = "'Playfair Display', serif";
-    else if (family.includes('var(--sans-geometric)')) family = "'Poppins', sans-serif";
-    else if (family.includes('var(--sans-readable)')) family = "'Open Sans', sans-serif";
+    if (family.includes('var(--serif-latex)')) family = '"Source Serif 4", "Times New Roman", serif';
+    else if (family.includes('var(--mono-code)')) family = '"Roboto Mono", "Courier New", monospace';
+    else if (family.includes('var(--sans-modern)')) family = '"Inter", Arial, sans-serif';
+    else if (family.includes('var(--serif-academic)')) family = '"Merriweather", serif';
+    else if (family.includes('var(--serif-high-contrast)')) family = '"Playfair Display", serif';
+    else if (family.includes('var(--sans-geometric)')) family = '"Poppins", sans-serif';
+    else if (family.includes('var(--sans-readable)')) family = '"Open Sans", sans-serif';
 
     return `${style} ${weight} ${size}px ${family}`;
 }

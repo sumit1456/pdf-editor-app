@@ -7,6 +7,8 @@ import { MEASURE_CTX, getRealFontString, normalizeFont, getWeightFromFont, GLOBA
 import { fontFitManager } from '../../utils/FontFitManager';
 import { buildWorkerPayload } from './workerUtils';
 import { getPdfGlyphFontFamily, getPdfGlyphFontWeight, hasPrivateUseGlyph, isFontAwesomeFont, normalizePdfSymbols } from '../../utils/pdfTextHelper';
+import { cleanPdfFontName } from '../../utils/fontFamilyMapper';
+import { ENABLE_BBOX_TEXT_FIT } from '../../utils/fontFitConfig';
 
 // Now purely a Single Page Renderer for Python Backend
 
@@ -561,7 +563,7 @@ const PythonRenderer = React.memo(({ page, pageIndex, activeNodeId, markedNodeId
         if (!fonts || fonts.length === 0) return '';
         return fonts.map(f => `
             @font-face {
-                font-family: "${f.name}";
+                font-family: "${cleanPdfFontName(f.name)}";
                 src: url(data:application/font-woff;base64,${f.data});
             }
         `).join('\n');
@@ -1088,7 +1090,7 @@ const LineRenderer = React.memo(({ isFirstLine, line, edit, pageIndex, activeNod
 
     // [FitV4] High-Fidelity Binary Font Fitting
     useEffect(() => {
-        if (!isFittingConfirmed || !isModified) return;
+        if (!ENABLE_BBOX_TEXT_FIT || !isFittingConfirmed || !isModified) return;
 
         if (edit?.isFitted) {
             // console.log(`[FitV4] Line ${line.id} already fitted, skipping.`);
